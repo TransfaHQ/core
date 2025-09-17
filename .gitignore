@@ -137,3 +137,9 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# tigerbeetle
+tigerbeetle
+!scripts/tigerbeetle
+tigerbeetle.zip
+data/*.tigerbeetle
