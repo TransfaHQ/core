@@ -41,6 +41,14 @@ export class ConfigService {
     };
   }
 
+  get adminSecret(): string {
+    return this.envConfig.ADMIN_SECRET;
+  }
+
+  get authSaltRounds(): number {
+    return this.envConfig.AUTH_SALT_ROUNDS;
+  }
+
   get typeOrmConfig(): TypeOrmModuleOptions {
     return {
       type: 'postgres',
