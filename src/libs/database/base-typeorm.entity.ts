@@ -5,7 +5,6 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { v7 as uuidv7 } from 'uuid';
 
 export abstract class BaseTypeormEntity {
   constructor(props?: unknown) {
@@ -14,7 +13,7 @@ export abstract class BaseTypeormEntity {
     }
   }
 
-  @PrimaryColumn({ update: false, type: 'uuid' })
+  @PrimaryColumn({ type: 'uuid', default: () => 'uuid_generate_v7()' })
   id: string;
 
   @CreateDateColumn({ insert: true, type: 'timestamp', default: () => 'NOW()', name: 'created_at' })
@@ -25,11 +24,4 @@ export abstract class BaseTypeormEntity {
 
   @DeleteDateColumn({ type: 'timestamp', name: 'deleted_at' })
   deletedAt: Date;
-
-  @BeforeInsert()
-  setId() {
-    if (!this.id) {
-      this.id = uuidv7();
-    }
-  }
 }
