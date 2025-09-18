@@ -18,16 +18,24 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "repl": "NODE_ENV=development nest start --entryFile repl --watch"
+    "repl": "NODE_ENV=development nest start --entryFile repl --watch",
+    "typeorm": "ts-node --files -r tsconfig-paths/register ./node_modules/typeorm/cli.js --dataSource ./src/database/config.ts",
+    "db:migrate": "npm run typeorm migration:run",
+    "db:migrate:revert": "npm run typeorm migration:revert",
+    "db:show": "npm run typeorm migration:show",
+    "db:create-migration": "cd src/database/migrations && ts-node --files -r tsconfig-paths/register ../../../node_modules/typeorm/cli.js migration:create"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",
     "@nestjs/core": "^11.1.6",
     "@nestjs/platform-express": "^11.1.6",
+    "@nestjs/typeorm": "^11.0.0",
     "dotenv": "^17.2.2",
+    "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "tigerbeetle-node": "0.16.58",
+    "typeorm": "^0.3.26",
     "zod": "^4.1.9"
   },
   "devDependencies": {
@@ -39,7 +47,7 @@
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.5.1",
+    "@types/node": "^24.5.2",
     "@types/supertest": "^6.0.3",
     "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.8",

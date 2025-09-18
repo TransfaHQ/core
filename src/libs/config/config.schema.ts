@@ -1,5 +1,7 @@
 import z from 'zod';
 
+import { DBConfigSchema } from '@src/database/config';
+
 export enum Environment {
   DEVELOPMENT = 'development',
   PRODUCTION = 'production',
@@ -7,7 +9,7 @@ export enum Environment {
   TEST = 'test',
 }
 
-export const ConfigSchema = z.object({
+export const ConfigSchema = DBConfigSchema.extend({
   NODE_ENV: z.enum(Environment),
   PORT: z.string().transform(Number).default(3000),
   TIGER_BEETLE_CLUSTER_ID: z.string().transform(BigInt),

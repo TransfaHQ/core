@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 
 import { Injectable } from '@nestjs/common';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 import { ConfigSchema, EnvConfig, Environment } from './config.schema';
 
@@ -37,6 +38,20 @@ export class ConfigService {
     return {
       cluster_id: this.envConfig.TIGER_BEETLE_CLUSTER_ID,
       replica_addresses: this.envConfig.TIGER_BEETLE_REPLICAS_ADDRESSES,
+    };
+  }
+
+  get typeOrmConfig(): TypeOrmModuleOptions {
+    return {
+      type: 'postgres',
+      host: this.envConfig.DB_HOST,
+      port: this.envConfig.DB_PORT,
+      username: this.envConfig.DB_USERNAME,
+      password: this.envConfig.DB_PASSWORD,
+      database: this.envConfig.DB_NAME,
+      entities: [__dirname + '/../../modules/**/*.entity{.ts,.js}'],
+      migrations: [__dirname + '/../../database/migrations/*{.ts,.js}'],
+      migrationsTableName: this.envConfig.DB_MIGRATIONS_TABLE,
     };
   }
 }
