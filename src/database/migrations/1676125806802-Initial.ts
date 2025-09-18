@@ -4,43 +4,43 @@ import { CORE_POSTGRES_SCHEMA } from '@libs/database/constant';
 
 export class Initial1676125806802 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
+    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto";`);
+
     await queryRunner.query(`
-      CREATE SEQUENCE IF NOT EXISTS snowflake_seq
-        START 0
-        INCREMENT 1
-        MINVALUE 0
-        MAXVALUE 4095;  -- 12 bits
+        CREATE OR REPLACE FUNCTION uuid_generate_v7() RETURNS uuid AS $$
+        DECLARE
+            ts_millis BIGINT;
+            rand_bytes BYTEA;
+            uuid_bytes BYTEA := '\\x00000000000000000000000000000000'::bytea;
+            val INT;
+            i INT;
+        BEGIN
+            ts_millis := FLOOR(EXTRACT(EPOCH FROM clock_timestamp()) * 1000);
+
+            rand_bytes := gen_random_bytes(10);
+
+            FOR i IN 0..5 LOOP
+                val := (ts_millis >> (40 - 8*i)) & 255;
+                uuid_bytes := set_byte(uuid_bytes, i, val);
+            END LOOP;
+
+            val := ((get_byte(rand_bytes, 0) & 15) | 112);  -- 112 decimal = 0x70
+            uuid_bytes := set_byte(uuid_bytes, 6, val);
+
+            uuid_bytes := set_byte(uuid_bytes, 7, get_byte(rand_bytes, 1));
+
+            val := ((get_byte(rand_bytes, 2) & 63) | 128);  -- 128 decimal = 0x80
+            uuid_bytes := set_byte(uuid_bytes, 8, val);
+
+            FOR i IN 9..15 LOOP
+                uuid_bytes := set_byte(uuid_bytes, i, get_byte(rand_bytes, i - 6));
+            END LOOP;
+
+            RETURN encode(uuid_bytes, 'hex')::uuid;
+        END;
+        $$ LANGUAGE plpgsql;
     `);
-
-    await queryRunner.query(
-      `
-      CREATE OR REPLACE FUNCTION generate_snowflake_id()
-      RETURNS BIGINT AS $$
-      DECLARE
-          epoch BIGINT;
-          timestamp_ms BIGINT;
-          machine_id BIGINT := 1; -- change if multiple nodes
-          sequence_id BIGINT;
-          snowflake_id BIGINT;
-      BEGIN
-          -- Fixed epoch: 2025-09-19 midnight UTC in milliseconds
-          epoch := 1758153600000*1000::BIGINT;
-
-          -- Current timestamp in milliseconds
-          timestamp_ms := (EXTRACT(EPOCH FROM clock_timestamp()) * 1000)::BIGINT;
-
-          -- Get next sequence number
-          sequence_id := nextval('snowflake_seq');
-
-          -- Compose Snowflake ID:
-          -- 41 bits timestamp | 10 bits machine_id | 12 bits sequence
-          snowflake_id := (((timestamp_ms - epoch) << 22) | (machine_id << 12) | sequence_id) & 0x7FFFFFFFFFFFFFFF;
-
-          RETURN snowflake_id;
-      END;
-      $$ LANGUAGE plpgsql;
-      `,
-    );
 
     if (CORE_POSTGRES_SCHEMA) {
       await queryRunner.query(`CREATE SCHEMA IF NOT EXISTS ${CORE_POSTGRES_SCHEMA}`);
@@ -49,8 +49,7 @@ export class Initial1676125806802 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-        DROP FUNCTION IF EXISTS generate_snowflake_id();
-        DROP SEQUENCE IF EXISTS snowflake_seq;
+        DROP FUNCTION IF EXISTS uuid_generate_v7();
     `);
 
     if (CORE_POSTGRES_SCHEMA) {

@@ -2,6 +2,8 @@ import { config as loadConfig } from 'dotenv';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import z from 'zod';
 
+import { checkPostgresVersion } from '@src/database/utils';
+
 loadConfig();
 
 export const DBConfigSchema = z.object({
@@ -33,14 +35,18 @@ const dataSourceOptions = (): DataSourceOptions => {
     migrations: [__dirname + '/migrations/*{.ts,.js}'],
     synchronize: false,
     migrationsTableName: dbConfig.DB_MIGRATIONS_TABLE,
-    // schema: dbConfig.CORE_POSTGRES_SCHEMA,
     migrationsRun: false,
   };
   return dataSourceOptions;
 };
 
 const dataSource = new DataSource(dataSourceOptions());
-dataSource.initialize().catch((e) => {
-  throw e;
-});
+dataSource
+  .initialize()
+  .then(async (dataSource) => {
+    await checkPostgresVersion(dataSource);
+  })
+  .catch((e) => {
+    throw e;
+  });
 export default dataSource;

@@ -26,14 +26,6 @@ export class ConfigService {
     return this.envConfig.NODE_ENV;
   }
 
-  get tigerBeetleClusterId(): bigint {
-    return this.envConfig.TIGER_BEETLE_CLUSTER_ID;
-  }
-
-  get tiggerBeetleReplicasAddresses(): string[] {
-    return this.envConfig.TIGER_BEETLE_REPLICAS_ADDRESSES;
-  }
-
   get tigerBeetleConfigs(): { cluster_id: bigint; replica_addresses: string[] } {
     return {
       cluster_id: this.envConfig.TIGER_BEETLE_CLUSTER_ID,
