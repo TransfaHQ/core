@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@libs/config/config.module';
 import { ConfigService } from '@libs/config/config.service';
 import { TigerBeetleModule } from '@libs/tigerbeetle/tigerbeetle.module';
+
 import { UserEntity } from '@modules/auth/entities/user.entity';
 
 const ormEntities = [UserEntity];

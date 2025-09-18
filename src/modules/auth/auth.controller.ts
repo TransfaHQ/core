@@ -1,4 +1,6 @@
 import * as bcrypt from 'bcryptjs';
+import type { Response } from 'express';
+import ms, { StringValue } from 'ms';
 import { Repository } from 'typeorm';
 
 import {
@@ -9,16 +11,20 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Res,
+  UnauthorizedException,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { ConfigService } from '@libs/config/config.service';
 
-import { CreateUserDto, UserResponseDto } from './dto';
+import { CreateUserDto, LoginDto, LoginResponseDto, UserResponseDto } from './dto';
 import { UserEntity } from './entities/user.entity';
 import { AdminGuard } from './guards/admin.guard';
+import { JwtPayload } from './types';
 
 @Controller({
   version: '1',
@@ -30,6 +36,7 @@ export class AuthController {
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     private readonly config: ConfigService,
+    private readonly jwtService: JwtService,
   ) {}
 
   @Post('user')
@@ -64,6 +71,50 @@ export class AuthController {
       email: savedUser.email,
       createdAt: savedUser.createdAt,
       updatedAt: savedUser.updatedAt,
+    };
+  }
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<LoginResponseDto> {
+    const { email, password } = loginDto;
+
+    const user = await this.userRepository.findOne({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Account is inactive');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const payload: JwtPayload = {
+      sub: user.id.toString(),
+      email: user.email,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload);
+
+    response.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: ms(this.config.jwtExpiresIn as StringValue),
+    });
+
+    return {
+      token: accessToken,
     };
   }
 }
