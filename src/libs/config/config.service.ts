@@ -14,7 +14,7 @@ export class ConfigService {
   loadConfig(): void {
     if (process.env.NODE_ENV === Environment.DEVELOPMENT) {
       const config = dotenv.parse(fs.readFileSync('.env'));
-      this.envConfig = ConfigSchema.parse({ ...this.envConfig, ...config });
+      this.envConfig = ConfigSchema.parse({ NODE_ENV: process.env.NODE_ENV, ...config });
       return;
     }
 
