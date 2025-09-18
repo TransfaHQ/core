@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { Repository } from 'typeorm';
+
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -9,7 +10,6 @@ import { AppModule } from '@src/app.module';
 import { setupApp } from '@src/setup';
 
 import { ConfigService } from '@libs/config/config.service';
-
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserEntity } from './entities/user.entity';
@@ -334,10 +334,7 @@ describe('AuthController', () => {
       });
 
       it('should reject empty request body', () => {
-        return request(app.getHttpServer())
-          .post('/v1/auth/login')
-          .send({})
-          .expect(400);
+        return request(app.getHttpServer()).post('/v1/auth/login').send({}).expect(400);
       });
     });
   });

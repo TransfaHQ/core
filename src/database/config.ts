@@ -23,7 +23,7 @@ export const DBConfigSchema = z.object({
   DB_MIGRATIONS_TABLE: z.string().default('migrations'),
 });
 
-const dbConfig = DBConfigSchema.parse(process.env);
+export const dbConfig = DBConfigSchema.parse(process.env);
 
 const dataSourceOptions = (): DataSourceOptions => {
   const dataSourceOptions: DataSourceOptions = {
@@ -38,11 +38,18 @@ const dataSourceOptions = (): DataSourceOptions => {
     synchronize: false,
     migrationsTableName: dbConfig.DB_MIGRATIONS_TABLE,
     migrationsRun: false,
-    // schema: dbConfig.CORE_POSTGRES_SCHEMA,
+    schema: dbConfig.CORE_POSTGRES_SCHEMA ?? undefined,
   };
   return dataSourceOptions;
 };
 
 const dataSource = new DataSource(dataSourceOptions());
-
+dataSource
+  .initialize()
+  .then(async (dataSource) => {
+    await checkPostgresVersion(dataSource);
+  })
+  .catch((e) => {
+    throw e;
+  });
 export default dataSource;

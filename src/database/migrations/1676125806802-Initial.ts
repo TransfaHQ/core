@@ -1,7 +1,5 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-import { CORE_POSTGRES_SCHEMA } from '@libs/database/constant';
-
 export class Initial1676125806802 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
@@ -41,19 +39,11 @@ export class Initial1676125806802 implements MigrationInterface {
         END;
         $$ LANGUAGE plpgsql;
     `);
-
-    if (CORE_POSTGRES_SCHEMA) {
-      await queryRunner.query(`CREATE SCHEMA IF NOT EXISTS ${CORE_POSTGRES_SCHEMA}`);
-    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
         DROP FUNCTION IF EXISTS uuid_generate_v7();
     `);
-
-    if (CORE_POSTGRES_SCHEMA) {
-      await queryRunner.query(`DROP SCHEMA IF EXISTS ${CORE_POSTGRES_SCHEMA} CASCADE`);
-    }
   }
 }

@@ -1,10 +1,4 @@
-import {
-  BeforeInsert,
-  CreateDateColumn,
-  DeleteDateColumn,
-  PrimaryColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { CreateDateColumn, DeleteDateColumn, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
 export abstract class BaseTypeormEntity {
   constructor(props?: unknown) {
