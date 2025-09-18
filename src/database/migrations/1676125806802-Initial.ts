@@ -21,7 +21,7 @@ export class Initial1676125806802 implements MigrationInterface {
           timestamp_ms BIGINT;
           machine_id BIGINT := 1; -- change if multiple nodes
           sequence_id BIGINT;
-          snowflake_id NUMERIC;
+          snowflake_id BIGINT;
       BEGIN
           -- Fixed epoch: 2025-09-19 midnight UTC in milliseconds
           epoch := 1758153600000*1000::BIGINT;
@@ -42,14 +42,19 @@ export class Initial1676125806802 implements MigrationInterface {
       `,
     );
 
-    await queryRunner.query(`CREATE SCHEMA IF NOT EXISTS ${CORE_POSTGRES_SCHEMA}`);
+    if (CORE_POSTGRES_SCHEMA) {
+      await queryRunner.query(`CREATE SCHEMA IF NOT EXISTS ${CORE_POSTGRES_SCHEMA}`);
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
         DROP FUNCTION IF EXISTS generate_snowflake_id();
         DROP SEQUENCE IF EXISTS snowflake_seq;
-        DROP SCHEMA IF EXISTS ${CORE_POSTGRES_SCHEMA}
     `);
+
+    if (CORE_POSTGRES_SCHEMA) {
+      await queryRunner.query(`DROP SCHEMA IF EXISTS ${CORE_POSTGRES_SCHEMA} CASCADE`);
+    }
   }
 }

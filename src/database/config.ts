@@ -35,7 +35,8 @@ const dataSourceOptions = (): DataSourceOptions => {
     migrations: [__dirname + '/migrations/*{.ts,.js}'],
     synchronize: false,
     migrationsTableName: dbConfig.DB_MIGRATIONS_TABLE,
-    schema: dbConfig.CORE_POSTGRES_SCHEMA,
+    // schema: dbConfig.CORE_POSTGRES_SCHEMA,
+    migrationsRun: false,
   };
   return dataSourceOptions;
 };

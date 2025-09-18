@@ -74,7 +74,7 @@ export class ConfigService {
       entities: [__dirname + '/../../modules/**/*.entity{.ts,.js}'],
       migrations: [__dirname + '/../../database/migrations/*{.ts,.js}'],
       migrationsTableName: this.envConfig.DB_MIGRATIONS_TABLE,
-      schema: this.envConfig.CORE_POSTGRES_SCHEMA,
+      // schema: this.envConfig.CORE_POSTGRES_SCHEMA,
     };
   }
 }
