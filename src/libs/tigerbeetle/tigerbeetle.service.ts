@@ -16,7 +16,7 @@ export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
   }
 
   onModuleDestroy() {
-    this.client.destroy();
+    if (this.client) this.client.destroy();
   }
 
   async createAccount(data: Account): Promise<void> {
