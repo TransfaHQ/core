@@ -5,8 +5,7 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-
-import { SnowflakeId } from '@libs/utils';
+import { v7 as uuidv7 } from 'uuid';
 
 export abstract class BaseTypeormEntity {
   constructor(props?: unknown) {
@@ -15,8 +14,8 @@ export abstract class BaseTypeormEntity {
     }
   }
 
-  @PrimaryColumn({ update: false, type: 'bigint' })
-  id: bigint;
+  @PrimaryColumn({ update: false, type: 'uuid' })
+  id: string;
 
   @CreateDateColumn({ insert: true, type: 'timestamp', default: () => 'NOW()', name: 'created_at' })
   createdAt: Date;
@@ -30,7 +29,7 @@ export abstract class BaseTypeormEntity {
   @BeforeInsert()
   setId() {
     if (!this.id) {
-      this.id = SnowflakeId.generate();
+      this.id = uuidv7();
     }
   }
 }
