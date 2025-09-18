@@ -23,7 +23,8 @@
     "db:migrate": "ts-node --files -r tsconfig-paths/register scripts/npm/db-migrate.ts",
     "db:revert": "ts-node --files -r tsconfig-paths/register scripts/npm/db-revert.ts",
     "db:show": "npm run typeorm migration:show",
-    "db:create-migration": "cd src/database/migrations && ts-node --files -r tsconfig-paths/register ../../../node_modules/typeorm/cli.js migration:create"
+    "db:create-migration": "cd src/database/migrations && ts-node --files -r tsconfig-paths/register ../../../node_modules/typeorm/cli.js migration:create",
+    "start:tb": "scripts/tigerbeetle/start.sh"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

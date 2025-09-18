@@ -144,3 +144,6 @@ tigerbeetle
 !src/**/tigerbeetle
 tigerbeetle.zip
 data/*.tigerbeetle
+
+apidocs/*.json
+apidocs/*.bru
