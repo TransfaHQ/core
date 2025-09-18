@@ -4,7 +4,9 @@ module.exports = {
   testEnvironment: 'node',
   testRegex: '.e2e-spec.ts$',
   transform: {
-    '^.+\\.(t|j)s$': 'ts-jest',
+    '^.+\\.(t|j)s$': ['ts-jest', {
+      transpilation: true
+    }],
   },
   moduleNameMapper: {
     '^@libs/(.*)$': '<rootDir>/src/libs/$1',

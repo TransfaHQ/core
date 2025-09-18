@@ -205,4 +205,140 @@ describe('AuthController', () => {
       });
     });
   });
+
+  describe('POST /v1/auth/login', () => {
+    let testUser: CreateUserDto;
+
+    beforeEach(async () => {
+      testUser = generateTestUser();
+
+      // Create a test user for login tests
+      await request(app.getHttpServer())
+        .post('/v1/auth/user')
+        .set(setAdminHeaders())
+        .send(testUser)
+        .expect(201);
+    });
+
+    describe('Successful Login', () => {
+      it('should login with valid credentials', async () => {
+        const response = await request(app.getHttpServer())
+          .post('/v1/auth/login')
+          .send({
+            email: testUser.email,
+            password: testUser.password,
+          })
+          .expect(200);
+
+        expect(response.body).toMatchObject({
+          token: expect.any(String),
+        });
+
+        expect(response.headers['set-cookie']).toBeDefined();
+        const cookieHeader = response.headers['set-cookie'][0];
+        expect(cookieHeader).toContain('access_token=');
+        expect(cookieHeader).toContain('HttpOnly');
+        expect(cookieHeader).toContain('Secure');
+        expect(cookieHeader).toContain('SameSite=Strict');
+      });
+
+      it('should set secure HTTP-only cookie', async () => {
+        const response = await request(app.getHttpServer())
+          .post('/v1/auth/login')
+          .send({
+            email: testUser.email,
+            password: testUser.password,
+          })
+          .expect(200);
+
+        const cookieHeader = response.headers['set-cookie'][0];
+        expect(cookieHeader).toContain('access_token=');
+        expect(cookieHeader).toContain('HttpOnly');
+        expect(cookieHeader).toContain('Secure');
+        expect(cookieHeader).toContain('SameSite=Strict');
+        expect(cookieHeader).toContain('Max-Age=');
+      });
+    });
+
+    describe('Invalid Credentials', () => {
+      it('should reject login with wrong password', () => {
+        return request(app.getHttpServer())
+          .post('/v1/auth/login')
+          .send({
+            email: testUser.email,
+            password: 'wrongpassword',
+          })
+          .expect(401)
+          .expect((res) => {
+            expect(res.body.message).toBe('Invalid credentials');
+          });
+      });
+
+      it('should reject login with non-existent email', () => {
+        return request(app.getHttpServer())
+          .post('/v1/auth/login')
+          .send({
+            email: 'nonexistent@example.com',
+            password: 'password123',
+          })
+          .expect(401)
+          .expect((res) => {
+            expect(res.body.message).toBe('Invalid credentials');
+          });
+      });
+
+      it('should reject login for inactive user', async () => {
+        // Deactivate the user
+        await userRepository.update({ email: testUser.email }, { isActive: false });
+
+        return request(app.getHttpServer())
+          .post('/v1/auth/login')
+          .send({
+            email: testUser.email,
+            password: testUser.password,
+          })
+          .expect(401)
+          .expect((res) => {
+            expect(res.body.message).toBe('Account is inactive');
+          });
+      });
+    });
+
+    describe('Input Validation', () => {
+      it('should reject invalid email format', () => {
+        return request(app.getHttpServer())
+          .post('/v1/auth/login')
+          .send({
+            email: 'invalid-email',
+            password: 'password123',
+          })
+          .expect(400);
+      });
+
+      it('should reject missing email', () => {
+        return request(app.getHttpServer())
+          .post('/v1/auth/login')
+          .send({
+            password: 'password123',
+          })
+          .expect(400);
+      });
+
+      it('should reject missing password', () => {
+        return request(app.getHttpServer())
+          .post('/v1/auth/login')
+          .send({
+            email: testUser.email,
+          })
+          .expect(400);
+      });
+
+      it('should reject empty request body', () => {
+        return request(app.getHttpServer())
+          .post('/v1/auth/login')
+          .send({})
+          .expect(400);
+      });
+    });
+  });
 });
