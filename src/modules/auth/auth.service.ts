@@ -48,4 +48,21 @@ export class AuthService {
 
     await this.keysRepository.softDelete(id);
   }
+
+  async validateApiKey(id: string, secret: string): Promise<KeysEntity | null> {
+    const key = await this.keysRepository.findOne({
+      where: { id },
+    });
+
+    if (!key) {
+      return null;
+    }
+
+    const isSecretValid = await bcrypt.compare(secret, key.secret);
+    if (!isSecretValid) {
+      return null;
+    }
+
+    return key;
+  }
 }

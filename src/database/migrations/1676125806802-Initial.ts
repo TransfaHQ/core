@@ -16,7 +16,7 @@ export class Initial1676125806802 implements MigrationInterface {
         BEGIN
             ts_millis := FLOOR(EXTRACT(EPOCH FROM clock_timestamp()) * 1000);
 
-            rand_bytes := gen_random_bytes(10);
+            rand_bytes := substring(decode(replace(gen_random_uuid()::text, '-', ''), 'hex') from 1 for 10);
 
             FOR i IN 0..5 LOOP
                 val := (ts_millis >> (40 - 8*i)) & 255;

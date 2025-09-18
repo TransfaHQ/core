@@ -10,6 +10,7 @@ import { AuthService } from './auth.service';
 import { KeysEntity } from './entities/keys.entity';
 import { UserEntity } from './entities/user.entity';
 import { AdminGuard } from './guards/admin.guard';
+import { ApiKeyGuard } from './guards/api-key.guard';
 import { JwtGuard } from './guards/jwt.guard';
 
 @Module({
@@ -28,7 +29,7 @@ import { JwtGuard } from './guards/jwt.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AdminGuard, JwtGuard],
-  exports: [AuthService, JwtGuard],
+  providers: [AuthService, AdminGuard, ApiKeyGuard, JwtGuard],
+  exports: [AuthService, ApiKeyGuard, JwtGuard],
 })
 export class AuthModule {}

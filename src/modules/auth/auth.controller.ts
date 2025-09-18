@@ -9,6 +9,7 @@ import {
   ConflictException,
   Controller,
   Delete,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
@@ -26,6 +27,7 @@ import { AuthService } from './auth.service';
 import { CreateKeyDto, CreateUserDto, DeleteKeyDto, KeyResponseDto, LoginDto, LoginResponseDto, UserResponseDto } from './dto';
 import { UserEntity } from './entities/user.entity';
 import { AdminGuard } from './guards/admin.guard';
+import { ApiKeyGuard } from './guards/api-key.guard';
 import { JwtPayload } from './types';
 
 @Controller({
@@ -140,4 +142,5 @@ export class AuthController {
   ): Promise<void> {
     return this.authService.deleteKey(deleteKeyDto.id);
   }
+
 }
