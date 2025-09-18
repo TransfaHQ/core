@@ -8,6 +8,7 @@ import {
   ClassSerializerInterceptor,
   ConflictException,
   Controller,
+  Delete,
   HttpCode,
   HttpStatus,
   Post,
@@ -21,7 +22,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { ConfigService } from '@libs/config/config.service';
 
-import { CreateUserDto, LoginDto, LoginResponseDto, UserResponseDto } from './dto';
+import { AuthService } from './auth.service';
+import { CreateKeyDto, CreateUserDto, DeleteKeyDto, KeyResponseDto, LoginDto, LoginResponseDto, UserResponseDto } from './dto';
 import { UserEntity } from './entities/user.entity';
 import { AdminGuard } from './guards/admin.guard';
 import { JwtPayload } from './types';
@@ -35,6 +37,7 @@ export class AuthController {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    private readonly authService: AuthService,
     private readonly config: ConfigService,
     private readonly jwtService: JwtService,
   ) {}
@@ -116,5 +119,25 @@ export class AuthController {
     return {
       token: accessToken,
     };
+  }
+
+  @Post('keys')
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.CREATED)
+  async createKey(
+    @Body()
+    createKeyDto: CreateKeyDto,
+  ): Promise<KeyResponseDto> {
+    return this.authService.createKey(createKeyDto);
+  }
+
+  @Delete('keys')
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteKey(
+    @Body()
+    deleteKeyDto: DeleteKeyDto,
+  ): Promise<void> {
+    return this.authService.deleteKey(deleteKeyDto.id);
   }
 }

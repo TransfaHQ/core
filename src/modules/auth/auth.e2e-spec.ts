@@ -12,11 +12,13 @@ import { setupApp } from '@src/setup';
 import { ConfigService } from '@libs/config/config.service';
 
 import { CreateUserDto } from './dto/create-user.dto';
+import { KeysEntity } from './entities/keys.entity';
 import { UserEntity } from './entities/user.entity';
 
 describe('AuthController', () => {
   let app: INestApplication<App>;
   let userRepository: Repository<UserEntity>;
+  let keysRepository: Repository<KeysEntity>;
   let configService: ConfigService;
   let adminSecret: string;
 
@@ -41,6 +43,7 @@ describe('AuthController', () => {
     await app.init();
 
     userRepository = moduleFixture.get<Repository<UserEntity>>(getRepositoryToken(UserEntity));
+    keysRepository = moduleFixture.get<Repository<KeysEntity>>(getRepositoryToken(KeysEntity));
     configService = moduleFixture.get<ConfigService>(ConfigService);
     adminSecret = configService.adminSecret;
   });
@@ -51,6 +54,7 @@ describe('AuthController', () => {
 
   beforeEach(async () => {
     await userRepository.deleteAll();
+    await keysRepository.deleteAll();
   });
 
   describe('POST /v1/auth/user', () => {
@@ -335,6 +339,217 @@ describe('AuthController', () => {
 
       it('should reject empty request body', () => {
         return request(app.getHttpServer()).post('/v1/auth/login').send({}).expect(400);
+      });
+    });
+  });
+
+  describe('POST /v1/auth/keys', () => {
+    describe('Admin Guard Authentication', () => {
+      it('should reject request without x-admin-key header', () => {
+        return request(app.getHttpServer())
+          .post('/v1/auth/keys')
+          .send({})
+          .expect(401)
+          .expect((res) => {
+            expect(res.body.message).toBe('Admin key is required');
+          });
+      });
+
+      it('should reject request with incorrect x-admin-key header', () => {
+        return request(app.getHttpServer())
+          .post('/v1/auth/keys')
+          .set('x-admin-key', 'wrong-key')
+          .send({})
+          .expect(401)
+          .expect((res) => {
+            expect(res.body.message).toBe('Invalid admin key');
+          });
+      });
+
+      it('should accept request with correct x-admin-key header', () => {
+        return request(app.getHttpServer())
+          .post('/v1/auth/keys')
+          .set(setAdminHeaders())
+          .send({})
+          .expect(201);
+      });
+    });
+
+    describe('Key Creation Success', () => {
+      it('should create key with generated secret', async () => {
+        const response = await request(app.getHttpServer())
+          .post('/v1/auth/keys')
+          .set(setAdminHeaders())
+          .send({})
+          .expect(201);
+
+        expect(response.body).toMatchObject({
+          id: expect.any(String),
+          secret: expect.any(String),
+          createdAt: expect.any(String),
+          updatedAt: expect.any(String),
+        });
+
+        // Secret should be a base64url string (32 bytes = ~43 chars in base64url)
+        expect(response.body.secret).toMatch(/^[A-Za-z0-9_-]+$/);
+        expect(response.body.secret.length).toBeGreaterThan(40);
+
+        // Verify key was created in database
+        const createdKey = await keysRepository.findOne({
+          where: { id: response.body.id },
+        });
+
+        expect(createdKey).toBeDefined();
+        expect(createdKey!.id).toBe(response.body.id);
+        // Secret in DB should be hashed, not the plain text
+        expect(createdKey!.secret).not.toBe(response.body.secret);
+      });
+
+      it('should generate unique secrets for multiple keys', async () => {
+        const response1 = await request(app.getHttpServer())
+          .post('/v1/auth/keys')
+          .set(setAdminHeaders())
+          .send({})
+          .expect(201);
+
+        const response2 = await request(app.getHttpServer())
+          .post('/v1/auth/keys')
+          .set(setAdminHeaders())
+          .send({})
+          .expect(201);
+
+        expect(response1.body.secret).not.toBe(response2.body.secret);
+        expect(response1.body.id).not.toBe(response2.body.id);
+      });
+    });
+  });
+
+  describe('DELETE /v1/auth/keys', () => {
+    let createdKeyId: string;
+
+    beforeEach(async () => {
+      // Create a key to delete in tests
+      const response = await request(app.getHttpServer())
+        .post('/v1/auth/keys')
+        .set(setAdminHeaders())
+        .send({})
+        .expect(201);
+
+      createdKeyId = response.body.id;
+    });
+
+    describe('Admin Guard Authentication', () => {
+      it('should reject request without x-admin-key header', () => {
+        return request(app.getHttpServer())
+          .delete('/v1/auth/keys')
+          .send({ id: createdKeyId })
+          .expect(401)
+          .expect((res) => {
+            expect(res.body.message).toBe('Admin key is required');
+          });
+      });
+
+      it('should reject request with incorrect x-admin-key header', () => {
+        return request(app.getHttpServer())
+          .delete('/v1/auth/keys')
+          .set('x-admin-key', 'wrong-key')
+          .send({ id: createdKeyId })
+          .expect(401)
+          .expect((res) => {
+            expect(res.body.message).toBe('Invalid admin key');
+          });
+      });
+
+      it('should accept request with correct x-admin-key header', () => {
+        return request(app.getHttpServer())
+          .delete('/v1/auth/keys')
+          .set(setAdminHeaders())
+          .send({ id: createdKeyId })
+          .expect(204);
+      });
+    });
+
+    describe('Key Deletion Success', () => {
+      it('should soft delete existing key', async () => {
+        await request(app.getHttpServer())
+          .delete('/v1/auth/keys')
+          .set(setAdminHeaders())
+          .send({ id: createdKeyId })
+          .expect(204);
+
+        // Key should be soft deleted (deletedAt should be set)
+        const deletedKey = await keysRepository.findOne({
+          where: { id: createdKeyId },
+          withDeleted: true, // Include soft deleted entities
+        });
+
+        expect(deletedKey).toBeDefined();
+        expect(deletedKey!.deletedAt).toBeDefined();
+        expect(deletedKey!.deletedAt).toBeInstanceOf(Date);
+
+        // Key should not be found in normal queries
+        const activeKey = await keysRepository.findOne({
+          where: { id: createdKeyId },
+        });
+
+        expect(activeKey).toBeNull();
+      });
+
+      it('should return 404 for non-existent key', async () => {
+        const fakeId = '00000000-0000-0000-0000-000000000000';
+
+        return request(app.getHttpServer())
+          .delete('/v1/auth/keys')
+          .set(setAdminHeaders())
+          .send({ id: fakeId })
+          .expect(404)
+          .expect((res) => {
+            expect(res.body.message).toBe('Key not found');
+          });
+      });
+
+      it('should return 404 when trying to delete already deleted key', async () => {
+        // First deletion
+        await request(app.getHttpServer())
+          .delete('/v1/auth/keys')
+          .set(setAdminHeaders())
+          .send({ id: createdKeyId })
+          .expect(204);
+
+        // Second deletion should fail
+        return request(app.getHttpServer())
+          .delete('/v1/auth/keys')
+          .set(setAdminHeaders())
+          .send({ id: createdKeyId })
+          .expect(404)
+          .expect((res) => {
+            expect(res.body.message).toBe('Key not found');
+          });
+      });
+    });
+
+    describe('Input Validation', () => {
+      it('should reject invalid UUID format', () => {
+        return request(app.getHttpServer())
+          .delete('/v1/auth/keys')
+          .set(setAdminHeaders())
+          .send({ id: 'invalid-uuid' })
+          .expect(400);
+      });
+
+      it('should reject missing id', () => {
+        return request(app.getHttpServer())
+          .delete('/v1/auth/keys')
+          .set(setAdminHeaders())
+          .send({})
+          .expect(400);
+      });
+
+      it('should reject empty request body', () => {
+        return request(app.getHttpServer())
+          .delete('/v1/auth/keys')
+          .set(setAdminHeaders())
+          .expect(400);
       });
     });
   });

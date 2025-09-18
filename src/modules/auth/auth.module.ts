@@ -7,13 +7,14 @@ import { ConfigService } from '@libs/config/config.service';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { KeysEntity } from './entities/keys.entity';
 import { UserEntity } from './entities/user.entity';
 import { AdminGuard } from './guards/admin.guard';
 import { JwtGuard } from './guards/jwt.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserEntity]),
+    TypeOrmModule.forFeature([UserEntity, KeysEntity]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
