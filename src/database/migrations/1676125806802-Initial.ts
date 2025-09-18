@@ -5,7 +5,7 @@ import { CORE_POSTGRES_SCHEMA } from '@libs/database/constant';
 export class Initial1676125806802 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE SEQUENCE snowflake_seq
+      CREATE SEQUENCE IF NOT EXISTS snowflake_seq
         START 0
         INCREMENT 1
         MINVALUE 0
