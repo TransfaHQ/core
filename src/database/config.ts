@@ -2,7 +2,9 @@ import { config as loadConfig } from 'dotenv';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import z from 'zod';
 
-loadConfig();
+loadConfig({
+  path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env',
+});
 
 export const DBConfigSchema = z.object({
   DB_HOST: z.string(),

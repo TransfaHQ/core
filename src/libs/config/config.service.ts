@@ -19,6 +19,12 @@ export class ConfigService {
       return;
     }
 
+    if (process.env.NODE_ENV === Environment.TEST) {
+      const config = dotenv.parse(fs.readFileSync('.env.test'));
+      this.envConfig = ConfigSchema.parse({ NODE_ENV: process.env.NODE_ENV, ...config });
+      return;
+    }
+
     this.envConfig = ConfigSchema.parse(process.env);
   }
 
