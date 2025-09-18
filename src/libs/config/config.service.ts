@@ -55,6 +55,14 @@ export class ConfigService {
     return this.envConfig.AUTH_SALT_ROUNDS;
   }
 
+  get jwtSecret(): string {
+    return this.envConfig.JWT_SECRET;
+  }
+
+  get jwtExpiresIn(): string {
+    return this.envConfig.JWT_EXPIRES_IN;
+  }
+
   get typeOrmConfig(): TypeOrmModuleOptions {
     return {
       type: 'postgres',
