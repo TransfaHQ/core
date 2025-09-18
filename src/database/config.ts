@@ -10,10 +10,13 @@ export const DBConfigSchema = z.object({
   DB_USERNAME: z.string(),
   DB_PASSWORD: z.string(),
   DB_NAME: z.string(),
-  CORE_POSTGRES_SCHEMA: z.string().regex(/^[A-Za-z_]+$/, {
-    message: 'Only letters and underscores are allowed',
-  }),
-  DB_MIGRATIONS_TABLE: z.string().default('core_migrations'),
+  CORE_POSTGRES_SCHEMA: z
+    .string()
+    .regex(/^[A-Za-z_]+$/, {
+      message: 'Only letters and underscores are allowed',
+    })
+    .optional(),
+  DB_MIGRATIONS_TABLE: z.string().default('migrations'),
 });
 
 const dbConfig = DBConfigSchema.parse(process.env);
@@ -30,6 +33,7 @@ const dataSourceOptions = (): DataSourceOptions => {
     migrations: [__dirname + '/migrations/*{.ts,.js}'],
     synchronize: false,
     migrationsTableName: dbConfig.DB_MIGRATIONS_TABLE,
+    schema: dbConfig.CORE_POSTGRES_SCHEMA,
   };
   return dataSourceOptions;
 };
