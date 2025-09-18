@@ -38,17 +38,11 @@ const dataSourceOptions = (): DataSourceOptions => {
     synchronize: false,
     migrationsTableName: dbConfig.DB_MIGRATIONS_TABLE,
     migrationsRun: false,
+    // schema: dbConfig.CORE_POSTGRES_SCHEMA,
   };
   return dataSourceOptions;
 };
 
 const dataSource = new DataSource(dataSourceOptions());
-dataSource
-  .initialize()
-  .then(async (dataSource) => {
-    await checkPostgresVersion(dataSource);
-  })
-  .catch((e) => {
-    throw e;
-  });
+
 export default dataSource;

@@ -1,16 +1,11 @@
-import { DataSource } from 'typeorm';
-
 import { NestFactory, repl } from '@nestjs/core';
 
-import { checkPostgresVersion } from '@src/database/utils';
-
 import { AppModule } from './app.module';
+import { setupApp } from './setup';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const dataSource = app.get(DataSource);
-  await checkPostgresVersion(dataSource);
-
+  await setupApp(app);
   await repl(AppModule);
 }
 bootstrap().catch(() => {
