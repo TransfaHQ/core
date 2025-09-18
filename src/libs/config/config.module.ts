@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
 import { ConfigService } from './config.service';
 
@@ -13,7 +13,6 @@ const services = [
   },
 ];
 
-@Global()
 @Module({
   imports: [],
   providers: [...services],

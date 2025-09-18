@@ -141,5 +141,6 @@ vite.config.ts.timestamp-*
 # tigerbeetle
 tigerbeetle
 !scripts/tigerbeetle
+!src/**/tigerbeetle
 tigerbeetle.zip
 data/*.tigerbeetle
