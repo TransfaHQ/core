@@ -10,6 +10,17 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiSecurity,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 
 import { CursorPaginationInterceptor } from '@libs/api/cursor-paginated.interceptor';
 import { CursorPaginatedResult } from '@libs/database';
@@ -20,6 +31,8 @@ import { LedgerResponseDto } from '@modules/ledger/dto/ledger-response.dto';
 import { ListLedgerRequestDto } from '@modules/ledger/dto/list-ledger.dto';
 import { LedgerService } from '@modules/ledger/services/ledger.service';
 
+@ApiTags('ledgers')
+@ApiSecurity('api-key')
 @UseGuards(ApiKeyGuard)
 @Controller({ version: '1', path: 'ledgers' })
 export class LedgerController {
@@ -27,6 +40,20 @@ export class LedgerController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Create a new ledger',
+    description: 'Creates a new ledger with the provided name and description',
+  })
+  @ApiCreatedResponse({
+    description: 'The ledger has been successfully created',
+    type: LedgerResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid input data',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid or missing API key',
+  })
   async createLedger(
     @Body()
     body: CreateLedgerDto,
@@ -36,6 +63,25 @@ export class LedgerController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get a ledger by ID',
+    description: 'Retrieves a single ledger by its unique identifier',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the ledger',
+    example: '01234567-89ab-cdef-0123-456789abcdef',
+  })
+  @ApiOkResponse({
+    description: 'The ledger has been successfully retrieved',
+    type: LedgerResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Ledger not found',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid or missing API key',
+  })
   async retrieveLedger(@Param('id') id: string): Promise<LedgerResponseDto> {
     return this.ledgerService.retrieveLedger(id);
   }
@@ -43,6 +89,43 @@ export class LedgerController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(CursorPaginationInterceptor)
+  @ApiOperation({
+    summary: 'List ledgers',
+    description: 'Retrieves a paginated list of ledgers',
+  })
+  @ApiOkResponse({
+    description: 'The ledgers have been successfully retrieved',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/LedgerResponseDto' },
+        },
+        nextCursor: {
+          type: 'string',
+          description: 'Cursor for the next page',
+          example: '01234567-89ab-cdef-0123-456789abcdef',
+        },
+        prevCursor: {
+          type: 'string',
+          description: 'Cursor for the previous page',
+          example: '01234567-89ab-cdef-0123-456789abcdef',
+        },
+        hasNext: {
+          type: 'boolean',
+          description: 'Whether there are more items after this page',
+        },
+        hasPrev: {
+          type: 'boolean',
+          description: 'Whether there are more items before this page',
+        },
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid or missing API key',
+  })
   async listLegders(
     @Query() queryParams: ListLedgerRequestDto,
   ): Promise<CursorPaginatedResult<LedgerResponseDto>> {
