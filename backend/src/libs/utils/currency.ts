@@ -1,29 +1,27 @@
-export enum CurrencyCode {
-  USD = 'USD',
-  EUR = 'EUR',
-  USDC = 'USDC',
-}
+import currencyCodes, { CurrencyCodeRecord } from 'currency-codes';
 
-export interface Asset {
-  code: CurrencyCode;
-  name: string;
-  scale: number;
-}
+type ExtendedCurrency = CurrencyCodeRecord & { isCustom?: boolean };
 
-export const CURRENCIES: Record<CurrencyCode, Asset> = {
-  [CurrencyCode.EUR]: {
-    name: 'Euro',
-    code: CurrencyCode.EUR,
-    scale: 2,
+const customCurrencies: ExtendedCurrency[] = [
+  {
+    code: 'USDC',
+    number: '1000',
+    digits: 8,
+    currency: 'USD Coin',
+    countries: ['GLOBAL'],
+    isCustom: true,
   },
-  [CurrencyCode.USD]: {
-    name: 'dollars',
-    code: CurrencyCode.USD,
-    scale: 2,
-  },
-  [CurrencyCode.USDC]: {
-    name: 'USD Coin',
-    code: CurrencyCode.USDC,
-    scale: 6,
-  },
-};
+];
+
+const allCurrencies: ExtendedCurrency[] = [
+  ...currencyCodes.codes().map((code) => ({
+    ...currencyCodes.code(code)!,
+    isCustom: false,
+  })),
+
+  ...customCurrencies,
+];
+
+export function getCurrency(code: string): ExtendedCurrency | undefined {
+  return allCurrencies.find((c) => c.code === code);
+}

@@ -24,8 +24,8 @@ export class CreateLedgerTable1758237952957 implements MigrationInterface {
             updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
             deleted_at TIMESTAMPTZ,
             tiger_beetle_id BIGINT NOT NULL,
-            currency VARCHAR(25) NOT NULL,
-            currency_exponent INT NOT NULL,
+            currency VARCHAR(5) NOT NULL,
+            currency_exponent SMALLINT CHECK (currency_exponent BETWEEN 0 AND 30) NOT NULL,
             CONSTRAINT ledger_account_external_id_unique UNIQUE (external_id),
             CONSTRAINT ledger_account_tiger_beetle_id_unique UNIQUE (tiger_beetle_id)
         );
