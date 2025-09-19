@@ -25,7 +25,7 @@ import {
 import { CursorPaginationInterceptor } from '@libs/api/cursor-paginated.interceptor';
 import { CursorPaginatedResult } from '@libs/database';
 
-import { ApiKeyGuard } from '@modules/auth/guards/api-key.guard';
+import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
 import { CreateLedgerDto } from '@modules/ledger/dto/create-ledger.dto';
 import { LedgerResponseDto } from '@modules/ledger/dto/ledger-response.dto';
 import { ListLedgerRequestDto } from '@modules/ledger/dto/list-ledger.dto';
@@ -33,7 +33,7 @@ import { LedgerService } from '@modules/ledger/services/ledger.service';
 
 @ApiTags('ledgers')
 @ApiSecurity('api-key')
-@UseGuards(ApiKeyGuard)
+@UseGuards(ApiKeyOrJwtGuard)
 @Controller({ version: '1', path: 'ledgers' })
 export class LedgerController {
   constructor(private ledgerService: LedgerService) {}

@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 
 import { ConfigModule } from '@libs/config/config.module';
 import { ConfigService } from '@libs/config/config.service';
@@ -9,6 +9,7 @@ import { AuthService } from './auth.service';
 import { AdminGuard } from './guards/admin.guard';
 import { ApiKeyGuard } from './guards/api-key.guard';
 import { JwtGuard } from './guards/jwt.guard';
+import { ApiKeyOrJwtGuard } from './guards/api-key-or-jwt.guard';
 
 @Global()
 @Module({
@@ -26,7 +27,7 @@ import { JwtGuard } from './guards/jwt.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AdminGuard, ApiKeyGuard, JwtGuard],
-  exports: [AuthService, ApiKeyGuard, JwtGuard],
+  providers: [AuthService, AdminGuard, ApiKeyGuard, JwtGuard, ApiKeyOrJwtGuard, JwtService],
+  exports: [AuthService, ApiKeyGuard, JwtGuard, ApiKeyOrJwtGuard, JwtService],
 })
 export class AuthModule {}

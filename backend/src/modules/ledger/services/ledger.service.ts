@@ -24,12 +24,12 @@ export class LedgerService {
 
     const ledger = await this.ledgerRepository.save(entity);
 
-    return this.toResposne(ledger);
+    return this.toResponse(ledger);
   }
 
   async retrieveLedger(id: string): Promise<LedgerResponseDto> {
     const ledger = await this.ledgerRepository.findOneByOrFail({ id });
-    return this.toResposne(ledger);
+    return this.toResponse(ledger);
   }
 
   async paginate(
@@ -45,11 +45,11 @@ export class LedgerService {
 
     return {
       ...response,
-      data: response.data.map((v) => this.toResposne(v)),
+      data: response.data.map((v) => this.toResponse(v)),
     };
   }
 
-  private toResposne(ledger: LedgerEntity): LedgerResponseDto {
+  private toResponse(ledger: LedgerEntity): LedgerResponseDto {
     return {
       id: ledger.id,
       name: ledger.name,
