@@ -1,0 +1,25 @@
+meta {
+  name: Create Ledger
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{APP_URL}}/{{APP_VERSION}}/ledgers/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Ledger 1"
+  }
+}
+
+script:post-response {
+  bru.setEnvVar('LEDGER_ACCOUNT_ID',res.body.id)
+}
+
+settings {
+  encodeUrl: true
+}
