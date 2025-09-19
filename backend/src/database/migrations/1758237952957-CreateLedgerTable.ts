@@ -8,7 +8,7 @@ export class CreateLedgerTable1758237952957 implements MigrationInterface {
             name VARCHAR(255) NOT NULL,
             description VARCHAR(255),
             tigerbeetle_id BIGINT NOT NULL,
-            CONSTRAINT ledger_account_tigerbeetle_id_unique UNIQUE (tigerbeetle_id)
+            CONSTRAINT ledger_tigerbeetle_id_unique UNIQUE (tigerbeetle_id),
             created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
             updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
             deleted_at TIMESTAMPTZ
@@ -32,6 +32,7 @@ export class CreateLedgerTable1758237952957 implements MigrationInterface {
 
         CREATE INDEX idx_ledger_name ON ledger(name);
         CREATE INDEX idx_ledger_deleted_at ON ledger(deleted_at);
+        CREATE INDEX idx_ledger_tigerbeetle_id ON ledger(tigerbeetle_id);
 
         CREATE INDEX idx_ledger_account_external_id ON ledger_account(external_id);
         CREATE INDEX idx_ledger_account_tigerbeetle_id ON ledger_account(tigerbeetle_id);
@@ -40,5 +41,18 @@ export class CreateLedgerTable1758237952957 implements MigrationInterface {
     `);
   }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
+      drop table ledger_account;
+      drop table ledger;
+      DROP INDEX IF EXISTS 
+        idx_ledger_name,
+        idx_ledger_deleted_at,
+        idx_ledger_account_external_id, 
+        idx_ledger_account_tigerbeetle_id,
+        idx_ledger_tigerbeetle_id,
+        idx_ledger_account_deleted_at,
+        idx_ledger_account_currency;
+    `);
+  }
 }
