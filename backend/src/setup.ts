@@ -5,6 +5,7 @@ import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { checkPostgresVersion } from '@src/database/utils';
+import { Logger } from 'nestjs-pino';
 
 export async function setupApp(app: INestApplication) {
   app.use(cookieParser());
@@ -14,6 +15,8 @@ export async function setupApp(app: INestApplication) {
   });
 
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+
+  app.useLogger(app.get(Logger));
 
   // Setup Swagger API documentation
   const config = new DocumentBuilder()
