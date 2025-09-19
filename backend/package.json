@@ -24,13 +24,16 @@
     "db:revert": "ts-node --files -r tsconfig-paths/register scripts/npm/db-revert.ts",
     "db:show": "npm run typeorm migration:show",
     "db:create-migration": "cd src/database/migrations && ts-node --files -r tsconfig-paths/register ../../../node_modules/typeorm/cli.js migration:create",
-    "tb:start": "scripts/tigerbeetle/start.sh"
+    "tb:start": "scripts/tigerbeetle/start.sh",
+    "tb:download": "scripts/tigerbeetle/download.sh",
+    "tb:configure": "scripts/tigerbeetle/configure.sh"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",
     "@nestjs/core": "^11.1.6",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/platform-express": "^11.1.6",
+    "@nestjs/serve-static": "^5.0.3",
     "@nestjs/typeorm": "^11.0.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.9",

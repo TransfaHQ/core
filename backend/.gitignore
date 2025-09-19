@@ -147,3 +147,5 @@ data/*.tigerbeetle
 
 apidocs/*.json
 apidocs/*.bru
+
+client/
