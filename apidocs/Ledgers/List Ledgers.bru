@@ -1,0 +1,24 @@
+meta {
+  name: List Ledgers
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{APP_URL}}/{{APP_VERSION}}/ledgers/
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~limit: 1
+  ~cursor: 01996178-b095-76a1-9bd6-97574b36b230
+}
+
+script:post-response {
+  bru.setEnvVar('LEDGER_ACCOUNT_ID',res.body.id)
+}
+
+settings {
+  encodeUrl: true
+}

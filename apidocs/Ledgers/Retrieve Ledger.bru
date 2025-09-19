@@ -1,0 +1,23 @@
+meta {
+  name: Retrieve Ledger
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{APP_URL}}/{{APP_VERSION}}/ledgers/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: {{LEDGER_ACCOUNT_ID}}
+}
+
+script:post-response {
+  bru.setEnvVar('LEDGER_ACCOUNT_ID',res.body.id)
+}
+
+settings {
+  encodeUrl: true
+}
