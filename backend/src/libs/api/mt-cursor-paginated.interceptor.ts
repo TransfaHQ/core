@@ -7,7 +7,7 @@ import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nes
 import { CursorPaginatedResult } from '@libs/database';
 
 @Injectable()
-export class CursorPaginationInterceptor<T>
+export class MTCursorPaginationInterceptor<T>
   implements NestInterceptor<CursorPaginatedResult<T>, T[]>
 {
   intercept(

@@ -22,7 +22,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
-import { CursorPaginationInterceptor } from '@libs/api/cursor-paginated.interceptor';
+import { MTCursorPaginationInterceptor } from '@libs/api/mt-cursor-paginated.interceptor';
 import { CursorPaginatedResult } from '@libs/database';
 
 import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
@@ -88,7 +88,6 @@ export class LedgerController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(CursorPaginationInterceptor)
   @ApiOperation({
     summary: 'List ledgers',
     description: 'Retrieves a paginated list of ledgers',
@@ -121,6 +120,37 @@ export class LedgerController {
           description: 'Whether there are more items before this page',
         },
       },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid or missing API key',
+  })
+  async listLegders(
+    @Query() queryParams: ListLedgerRequestDto,
+  ): Promise<CursorPaginatedResult<LedgerResponseDto>> {
+    return this.ledgerService.paginate(queryParams.limit, queryParams.cursor);
+  }
+}
+
+@ApiTags('ledgers')
+@ApiSecurity('api-key')
+@UseGuards(ApiKeyOrJwtGuard)
+@Controller({ version: '0', path: 'ledgers' })
+export class MTLedgerController {
+  constructor(private ledgerService: LedgerService) {}
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(MTCursorPaginationInterceptor)
+  @ApiOperation({
+    summary: 'List ledgers following Modern Treasury format',
+    description: 'Retrieves a paginated list of ledgers',
+  })
+  @ApiOkResponse({
+    description: 'The ledgers have been successfully retrieved',
+    schema: {
+      type: 'array',
+      items: { $ref: '#/components/schemas/LedgerResponseDto' },
     },
   })
   @ApiUnauthorizedResponse({

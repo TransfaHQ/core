@@ -7,9 +7,9 @@ import { ConfigService } from '@libs/config/config.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AdminGuard } from './guards/admin.guard';
+import { ApiKeyOrJwtGuard } from './guards/api-key-or-jwt.guard';
 import { ApiKeyGuard } from './guards/api-key.guard';
 import { JwtGuard } from './guards/jwt.guard';
-import { ApiKeyOrJwtGuard } from './guards/api-key-or-jwt.guard';
 
 @Global()
 @Module({
