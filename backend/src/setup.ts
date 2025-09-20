@@ -1,11 +1,11 @@
 import cookieParser from 'cookie-parser';
+import { Logger } from 'nestjs-pino';
 import { DataSource } from 'typeorm';
 
 import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { checkPostgresVersion } from '@src/database/utils';
-import { Logger } from 'nestjs-pino';
 
 export async function setupApp(app: INestApplication) {
   app.use(cookieParser());

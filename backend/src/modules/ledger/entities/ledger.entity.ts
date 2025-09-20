@@ -1,6 +1,8 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, OneToMany } from 'typeorm';
 
 import { BaseTypeormEntity } from '@libs/database';
+
+import { LedgerMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
 
 @Entity('ledger')
 export class LedgerEntity extends BaseTypeormEntity {
@@ -11,4 +13,9 @@ export class LedgerEntity extends BaseTypeormEntity {
 
   @Column({ type: 'int', name: 'tiger_beetle_id' })
   tigerBeetleId: number;
+
+  @OneToMany(() => LedgerMetadataEntity, (metadata) => metadata.ledger, {
+    cascade: true,
+  })
+  metadata: LedgerMetadataEntity[];
 }

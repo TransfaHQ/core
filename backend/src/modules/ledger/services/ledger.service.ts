@@ -7,6 +7,7 @@ import { CursorPaginatedResult, cursorPaginate } from '@libs/database';
 
 import { CreateLedgerDto } from '@modules/ledger/dto/create-ledger.dto';
 import { LedgerResponseDto } from '@modules/ledger/dto/ledger-response.dto';
+import { LedgerMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
 import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
 
 @Injectable()
@@ -14,6 +15,8 @@ export class LedgerService {
   constructor(
     @InjectRepository(LedgerEntity)
     private readonly ledgerRepository: Repository<LedgerEntity>,
+    @InjectRepository(LedgerMetadataEntity)
+    private readonly ledgerMetadataRepository: Repository<LedgerMetadataEntity>,
   ) {}
 
   async createLedger(data: CreateLedgerDto): Promise<LedgerResponseDto> {
@@ -23,12 +26,23 @@ export class LedgerService {
     });
 
     const ledger = await this.ledgerRepository.save(entity);
+    const metadata = [] as LedgerMetadataEntity[];
 
+    if (data.metadata.length > 0) {
+      data.metadata.map((v) => {
+        metadata.push(this.ledgerMetadataRepository.create({ ledger, key: v.key, value: v.value }));
+      });
+    }
+    await this.ledgerMetadataRepository.save(metadata);
+    ledger.metadata = metadata;
     return this.toResponse(ledger);
   }
 
   async retrieveLedger(id: string): Promise<LedgerResponseDto> {
-    const ledger = await this.ledgerRepository.findOneByOrFail({ id });
+    const ledger = await this.ledgerRepository.findOneOrFail({
+      where: { id },
+      relations: ['metadata'],
+    });
     return this.toResponse(ledger);
   }
 
@@ -41,6 +55,7 @@ export class LedgerService {
       limit,
       cursor,
       order: 'ASC',
+      relations: ['metadata'],
     });
 
     return {
@@ -54,6 +69,9 @@ export class LedgerService {
       id: ledger.id,
       name: ledger.name,
       description: ledger.description,
+      metadata: ledger.metadata?.map((v) => {
+        return { key: v.key, value: v.value };
+      }),
       createdAt: ledger.createdAt,
       updatedAt: ledger.updatedAt,
     };

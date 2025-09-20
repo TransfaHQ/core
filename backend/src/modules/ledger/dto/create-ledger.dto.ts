@@ -1,5 +1,19 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
+
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+import { LedgerMetadataDto } from '@modules/ledger/dto/ledger-metadata.dto';
 
 export class CreateLedgerDto {
   @ApiProperty({
@@ -25,4 +39,22 @@ export class CreateLedgerDto {
   @MinLength(3)
   @MaxLength(255)
   description: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Additional data represented as key-value pairs. Both the key and value must be strings.',
+    type: [LedgerMetadataDto],
+    example: [
+      { key: 'currency', value: 'USD' },
+      { key: 'region', value: 'NA' },
+    ],
+  })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => LedgerMetadataDto)
+  @IsArray()
+  @ValidateNested({ each: true })
+  @ArrayMinSize(1)
+  @ArrayMaxSize(250)
+  metadata: LedgerMetadataDto[];
 }

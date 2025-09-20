@@ -9,6 +9,7 @@ export interface CursorPaginationOptions<T extends BaseTypeormEntity> {
   cursor?: string;
   order?: 'ASC' | 'DESC';
   where?: (qb: SelectQueryBuilder<T>) => SelectQueryBuilder<T>;
+  relations?: string[];
 }
 
 export interface CursorPaginatedResult<T> {
@@ -25,12 +26,17 @@ export interface CursorPaginatedResult<T> {
 export async function cursorPaginate<T extends BaseTypeormEntity>(
   options: CursorPaginationOptions<T>,
 ): Promise<CursorPaginatedResult<T>> {
-  const { repo, cursor, order = 'ASC', where } = options;
+  const { repo, cursor, order = 'ASC', where, relations = [] } = options;
   const limit = options.limit ?? API_PAGE_SIZE;
   let qb = repo
     .createQueryBuilder('entity')
     .orderBy('entity.id', order)
     .take(limit + 1);
+
+  // Apply relations
+  for (const relation of relations) {
+    qb = qb.leftJoinAndSelect(`entity.${relation}`, relation.replace('.', '_'));
+  }
 
   if (cursor) {
     if (order === 'ASC') {

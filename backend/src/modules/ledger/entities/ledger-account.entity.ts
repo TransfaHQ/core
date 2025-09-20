@@ -1,6 +1,11 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, OneToMany } from 'typeorm';
 
 import { BaseTypeormEntity } from '@libs/database';
+
+import {
+  LedgerAccountMetadataEntity,
+  LedgerMetadataEntity,
+} from '@modules/ledger/entities/ledger-metadata.entity';
 
 @Entity('ledger_account')
 export class LedgerAccountEntity extends BaseTypeormEntity {
@@ -20,4 +25,9 @@ export class LedgerAccountEntity extends BaseTypeormEntity {
 
   @Column({ name: 'currency_exponent', type: 'smallint' })
   currencyExponent: number;
+
+  @OneToMany(() => LedgerAccountMetadataEntity, (metadata) => metadata.ledger, {
+    cascade: true,
+  })
+  metadata: LedgerMetadataEntity[];
 }

@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
+
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import { API_PAGE_MAX_NUMBER, API_PAGE_SIZE, API_PAGE_SIZE_MAX } from '@libs/constants';

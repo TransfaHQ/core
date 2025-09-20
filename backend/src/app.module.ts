@@ -1,6 +1,8 @@
+import { LoggerModule } from 'nestjs-pino';
+import { join } from 'path';
+
 import { Module } from '@nestjs/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 
 import { AuthModule } from '@modules/auth/auth.module';
 import { BootstrapModule } from '@modules/bootstrap/bootstrap.module';
@@ -9,7 +11,6 @@ import { TransferModule } from '@modules/transfer/transfer.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { LoggerModule } from 'nestjs-pino';
 
 @Module({
   imports: [
@@ -19,9 +20,7 @@ import { LoggerModule } from 'nestjs-pino';
     }),
     LoggerModule.forRoot({
       pinoHttp: {
-        transport: process.env.NODE_ENV !== 'production'
-            ? { target: 'pino-pretty' }
-            : undefined,
+        transport: process.env.NODE_ENV !== 'production' ? { target: 'pino-pretty' } : undefined,
         customProps: () => ({}),
         serializers: {
           req: (req) => ({
@@ -32,7 +31,7 @@ import { LoggerModule } from 'nestjs-pino';
             remotePort: req.remotePort,
           }),
         },
-      }
+      },
     }),
     BootstrapModule,
     AuthModule,

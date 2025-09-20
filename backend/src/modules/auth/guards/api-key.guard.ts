@@ -1,10 +1,6 @@
 import type { Request } from 'express';
 
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 
 import { AuthService } from '../auth.service';
 
