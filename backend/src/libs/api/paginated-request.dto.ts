@@ -3,7 +3,7 @@ import { IsInt, IsOptional, Max, Min } from 'class-validator';
 
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
-import { API_PAGE_MAX_NUMBER, API_PAGE_SIZE, API_PAGE_SIZE_MAX } from '@libs/constants';
+import { API_PAGE_SIZE, API_PAGE_SIZE_MAX } from '@libs/constants';
 
 export class PaginatedRequestDto {
   @ApiPropertyOptional({
@@ -19,20 +19,6 @@ export class PaginatedRequestDto {
   @Max(API_PAGE_SIZE_MAX)
   @Type(() => Number)
   readonly limit?: number = API_PAGE_SIZE;
-
-  @ApiPropertyOptional({
-    description: 'Page number for pagination (1-based)',
-    example: 1,
-    minimum: 0,
-    maximum: API_PAGE_MAX_NUMBER,
-    default: 1,
-  })
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(API_PAGE_MAX_NUMBER)
-  @Type(() => Number)
-  readonly page?: number = 1;
 
   @ApiPropertyOptional({
     description: 'Cursor for cursor-based pagination',

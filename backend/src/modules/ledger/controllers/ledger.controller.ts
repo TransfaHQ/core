@@ -52,16 +52,9 @@ export class LedgerController {
     description: 'The ledger has been successfully created',
     type: LedgerResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Invalid input data',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Invalid or missing API key',
-  })
-  async createLedger(
-    @Body()
-    body: CreateLedgerDto,
-  ): Promise<LedgerResponseDto> {
+  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  @ApiUnauthorizedResponse({ description: 'Invalid or missing API key' })
+  async createLedger(@Body() body: CreateLedgerDto): Promise<LedgerResponseDto> {
     const response = await this.ledgerService.createLedger(body);
     return ledgerEntityToApiV1Response(response);
   }
@@ -81,12 +74,8 @@ export class LedgerController {
     description: 'The ledger has been successfully retrieved',
     type: LedgerResponseDto,
   })
-  @ApiNotFoundResponse({
-    description: 'Ledger not found',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Invalid or missing API key',
-  })
+  @ApiNotFoundResponse({ description: 'Ledger not found' })
+  @ApiUnauthorizedResponse({ description: 'Invalid or missing API key' })
   async retrieveLedger(@Param('id') id: string): Promise<LedgerResponseDto> {
     const response = await this.ledgerService.retrieveLedger(id);
     return ledgerEntityToApiV1Response(response);
@@ -107,12 +96,8 @@ export class LedgerController {
     description: 'The ledger has been successfully updated',
     type: LedgerResponseDto,
   })
-  @ApiNotFoundResponse({
-    description: 'Ledger not found',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Invalid or missing API key',
-  })
+  @ApiNotFoundResponse({ description: 'Ledger not found' })
+  @ApiUnauthorizedResponse({ description: 'Invalid or missing API key' })
   async updateLedger(
     @Param('id') id: string,
     @Body() data: UpdateLedgerDto,
@@ -126,6 +111,20 @@ export class LedgerController {
   @ApiOperation({
     summary: 'List ledgers',
     description: 'Retrieves a paginated list of ledgers',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'cursor',
+    required: false,
+    type: String,
+    description: 'Cursor for pagination',
+    example: '01234567-89ab-cdef-0123-456789abcdef',
   })
   @ApiOkResponse({
     description: 'The ledgers have been successfully retrieved',
@@ -157,24 +156,8 @@ export class LedgerController {
       },
     },
   })
-  @ApiUnauthorizedResponse({
-    description: 'Invalid or missing API key',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Number of items per page',
-    example: 10,
-  })
-  @ApiQuery({
-    name: 'cursor',
-    required: false,
-    type: String,
-    description: 'Cursor for pagination',
-    example: '01234567-89ab-cdef-0123-456789abcdef',
-  })
-  async listLegders(
+  @ApiUnauthorizedResponse({ description: 'Invalid or missing API key' })
+  async listLedgers(
     @Query() queryParams: ListLedgerRequestDto,
   ): Promise<CursorPaginatedResult<LedgerResponseDto>> {
     const response = await this.ledgerService.paginate(queryParams.limit, queryParams.cursor);
