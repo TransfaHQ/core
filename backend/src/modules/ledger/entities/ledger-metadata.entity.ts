@@ -20,7 +20,7 @@ export class LedgerMetadataEntity extends BaseTypeormEntity {
   ledger: LedgerEntity;
 }
 
-@Entity('ledger_acount_metadata')
+@Entity('ledger_account_metadata')
 export class LedgerAccountMetadataEntity extends BaseTypeormEntity {
   @Column({ type: 'varchar', length: 255 })
   key: string;

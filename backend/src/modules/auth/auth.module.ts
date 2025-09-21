@@ -17,6 +17,7 @@ import { JwtGuard } from './guards/jwt.guard';
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
+      global: true,
       useFactory: (configService: ConfigService) => ({
         secret: configService.jwtSecret,
         signOptions: {
@@ -27,7 +28,7 @@ import { JwtGuard } from './guards/jwt.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AdminGuard, ApiKeyGuard, JwtGuard, ApiKeyOrJwtGuard, JwtService],
-  exports: [AuthService, ApiKeyGuard, JwtGuard, ApiKeyOrJwtGuard, JwtService],
+  providers: [AuthService, AdminGuard, ApiKeyGuard, JwtGuard, ApiKeyOrJwtGuard],
+  exports: [AuthService, ApiKeyGuard, JwtGuard, ApiKeyOrJwtGuard],
 })
 export class AuthModule {}
