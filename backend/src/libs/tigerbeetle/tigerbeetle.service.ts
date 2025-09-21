@@ -38,6 +38,7 @@ export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
   }
 
   async retrieveAccount(id: bigint): Promise<Account> {
+    console.log(`Here we are , ${JSON.stringify(BigInt(id).toString())}`);
     const response = await this.retrieveAccounts([id]);
     if (response.length === 0) throw new NotFoundException();
     return response[0];

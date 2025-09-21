@@ -1,5 +1,5 @@
 import BigNumber from 'bignumber.js';
-import { id } from 'tigerbeetle-node';
+import { Account as TigerBeetleAccount, id } from 'tigerbeetle-node';
 import { Repository } from 'typeorm';
 
 import { BadRequestException, Injectable } from '@nestjs/common';
@@ -11,6 +11,7 @@ import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
 import { getCurrency } from '@libs/utils/currency';
 
 import { CreateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/create-ledger-account.dto';
+import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/updae-ledger-account.dto';
 import { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
 import { LedgerAccountMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
 import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
@@ -93,7 +94,93 @@ export class LedgerAccountService {
     });
 
     const tbAccount = await this.tigerBeetleService.retrieveAccount(savedAccount.tigerBeetleId);
+    this.parseAccountBalanceFromTBAccount(savedAccount, tbAccount);
 
+    return savedAccount;
+  }
+
+  async retrieveLedgerAccount(id: string): Promise<LedgerAccountEntity> {
+    const response = await this.ledgerAccountRepository.findOneOrFail({
+      where: { id },
+      relations: ['metadata'],
+    });
+
+    const tbAccount = await this.tigerBeetleService.retrieveAccount(response.tigerBeetleId);
+    this.parseAccountBalanceFromTBAccount(response, tbAccount);
+    return response;
+  }
+
+  async paginate(
+    limit?: number,
+    cursor?: string,
+  ): Promise<CursorPaginatedResult<LedgerAccountEntity>> {
+    const response = await cursorPaginate<LedgerAccountEntity>({
+      repo: this.ledgerAccountRepository,
+      limit,
+      cursor,
+      order: 'ASC',
+      relations: ['metadata'],
+    });
+    const tbAccounts = await this.tigerBeetleService.retrieveAccounts(
+      response.data.map((v) => v.tigerBeetleId),
+    );
+
+    return {
+      ...response,
+      data: response.data.map((entity) => {
+        const tbAccount = tbAccounts.filter((entity) => entity.id)[0];
+        this.parseAccountBalanceFromTBAccount(entity, tbAccount);
+        return entity;
+      }),
+    };
+  }
+
+  @Transactional()
+  async update(id: string, data: UpdateLedgerAccountDto): Promise<LedgerAccountEntity> {
+    const ledger = await this.ledgerAccountRepository.findOneOrFail({
+      where: { id },
+      relations: ['metadata'],
+    });
+
+    ledger.name = data.name ?? ledger.name;
+    ledger.description = data.description ?? ledger.description;
+    await this.ledgerAccountRepository.save(ledger);
+
+    for (const [key, value] of Object.entries(data.metadata ?? {})) {
+      if (value === null || value === undefined) {
+        // Remove metadata where value is null
+        await this.ledgerAccountMetadataRepository.delete({
+          ledgerAccount: { id },
+          key: key,
+        });
+      } else {
+        // Upsert metadata (update if exists, create if not)
+        await this.ledgerAccountMetadataRepository.upsert(
+          {
+            ledgerAccount: { id },
+            key: key,
+            value: value,
+          },
+          ['ledgerAccount', 'key'],
+        );
+      }
+    }
+    const updateLedgerAccount = await this.ledgerAccountRepository.findOne({
+      where: { id },
+      relations: ['metadata'],
+    });
+
+    const tbAccount = await this.tigerBeetleService.retrieveAccount(
+      updateLedgerAccount!.tigerBeetleId,
+    );
+    this.parseAccountBalanceFromTBAccount(updateLedgerAccount!, tbAccount);
+    return updateLedgerAccount!;
+  }
+
+  private parseAccountBalanceFromTBAccount(
+    entity: LedgerAccountEntity,
+    tbAccount: TigerBeetleAccount,
+  ): void {
     /**
      * Summed amounts of all posted and pending ledger entries with debit direction.
      */
@@ -114,7 +201,7 @@ export class LedgerAccountService {
      */
     let pendingAmount = 0;
 
-    if (savedAccount.normalBalance === NormalBalanceEnum.CREDIT) {
+    if (entity.normalBalance === NormalBalanceEnum.CREDIT) {
       pendingAmount = BigNumber(pendingCredit).minus(pendingDebit).toNumber();
     } else {
       pendingAmount = BigNumber(pendingDebit).minus(pendingCredit).toNumber();
@@ -136,7 +223,7 @@ export class LedgerAccountService {
      */
     let postedAmount = 0;
 
-    if (savedAccount.normalBalance === NormalBalanceEnum.CREDIT) {
+    if (entity.normalBalance === NormalBalanceEnum.CREDIT) {
       postedAmount = BigNumber(postedCredit).minus(postedDebit).toNumber();
     } else {
       postedAmount = BigNumber(postedDebit).minus(postedCredit).toNumber();
@@ -147,55 +234,34 @@ export class LedgerAccountService {
      * Debit Normal: posted_balance["debits"] - pending_balance["credits"]
      */
     let availableAmount = 0;
-    if (savedAccount.normalBalance === NormalBalanceEnum.CREDIT) {
+    if (entity.normalBalance === NormalBalanceEnum.CREDIT) {
       availableAmount = BigNumber(postedCredit).minus(pendingDebit).toNumber();
     } else {
       availableAmount = BigNumber(postedDebit).minus(pendingCredit).toNumber();
     }
 
-    savedAccount.balances = {
+    entity.balances = {
       pendingBalance: {
         credits: pendingCredit,
         debits: pendingDebit,
         amount: pendingAmount,
-        currency: savedAccount.currency,
-        currencyExponent: savedAccount.currencyExponent,
+        currency: entity.currency,
+        currencyExponent: entity.currencyExponent,
       },
       postedBalance: {
         credits: postedCredit,
         debits: postedDebit,
         amount: postedAmount,
-        currency: savedAccount.currency,
-        currencyExponent: savedAccount.currencyExponent,
+        currency: entity.currency,
+        currencyExponent: entity.currencyExponent,
       },
       avalaibleBalance: {
         credits: postedCredit,
         debits: pendingDebit,
         amount: availableAmount,
-        currency: savedAccount.currency,
-        currencyExponent: savedAccount.currencyExponent,
+        currency: entity.currency,
+        currencyExponent: entity.currencyExponent,
       },
     };
-    return savedAccount;
-  }
-
-  async retrieveLedgerAccount(id: string): Promise<LedgerAccountEntity> {
-    return this.ledgerAccountRepository.findOneOrFail({
-      where: { id },
-      relations: ['metadata'],
-    });
-  }
-
-  async paginate(
-    limit?: number,
-    cursor?: string,
-  ): Promise<CursorPaginatedResult<LedgerAccountEntity>> {
-    return cursorPaginate<LedgerAccountEntity>({
-      repo: this.ledgerAccountRepository,
-      limit,
-      cursor,
-      order: 'ASC',
-      relations: ['metadata'],
-    });
   }
 }

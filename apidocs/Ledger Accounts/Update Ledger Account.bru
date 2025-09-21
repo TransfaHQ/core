@@ -1,5 +1,5 @@
 meta {
-  name: Patch
+  name: Update Ledger Account
   type: http
   seq: 5
 }
@@ -20,10 +20,6 @@ body:json {
     "description": "Ledger 2 description",
     "metadata": {"core": "test"}
   }
-}
-
-script:post-response {
-  bru.setEnvVar('LEDGER_ACCOUNT_ID',res.body.id)
 }
 
 settings {

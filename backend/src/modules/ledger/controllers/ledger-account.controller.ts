@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -28,6 +29,7 @@ import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
 import { ledgerAccountEntityToApiV1Response } from '@modules/ledger/controllers/api-response';
 import { CreateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/create-ledger-account.dto';
 import { LedgerAccountResponseDto } from '@modules/ledger/dto/ledger-account/ledger-account-response.dto';
+import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/updae-ledger-account.dto';
 import { ListLedgerRequestDto } from '@modules/ledger/dto/list-ledger.dto';
 import { LedgerAccountService } from '@modules/ledger/services/ledger-account.service';
 
@@ -146,5 +148,31 @@ export class LedgerAccountController {
       queryParams.cursor,
     );
     return { ...response, data: response.data.map(ledgerAccountEntityToApiV1Response) };
+  }
+
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update a ledger account by ID',
+    description:
+      'Updates an existing ledger account by its unique identifier with the provided fields',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the ledger account to update',
+    example: '01234567-89ab-cdef-0123-456789abcdef',
+  })
+  @ApiOkResponse({
+    description: 'The ledger account has been successfully updated',
+    type: LedgerAccountResponseDto,
+  })
+  @ApiNotFoundResponse({ description: 'Ledger account not found' })
+  @ApiUnauthorizedResponse({ description: 'Invalid or missing API key' })
+  async updateLedger(
+    @Param('id') id: string,
+    @Body() data: UpdateLedgerAccountDto,
+  ): Promise<LedgerAccountResponseDto> {
+    const response = await this.ledgerAccountService.update(id, data);
+    return ledgerAccountEntityToApiV1Response(response);
   }
 }

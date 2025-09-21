@@ -1,19 +1,22 @@
-import { ColumnNumericTransformer } from './column-transformer';
+import { id } from 'tigerbeetle-node';
 
-describe('ColumnNumericTransformer', () => {
-  let transformer: ColumnNumericTransformer;
+import { TigerBeetleIdTransformer, tbIdToBuffer } from './column-transformer';
+
+describe('TigerBeetleIdTransformer', () => {
+  let transformer: TigerBeetleIdTransformer;
+  let tbId: bigint;
 
   beforeEach(() => {
-    transformer = new ColumnNumericTransformer();
+    transformer = new TigerBeetleIdTransformer();
+    tbId = id();
   });
 
-  it('should parse number to number', () => {
-    expect(transformer.to(10)).toBe(10);
-    expect(transformer.to(10.5)).toBe(10.5);
+  it('should parse bigint to bytea', () => {
+    expect(transformer.to(tbId)).toEqual(tbIdToBuffer(tbId));
   });
 
-  it('should parse string to number', () => {
-    expect(transformer.from('10')).toBe(10);
-    expect(transformer.from('10.5')).toBe(10.5);
+  it('should parse bytea to int', () => {
+    const buff = tbIdToBuffer(tbId);
+    expect(transformer.from(buff)).toBe(tbId);
   });
 });

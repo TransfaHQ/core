@@ -1,7 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 
 import { BaseTypeormEntity } from '@libs/database';
-import { ColumnNumericTransformer } from '@libs/database/column-transformer';
+import { TigerBeetleIdTransformer } from '@libs/database/column-transformer';
 import { NormalBalanceEnum } from '@libs/enums';
 
 import { LedgerAccountMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
@@ -19,7 +19,7 @@ export class LedgerAccountEntity extends BaseTypeormEntity {
   @Column({ type: 'varchar', length: 255 })
   description: string;
 
-  @Column({ type: 'numeric', name: 'tiger_beetle_id', transformer: new ColumnNumericTransformer() })
+  @Column({ type: 'bytea', name: 'tiger_beetle_id', transformer: new TigerBeetleIdTransformer() })
   tigerBeetleId: bigint;
 
   @Column({ type: 'varchar', name: 'external_id', length: 180, unique: true })
