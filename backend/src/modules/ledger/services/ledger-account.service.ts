@@ -1,5 +1,5 @@
 import BigNumber from 'bignumber.js';
-import { Account as TigerBeetleAccount, id } from 'tigerbeetle-node';
+import { AccountFlags, Account as TigerBeetleAccount, id } from 'tigerbeetle-node';
 import { Repository } from 'typeorm';
 
 import { BadRequestException, Injectable } from '@nestjs/common';
@@ -11,7 +11,7 @@ import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
 import { getCurrency } from '@libs/utils/currency';
 
 import { CreateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/create-ledger-account.dto';
-import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/updae-ledger-account.dto';
+import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/update-ledger-account.dto';
 import { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
 import { LedgerAccountMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
 import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
@@ -85,7 +85,10 @@ export class LedgerAccountService {
       ledger: ledger.tigerBeetleId,
       timestamp: 0n,
       reserved: 0,
-      flags: savedAccount.normalBalance === NormalBalanceEnum.CREDIT ? 2 : 4,
+      flags:
+        savedAccount.normalBalance === NormalBalanceEnum.CREDIT
+          ? AccountFlags.debits_must_not_exceed_credits
+          : AccountFlags.credits_must_not_exceed_debits,
       // todo; might be good to use theses fields to link accounts together
       user_data_128: 0n,
       user_data_64: 0n,
@@ -113,6 +116,9 @@ export class LedgerAccountService {
   async paginate(
     limit?: number,
     cursor?: string,
+    ledgerId?: string,
+    currency?: string,
+    normalBalance?: string,
   ): Promise<CursorPaginatedResult<LedgerAccountEntity>> {
     const response = await cursorPaginate<LedgerAccountEntity>({
       repo: this.ledgerAccountRepository,
@@ -120,6 +126,18 @@ export class LedgerAccountService {
       cursor,
       order: 'ASC',
       relations: ['metadata'],
+      where: (qb) => {
+        if (ledgerId) {
+          qb = qb.andWhere('entity.ledgerId = :ledgerId', { ledgerId });
+        }
+        if (currency) {
+          qb = qb.andWhere('entity.currency = :currency', { currency });
+        }
+        if (normalBalance) {
+          qb = qb.andWhere('entity.normalBalance = :normalBalance', { normalBalance });
+        }
+        return qb;
+      },
     });
     const tbAccounts = await this.tigerBeetleService.retrieveAccounts(
       response.data.map((v) => v.tigerBeetleId),

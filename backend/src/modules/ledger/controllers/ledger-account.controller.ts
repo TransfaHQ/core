@@ -29,9 +29,9 @@ import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
 import { ledgerAccountEntityToApiV1Response } from '@modules/ledger/controllers/api-response';
 import { CreateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/create-ledger-account.dto';
 import { LedgerAccountResponseDto } from '@modules/ledger/dto/ledger-account/ledger-account-response.dto';
-import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/updae-ledger-account.dto';
-import { ListLedgerRequestDto } from '@modules/ledger/dto/list-ledger.dto';
+import { ListLedgerAccountRequestDto } from '@modules/ledger/dto/ledger-account/list-ledger-account-request.dto';
 import { LedgerAccountService } from '@modules/ledger/services/ledger-account.service';
+import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/update-ledger-account.dto';
 
 @ApiTags('ledger-accounts')
 @ApiSecurity('api-key')
@@ -47,7 +47,7 @@ export class LedgerAccountController {
     description: 'Creates a new ledger account with the provided details',
   })
   @ApiCreatedResponse({
-    description: 'The ledger has been successfully created',
+    description: 'The ledger account has been successfully created',
     type: LedgerAccountResponseDto,
   })
   @ApiBadRequestResponse({
@@ -56,7 +56,7 @@ export class LedgerAccountController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing API key',
   })
-  async createLedger(@Body() body: CreateLedgerAccountDto): Promise<LedgerAccountResponseDto> {
+  async createLedgerAccount(@Body() body: CreateLedgerAccountDto): Promise<LedgerAccountResponseDto> {
     const response = await this.ledgerAccountService.createLedgerAccount(body);
     return ledgerAccountEntityToApiV1Response(response);
   }
@@ -64,25 +64,25 @@ export class LedgerAccountController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Get a ledger by ID',
-    description: 'Retrieves a single ledger by its unique identifier',
+    summary: 'Get a ledger account by ID',
+    description: 'Retrieves a single ledger account by its unique identifier',
   })
   @ApiParam({
     name: 'id',
-    description: 'Unique identifier of the ledger',
+    description: 'Unique identifier of the ledger account',
     example: '01234567-89ab-cdef-0123-456789abcdef',
   })
   @ApiOkResponse({
-    description: 'The ledger has been successfully retrieved',
+    description: 'The ledger account has been successfully retrieved',
     type: LedgerAccountResponseDto,
   })
   @ApiNotFoundResponse({
-    description: 'Ledger not found',
+    description: 'Ledger account not found',
   })
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing API key',
   })
-  async retrieveLedger(@Param('id') id: string): Promise<LedgerAccountResponseDto> {
+  async retrieveLedgerAccount(@Param('id') id: string): Promise<LedgerAccountResponseDto> {
     const response = await this.ledgerAccountService.retrieveLedgerAccount(id);
     return ledgerAccountEntityToApiV1Response(response);
   }
@@ -90,7 +90,7 @@ export class LedgerAccountController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'List ledgers',
+    summary: 'List ledger accounts',
     description: 'Retrieves a paginated list of ledger accounts',
   })
   @ApiQuery({
@@ -107,8 +107,29 @@ export class LedgerAccountController {
     description: 'Cursor for pagination',
     example: '01234567-89ab-cdef-0123-456789abcdef',
   })
+  @ApiQuery({
+    name: 'ledger_id',
+    required: false,
+    type: String,
+    description: 'Filter by ledger ID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiQuery({
+    name: 'currency',
+    required: false,
+    type: String,
+    description: 'Filter by currency code',
+    example: 'USD',
+  })
+  @ApiQuery({
+    name: 'normal_balance',
+    required: false,
+    enum: ['credit', 'debit'],
+    description: 'Filter by normal balance type',
+    example: 'debit',
+  })
   @ApiOkResponse({
-    description: 'The ledgers have been successfully retrieved',
+    description: 'The ledger accounts have been successfully retrieved',
     schema: {
       type: 'object',
       properties: {
@@ -140,12 +161,15 @@ export class LedgerAccountController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing API key',
   })
-  async listLedgers(
-    @Query() queryParams: ListLedgerRequestDto,
+  async listAccounts(
+    @Query() queryParams: ListLedgerAccountRequestDto,
   ): Promise<CursorPaginatedResult<LedgerAccountResponseDto>> {
     const response = await this.ledgerAccountService.paginate(
       queryParams.limit,
       queryParams.cursor,
+      queryParams.ledger_id,
+      queryParams.currency,
+      queryParams.normal_balance,
     );
     return { ...response, data: response.data.map(ledgerAccountEntityToApiV1Response) };
   }
@@ -166,9 +190,12 @@ export class LedgerAccountController {
     description: 'The ledger account has been successfully updated',
     type: LedgerAccountResponseDto,
   })
+  @ApiBadRequestResponse({
+    description: 'Invalid input data',
+  })
   @ApiNotFoundResponse({ description: 'Ledger account not found' })
   @ApiUnauthorizedResponse({ description: 'Invalid or missing API key' })
-  async updateLedger(
+  async updateLedgerAccount(
     @Param('id') id: string,
     @Body() data: UpdateLedgerAccountDto,
   ): Promise<LedgerAccountResponseDto> {
