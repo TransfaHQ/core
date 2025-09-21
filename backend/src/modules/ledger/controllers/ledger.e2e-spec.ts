@@ -1,7 +1,11 @@
 import request from 'supertest';
 import { App } from 'supertest/types';
+import { Repository } from 'typeorm';
 
 import { HttpStatus, INestApplication } from '@nestjs/common';
+import { getRepositoryToken } from '@nestjs/typeorm';
+
+import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
 
 const setBasicAuthHeader = () => {
   const credentials = `${__TEST_CORE_API_KEY__}:${__TEST_CORE_API_SECRET__}`;
@@ -13,9 +17,11 @@ const setBasicAuthHeader = () => {
 
 describe('LedgerController', () => {
   let app: INestApplication<App>;
+  let ledgerRepository: Repository<LedgerEntity>;
 
   beforeAll(() => {
     app = __TEST_APP__!;
+    ledgerRepository = app.get(getRepositoryToken(LedgerEntity));
   });
 
   describe('POST /v1/ledgers', () => {
@@ -40,11 +46,17 @@ describe('LedgerController', () => {
         .set(setBasicAuthHeader())
         .send({ description: 'test', name: 'test' })
         .expect(HttpStatus.CREATED)
-        .expect((response) => {
+        .expect(async (response) => {
           expect(response.body.id).toBeDefined();
           expect(response.body.name).toBe('test');
           expect(response.body.description).toBe('test');
           expect(response.body.metadata).toMatchObject({});
+          expect(response.body.createdAt).toBeDefined();
+          expect(response.body.updatedAt).toBeDefined();
+
+          const ledger = await ledgerRepository.findOne({ where: { id: response.body.id } });
+          expect(ledger!.name).toBe('test');
+          expect(ledger!.description).toBe('test');
         });
     });
 
@@ -100,7 +112,23 @@ describe('LedgerController', () => {
     });
   });
 
-  describe('PUT /v1/ledgers/:id', () => {
-    it('should return 202', async () => {});
+  describe('PATCH /v1/ledgers/:id', () => {
+    it('should return 202', async () => {
+      const ledgerBeforeUpdate = await ledgerRepository.findOneBy({ id: __TEST_LEDGER_ID__ });
+      const name = 'Transfa Ledger';
+
+      await request(app.getHttpServer())
+        .patch(`/v1/ledgers/${__TEST_LEDGER_ID__}`)
+        .set(setBasicAuthHeader())
+        .send({ name })
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.name).toBe(name);
+        });
+
+      const ledgerAfterUpdate = await ledgerRepository.findOneBy({ id: __TEST_LEDGER_ID__ });
+      expect(ledgerAfterUpdate!.name).not.toBe(ledgerBeforeUpdate!.name);
+      expect(ledgerAfterUpdate!.name).toBe(name);
+    });
   });
 });

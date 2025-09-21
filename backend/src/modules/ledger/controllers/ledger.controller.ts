@@ -82,7 +82,7 @@ export class LedgerController {
   }
 
   @Patch(':id')
-  @HttpCode(HttpStatus.ACCEPTED)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Update a ledger by ID',
     description: 'Updates an existing ledger by its unique identifier with the provided fields',
