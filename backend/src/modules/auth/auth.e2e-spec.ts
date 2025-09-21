@@ -3,11 +3,7 @@ import { App } from 'supertest/types';
 import { Repository } from 'typeorm';
 
 import { INestApplication } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-
-import { AppModule } from '@src/app.module';
-import { setupApp } from '@src/setup';
 
 import { ConfigService } from '@libs/config/config.service';
 
@@ -40,19 +36,11 @@ describe('AuthController', () => {
   };
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+    app = __TEST_APP__!;
 
-    app = moduleFixture.createNestApplication();
-
-    await setupApp(app);
-
-    await app.init();
-
-    userRepository = moduleFixture.get<Repository<UserEntity>>(getRepositoryToken(UserEntity));
-    keysRepository = moduleFixture.get<Repository<KeysEntity>>(getRepositoryToken(KeysEntity));
-    configService = moduleFixture.get<ConfigService>(ConfigService);
+    userRepository = app.get<Repository<UserEntity>>(getRepositoryToken(UserEntity));
+    keysRepository = app.get<Repository<KeysEntity>>(getRepositoryToken(KeysEntity));
+    configService = app.get<ConfigService>(ConfigService);
     adminSecret = configService.adminSecret;
   });
 
@@ -62,7 +50,7 @@ describe('AuthController', () => {
 
   beforeEach(async () => {
     await userRepository.deleteAll();
-    await keysRepository.deleteAll();
+    await keysRepository.query(`delete from keys where id != '${__TEST_CORE_API_KEY__}';`);
   });
 
   describe('POST /v1/auth/user', () => {
