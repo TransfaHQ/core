@@ -3,11 +3,11 @@ import { DataSource, Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
-import { CursorPaginatedResult, cursorPaginate } from '@libs/database';
+import { CursorPaginatedResult, Transactional, cursorPaginate } from '@libs/database';
 
 import { CreateLedgerDto } from '@modules/ledger/dto/create-ledger.dto';
-import { UpdateLedgerDto } from '@modules/ledger/dto/update-ledger.dto';
 import { LedgerResponseDto } from '@modules/ledger/dto/ledger-response.dto';
+import { UpdateLedgerDto } from '@modules/ledger/dto/update-ledger.dto';
 import { LedgerMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
 import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
 
@@ -22,6 +22,7 @@ export class LedgerService {
     private readonly ledgerMetadataRepository: Repository<LedgerMetadataEntity>,
   ) {}
 
+  @Transactional()
   async createLedger(data: CreateLedgerDto): Promise<LedgerResponseDto> {
     const entity = this.ledgerRepository.create({
       name: data.name,
@@ -29,14 +30,14 @@ export class LedgerService {
     });
 
     const ledger = await this.ledgerRepository.save(entity);
-    const metadata: LedgerMetadataEntity[] = [];
+    const metadata: LedgerMetadataEntity[] = Object.entries(data.metadata ?? {}).map(
+      ([key, value]) => {
+        return this.ledgerMetadataRepository.create({ ledger, key, value });
+      },
+    );
 
-    if (data.metadata && data.metadata.length > 0) {
-      data.metadata.map((v) => {
-        metadata.push(this.ledgerMetadataRepository.create({ ledger, key: v.key, value: v.value }));
-      });
-    }
-    await this.ledgerMetadataRepository.save(metadata);
+    if (metadata.length > 0) await this.ledgerMetadataRepository.save(metadata);
+
     ledger.metadata = metadata;
     return this.toResponse(ledger);
   }
@@ -47,54 +48,6 @@ export class LedgerService {
       relations: ['metadata'],
     });
     return this.toResponse(ledger);
-  }
-
-  async updateLedger(id: string, data: UpdateLedgerDto): Promise<LedgerResponseDto> {
-    return await this.dataSource.transaction(async (manager) => {
-      const ledger = await manager.findOneOrFail(LedgerEntity, {
-        where: { id },
-        relations: ['metadata'],
-      });
-
-      if (data.name !== undefined) {
-        ledger.name = data.name;
-      }
-      if (data.description !== undefined) {
-        ledger.description = data.description;
-      }
-
-      await manager.save(ledger);
-
-      if (data.metadata !== undefined) {
-        for (const metaData of data.metadata) {
-          if (metaData.value === null || metaData.value === undefined) {
-            // Remove metadata where value is null
-            await manager.delete(LedgerMetadataEntity, {
-              ledger: { id },
-              key: metaData.key,
-            });
-          } else {
-            // Upsert metadata (update if exists, create if not)
-            await manager.upsert(
-              LedgerMetadataEntity,
-              {
-                ledger: { id },
-                key: metaData.key,
-                value: metaData.value,
-              },
-              ['ledger', 'key']
-            );
-          }
-        }
-      }
-
-      const updatedLedger = await manager.findOne(LedgerEntity, {
-        where: { id },
-        relations: ['metadata'],
-      });
-
-      return this.toResponse(updatedLedger!);
-    });
   }
 
   async paginate(
@@ -115,14 +68,50 @@ export class LedgerService {
     };
   }
 
+  @Transactional()
+  async update(id: string, data: UpdateLedgerDto): Promise<LedgerResponseDto> {
+    const ledger = await this.ledgerRepository.findOneOrFail({
+      where: { id },
+      relations: ['metadata'],
+    });
+
+    ledger.name = data.name ?? ledger.name;
+    ledger.description = data.description ?? ledger.description;
+    await this.ledgerRepository.save(ledger);
+
+    for (const [key, value] of Object.entries(data.metadata ?? {})) {
+      if (value === null || value === undefined) {
+        // Remove metadata where value is null
+        await this.ledgerMetadataRepository.delete({
+          ledger: { id },
+          key: key,
+        });
+      } else {
+        // Upsert metadata (update if exists, create if not)
+        await this.ledgerMetadataRepository.upsert(
+          {
+            ledger: { id },
+            key: key,
+            value: value,
+          },
+          ['ledger', 'key'],
+        );
+      }
+    }
+
+    const updatedLedger = await this.ledgerRepository.findOne({
+      where: { id },
+      relations: ['metadata'],
+    });
+    return this.toResponse(updatedLedger!);
+  }
+
   private toResponse(ledger: LedgerEntity): LedgerResponseDto {
     return {
       id: ledger.id,
       name: ledger.name,
       description: ledger.description,
-      metadata: ledger.metadata?.map((v) => {
-        return { key: v.key, value: v.value };
-      }),
+      metadata: Object.fromEntries(ledger.metadata?.map((v) => [v.key, v.value])),
       createdAt: ledger.createdAt,
       updatedAt: ledger.updatedAt,
     };

@@ -1,5 +1,5 @@
 import { config as loadConfig } from 'dotenv';
-import { DataSource, DataSourceOptions } from 'typeorm';
+import { DataSource, DataSourceOptions, LoggerOptions } from 'typeorm';
 import z from 'zod';
 
 import { checkPostgresVersion } from '@src/database/utils';
@@ -21,6 +21,7 @@ export const DBConfigSchema = z.object({
     })
     .optional(),
   DB_MIGRATIONS_TABLE: z.string().default('migrations'),
+  DB_LOGGING_LEVEL: z.string().default('query'),
 });
 
 export const dbConfig = DBConfigSchema.parse(process.env);
@@ -39,6 +40,7 @@ const dataSourceOptions = (): DataSourceOptions => {
     migrationsTableName: dbConfig.DB_MIGRATIONS_TABLE,
     migrationsRun: false,
     schema: dbConfig.CORE_POSTGRES_SCHEMA ?? undefined,
+    logging: dbConfig.DB_LOGGING_LEVEL as LoggerOptions,
   };
   return dataSourceOptions;
 };

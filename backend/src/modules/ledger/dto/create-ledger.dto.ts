@@ -1,19 +1,8 @@
-import { Type } from 'class-transformer';
-import {
-  ArrayMaxSize,
-  ArrayMinSize,
-  IsArray,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
-  MinLength,
-  ValidateNested,
-} from 'class-validator';
+import { IsNotEmpty, IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { LedgerMetadataDto } from '@modules/ledger/dto/ledger-metadata.dto';
+import { IsMetadata } from '@libs/api/validators/is-metadata.validator';
 
 export class CreateLedgerDto {
   @ApiProperty({
@@ -43,18 +32,12 @@ export class CreateLedgerDto {
   @ApiPropertyOptional({
     description:
       'Additional data represented as key-value pairs. Both the key and value must be strings.',
-    type: [LedgerMetadataDto],
-    example: [
-      { key: 'currency', value: 'USD' },
-      { key: 'region', value: 'NA' },
-    ],
+    type: 'object',
+    example: { key: 'currency', value: 'USD' },
+    additionalProperties: { type: 'string', maxLength: 255, minLength: 3 },
   })
   @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => LedgerMetadataDto)
-  @IsArray()
-  @ValidateNested({ each: true })
-  @ArrayMinSize(1)
-  @ArrayMaxSize(250)
-  metadata?: LedgerMetadataDto[];
+  @IsObject()
+  @IsMetadata({ message: 'metadata must have string keys/values max length 255' })
+  metadata: Record<string, string>;
 }

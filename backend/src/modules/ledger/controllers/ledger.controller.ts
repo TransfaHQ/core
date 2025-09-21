@@ -23,7 +23,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
-import { MTCursorPaginationInterceptor } from '@libs/api/mt-cursor-paginated.interceptor';
+import { MTCursorPaginationInterceptor } from '@libs/api/interceptors/mt-cursor-paginated.interceptor';
 import { CursorPaginatedResult } from '@libs/database';
 
 import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
@@ -31,6 +31,7 @@ import { CreateLedgerDto } from '@modules/ledger/dto/create-ledger.dto';
 import { UpdateLedgerDto } from '@modules/ledger/dto/update-ledger.dto';
 import { LedgerResponseDto } from '@modules/ledger/dto/ledger-response.dto';
 import { ListLedgerRequestDto } from '@modules/ledger/dto/list-ledger.dto';
+import { UpdateLedgerDto } from '@modules/ledger/dto/update-ledger.dto';
 import { LedgerService } from '@modules/ledger/services/ledger.service';
 
 @ApiTags('ledgers')
@@ -91,8 +92,8 @@ export class LedgerController {
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Update a ledger',
-    description: 'Updates an existing ledger with the provided data',
+    summary: 'Update a ledger by ID',
+    description: 'Updates an existing ledger by its unique identifier with the provided fields',
   })
   @ApiParam({
     name: 'id',
@@ -103,9 +104,6 @@ export class LedgerController {
     description: 'The ledger has been successfully updated',
     type: LedgerResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Invalid input data',
-  })
   @ApiNotFoundResponse({
     description: 'Ledger not found',
   })
@@ -114,9 +112,9 @@ export class LedgerController {
   })
   async updateLedger(
     @Param('id') id: string,
-    @Body() body: UpdateLedgerDto,
+    @Body() data: UpdateLedgerDto,
   ): Promise<LedgerResponseDto> {
-    return this.ledgerService.updateLedger(id, body);
+    return this.ledgerService.update(id, data);
   }
 
   @Get()

@@ -7,6 +7,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { checkPostgresVersion } from '@src/database/utils';
 
+import { TypeormQueryErrorFilter } from '@libs/api/filters';
+import { setDataSource } from '@libs/database';
+
 export async function setupApp(app: INestApplication) {
   app.use(cookieParser());
 
@@ -17,6 +20,7 @@ export async function setupApp(app: INestApplication) {
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
 
   app.useLogger(app.get(Logger));
+  app.useGlobalFilters(new TypeormQueryErrorFilter());
 
   // Setup Swagger API documentation
   const config = new DocumentBuilder()
@@ -38,5 +42,6 @@ export async function setupApp(app: INestApplication) {
 
   const dataSource = app.get(DataSource);
   await checkPostgresVersion(dataSource);
+  setDataSource(dataSource);
   return app;
 }
