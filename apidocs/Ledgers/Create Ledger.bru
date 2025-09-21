@@ -18,7 +18,7 @@ body:json {
 }
 
 script:post-response {
-  bru.setEnvVar('LEDGER_ACCOUNT_ID',res.body.id)
+  bru.setEnvVar('LEDGER_ID',res.body.id)
 }
 
 settings {
