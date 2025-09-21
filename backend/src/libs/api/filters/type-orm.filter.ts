@@ -12,7 +12,7 @@ export class TypeormQueryErrorFilter implements ExceptionFilter {
     let message = "Internal server error. Please contact Transfa's Engineering team.";
     let error = 'Internal server';
 
-    Logger.error(`db error: ${exception.detail}`);
+    Logger.error(`db error: ${exception}`);
 
     try {
       const messageStart = `${exception.table.split('_').join(' ')} with`;

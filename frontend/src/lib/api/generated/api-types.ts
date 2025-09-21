@@ -79,7 +79,7 @@ export interface paths {
          * List ledgers
          * @description Retrieves a paginated list of ledgers
          */
-        get: operations["LedgerController_listLegders_v1"];
+        get: operations["LedgerController_listLedgers_v1"];
         put?: never;
         /**
          * Create a new ledger
@@ -110,8 +110,8 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Update a ledger
-         * @description Updates an existing ledger with the provided data
+         * Update a ledger by ID
+         * @description Updates an existing ledger by its unique identifier with the provided fields
          */
         patch: operations["LedgerController_updateLedger_v1"];
         trace?: never;
@@ -136,6 +136,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ledger_accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List ledger accounts
+         * @description Retrieves a paginated list of ledger accounts
+         */
+        get: operations["LedgerAccountController_listAccounts_v1"];
+        put?: never;
+        /**
+         * Create a new ledger account
+         * @description Creates a new ledger account with the provided details
+         */
+        post: operations["LedgerAccountController_createLedgerAccount_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ledger_accounts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a ledger account by ID
+         * @description Retrieves a single ledger account by its unique identifier
+         */
+        get: operations["LedgerAccountController_retrieveLedgerAccount_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a ledger account by ID
+         * @description Updates an existing ledger account by its unique identifier with the provided fields
+         */
+        patch: operations["LedgerAccountController_updateLedgerAccount_v1"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -144,18 +192,6 @@ export interface components {
         LoginDto: Record<string, never>;
         CreateKeyDto: Record<string, never>;
         DeleteKeyDto: Record<string, never>;
-        LedgerMetadataDto: {
-            /**
-             * @description Name of key
-             * @example key
-             */
-            key: string;
-            /**
-             * @description Value associated with the key
-             * @example value
-             */
-            value: string;
-        };
         CreateLedgerDto: {
             /**
              * @description Name of the ledger
@@ -169,18 +205,14 @@ export interface components {
             description?: string;
             /**
              * @description Additional data represented as key-value pairs. Both the key and value must be strings.
-             * @example [
-             *       {
-             *         "key": "currency",
-             *         "value": "USD"
-             *       },
-             *       {
-             *         "key": "region",
-             *         "value": "NA"
-             *       }
-             *     ]
+             * @example {
+             *       "key": "currency",
+             *       "value": "USD"
+             *     }
              */
-            metadata?: components["schemas"]["LedgerMetadataDto"][];
+            metadata?: {
+                [key: string]: string;
+            };
         };
         LedgerResponseDto: {
             /**
@@ -200,18 +232,14 @@ export interface components {
             description: string;
             /**
              * @description Additional data represented as key-value pairs. Both the key and value must be strings.
-             * @example [
-             *       {
-             *         "key": "currency",
-             *         "value": "USD"
-             *       },
-             *       {
-             *         "key": "region",
-             *         "value": "NA"
-             *       }
-             *     ]
+             * @example {
+             *       "key": "currency",
+             *       "value": "USD"
+             *     }
              */
-            metadata?: components["schemas"]["LedgerMetadataDto"][];
+            metadata?: {
+                [key: string]: string;
+            };
             /**
              * Format: date-time
              * @description Timestamp when the ledger was created
@@ -238,18 +266,175 @@ export interface components {
             description?: string;
             /**
              * @description Additional data represented as key-value pairs. Both the key and value must be strings.
-             * @example [
-             *       {
-             *         "key": "currency",
-             *         "value": "USD"
-             *       },
-             *       {
-             *         "key": "region",
-             *         "value": "NA"
-             *       }
-             *     ]
+             * @example {
+             *       "key": "currency",
+             *       "value": "USD"
+             *     }
              */
-            metadata?: components["schemas"]["LedgerMetadataDto"][];
+            metadata?: {
+                [key: string]: string;
+            };
+        };
+        CreateLedgerAccountDto: {
+            /**
+             * @description Ledger id associated with the ledger account
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            ledgerId: string;
+            /**
+             * @description Name of the ledger account
+             * @example Company General Ledger
+             */
+            name: string;
+            /**
+             * @description Description of the ledger account purpose
+             * @example Main accounting ledger account for company operations
+             */
+            description?: string;
+            /**
+             * @description Additional data represented as key-value pairs. Both the key and value must be strings.
+             * @example {
+             *       "currency": "USD",
+             *       "region": "US"
+             *     }
+             */
+            metadata?: {
+                [key: string]: string;
+            };
+            /**
+             * @description Currency code of the ledger account (ISO 4217)
+             * @example USD
+             */
+            currency: string;
+            /**
+             * @description Exponent for the currency (e.g., 2 for USD cents). Required if the currency is not recognized.
+             * @example 2
+             */
+            currencyExponent?: number;
+            /**
+             * @description Normal balance type for the ledger account
+             * @example debit
+             * @enum {string}
+             */
+            normalBalance: "credit" | "debit";
+            /**
+             * @description External identifier for the ledger account
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            externalId?: string;
+        };
+        BalanceDto: {
+            /**
+             * @description Total credits
+             * @example 1000
+             */
+            credits: number;
+            /**
+             * @description Total debits
+             * @example 500
+             */
+            debits: number;
+            /**
+             * @description Net amount
+             * @example 500
+             */
+            amount: number;
+            /**
+             * @description Currency code (ISO 4217)
+             * @example USD
+             */
+            currency: string;
+            /**
+             * @description Currency exponent (number of decimal places, e.g., 2 for USD)
+             * @example 2
+             */
+            currencyExponent: number;
+        };
+        LedgerAccountBalancesDto: {
+            /** @description Pending balance */
+            pendingBalance: components["schemas"]["BalanceDto"];
+            /** @description Posted balance */
+            postedBalance: components["schemas"]["BalanceDto"];
+            /** @description Available balance */
+            avalaibleBalance: components["schemas"]["BalanceDto"];
+        };
+        LedgerAccountResponseDto: {
+            /**
+             * @description Ledger account unique identifier
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            id: string;
+            /**
+             * @description Name of the ledger account
+             * @example Company General Ledger
+             */
+            name: string;
+            /**
+             * @description Description of the ledger account
+             * @example Main accounting ledger account
+             */
+            description: string;
+            /**
+             * @description Normal balance type
+             * @example DEBIT
+             */
+            normalBalance: string;
+            /**
+             * @description Associated ledger ID
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            ledgerId: string;
+            /**
+             * @description External identifier for the ledger account
+             * @example EXT-12345
+             */
+            externalId: string;
+            /** @description Balances of the ledger account */
+            balances: components["schemas"]["LedgerAccountBalancesDto"];
+            /**
+             * @description Additional data represented as key-value pairs. Both the key and value must be strings.
+             * @example {
+             *       "key": "currency",
+             *       "value": "USD"
+             *     }
+             */
+            metadata?: {
+                [key: string]: string;
+            };
+            /**
+             * Format: date-time
+             * @description Creation timestamp
+             * @example 2025-09-21T22:04:48.633Z
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description Last update timestamp
+             * @example 2025-09-21T22:04:48.633Z
+             */
+            updatedAt: string;
+        };
+        UpdateLedgerAccountDto: {
+            /**
+             * @description Name of the ledger account
+             * @example Company General Ledger
+             */
+            name?: string;
+            /**
+             * @description Description of the ledger account purpose
+             * @example Main accounting ledger account for company operations
+             */
+            description?: string;
+            /**
+             * @description Additional data represented as key-value pairs. Both the key and value must be strings.
+             * @example {
+             *       "currency": "USD",
+             *       "region": "US"
+             *     }
+             */
+            metadata?: {
+                [key: string]: string;
+            };
         };
     };
     responses: never;
@@ -361,14 +546,12 @@ export interface operations {
             };
         };
     };
-    LedgerController_listLegders_v1: {
+    LedgerController_listLedgers_v1: {
         parameters: {
             query?: {
-                /** @description Number of items to return per page */
+                /** @description Number of items per page */
                 limit?: number;
-                /** @description Page number for pagination (1-based) */
-                page?: number;
-                /** @description Cursor for cursor-based pagination */
+                /** @description Cursor for pagination */
                 cursor?: string;
             };
             header?: never;
@@ -511,13 +694,6 @@ export interface operations {
                     "application/json": components["schemas"]["LedgerResponseDto"];
                 };
             };
-            /** @description Invalid input data */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
             /** @description Invalid or missing API key */
             401: {
                 headers: {
@@ -539,8 +715,6 @@ export interface operations {
             query?: {
                 /** @description Number of items to return per page */
                 limit?: number;
-                /** @description Page number for pagination (1-based) */
-                page?: number;
                 /** @description Cursor for cursor-based pagination */
                 cursor?: string;
             };
@@ -561,6 +735,183 @@ export interface operations {
             };
             /** @description Invalid or missing API key */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LedgerAccountController_listAccounts_v1: {
+        parameters: {
+            query?: {
+                /** @description Number of items per page */
+                limit?: number;
+                /** @description Cursor for pagination */
+                cursor?: string;
+                /** @description Filter by ledger ID */
+                ledger_id?: string;
+                /** @description Filter by currency code */
+                currency?: string;
+                /** @description Filter by normal balance type */
+                normal_balance?: "credit" | "debit";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The ledger accounts have been successfully retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["LedgerAccountResponseDto"][];
+                        /**
+                         * @description Cursor for the next page
+                         * @example 01234567-89ab-cdef-0123-456789abcdef
+                         */
+                        nextCursor?: string;
+                        /**
+                         * @description Cursor for the previous page
+                         * @example 01234567-89ab-cdef-0123-456789abcdef
+                         */
+                        prevCursor?: string;
+                        /** @description Whether there are more items after this page */
+                        hasNext?: boolean;
+                        /** @description Whether there are more items before this page */
+                        hasPrev?: boolean;
+                    };
+                };
+            };
+            /** @description Invalid or missing API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LedgerAccountController_createLedgerAccount_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLedgerAccountDto"];
+            };
+        };
+        responses: {
+            /** @description The ledger account has been successfully created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerAccountResponseDto"];
+                };
+            };
+            /** @description Invalid input data */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid or missing API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LedgerAccountController_retrieveLedgerAccount_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the ledger account */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The ledger account has been successfully retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerAccountResponseDto"];
+                };
+            };
+            /** @description Invalid or missing API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ledger account not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LedgerAccountController_updateLedgerAccount_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the ledger account to update */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLedgerAccountDto"];
+            };
+        };
+        responses: {
+            /** @description The ledger account has been successfully updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerAccountResponseDto"];
+                };
+            };
+            /** @description Invalid input data */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid or missing API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ledger account not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

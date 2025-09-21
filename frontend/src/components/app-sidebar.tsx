@@ -10,9 +10,20 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { ArrowRightLeft, BookOpen, FileText, Tags, Wallet } from "lucide-react";
+import { Link, useLocation } from "react-router";
 import logo from "@/assets/logo.svg";
 
 export function AppSidebar() {
+  const location = useLocation();
+
+  const menuItems = [
+    { icon: BookOpen, label: "Ledgers", path: "/ledgers" },
+    { icon: Wallet, label: "Accounts", path: "/accounts" },
+    { icon: ArrowRightLeft, label: "Transactions", path: "/transactions" },
+    { icon: Tags, label: "Categories", path: "/categories" },
+    { icon: FileText, label: "Entries", path: "/entries" },
+  ];
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -26,36 +37,16 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <BookOpen />
-                  <span>Ledgers</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Wallet />
-                  <span>Accounts</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <ArrowRightLeft />
-                  <span>Transactions</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Tags />
-                  <span>Categories</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <FileText />
-                  <span>Entries</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {menuItems.map((item) => (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton asChild isActive={location.pathname === item.path}>
+                    <Link to={item.path}>
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
