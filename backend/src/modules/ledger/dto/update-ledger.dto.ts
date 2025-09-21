@@ -1,17 +1,17 @@
-import { IsNotEmpty, IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import { IsMetadata } from '@libs/api/validators/is-metadata.validator';
 
-export class CreateLedgerDto {
-  @ApiProperty({
+export class UpdateLedgerDto {
+  @ApiPropertyOptional({
     description: 'Name of the ledger',
     example: 'Company General Ledger',
     minLength: 3,
     maxLength: 255,
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @MinLength(3)
   @MaxLength(255)

@@ -1,5 +1,6 @@
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
+import { LoggerOptions } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
@@ -67,6 +68,7 @@ export class ConfigService {
       migrations: [__dirname + '/../../database/migrations/*{.ts,.js}'],
       migrationsTableName: this.envConfig.DB_MIGRATIONS_TABLE,
       schema: this.envConfig.CORE_POSTGRES_SCHEMA ?? undefined,
+      logging: this.envConfig.DB_LOGGING_LEVEL as LoggerOptions,
     };
   }
 }

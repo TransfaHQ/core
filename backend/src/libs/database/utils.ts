@@ -1,4 +1,6 @@
 import { Repository, SelectQueryBuilder } from 'typeorm';
+// datasource.provider.ts
+import { DataSource } from 'typeorm';
 
 import { API_PAGE_SIZE } from '@libs/constants';
 import { BaseTypeormEntity } from '@libs/database/base-typeorm.entity';
@@ -65,5 +67,31 @@ export async function cursorPaginate<T extends BaseTypeormEntity>(
     prevCursor,
     hasNext: order === 'ASC' ? !!nextCursor : false,
     hasPrev: order === 'DESC' ? !!prevCursor : false,
+  };
+}
+
+let appDataSource: DataSource;
+
+export const setDataSource = (ds: DataSource) => {
+  appDataSource = ds;
+};
+
+const getDataSource = (): DataSource => {
+  if (!appDataSource) throw new Error('DataSource has not been set yet');
+  return appDataSource;
+};
+
+export function Transactional() {
+  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+    const originalMethod = descriptor.value;
+
+    descriptor.value = async function (...args: any[]) {
+      const dataSource = getDataSource();
+      return dataSource.transaction(async (manager) => {
+        return originalMethod.apply(this, [...args, manager]);
+      });
+    };
+
+    return descriptor;
   };
 }

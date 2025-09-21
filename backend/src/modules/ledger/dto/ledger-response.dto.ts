@@ -1,7 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { LedgerMetadataDto } from '@modules/ledger/dto/ledger-metadata.dto';
-
 export class LedgerResponseDto {
   @ApiProperty({
     description: 'Unique identifier for the ledger',
@@ -24,13 +22,11 @@ export class LedgerResponseDto {
   @ApiPropertyOptional({
     description:
       'Additional data represented as key-value pairs. Both the key and value must be strings.',
-    type: [LedgerMetadataDto],
-    example: [
-      { key: 'currency', value: 'USD' },
-      { key: 'region', value: 'NA' },
-    ],
+    type: 'object',
+    example: { key: 'currency', value: 'USD' },
+    additionalProperties: { type: 'string', minLength: 1, maxLength: 1 },
   })
-  metadata: LedgerMetadataDto[];
+  metadata: Record<string, string>;
 
   @ApiProperty({
     description: 'Timestamp when the ledger was created',
