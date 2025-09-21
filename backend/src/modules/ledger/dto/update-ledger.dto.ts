@@ -3,7 +3,6 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
-  IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
@@ -11,22 +10,22 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import { LedgerMetadataDto } from '@modules/ledger/dto/ledger-metadata.dto';
 
-export class CreateLedgerDto {
-  @ApiProperty({
+export class UpdateLedgerDto {
+  @ApiPropertyOptional({
     description: 'Name of the ledger',
     example: 'Company General Ledger',
     minLength: 3,
     maxLength: 255,
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @MinLength(3)
   @MaxLength(255)
-  name: string;
+  name?: string;
 
   @ApiPropertyOptional({
     description: 'Description of the ledger purpose',
@@ -38,7 +37,7 @@ export class CreateLedgerDto {
   @IsString()
   @MinLength(3)
   @MaxLength(255)
-  description: string;
+  description?: string;
 
   @ApiPropertyOptional({
     description:

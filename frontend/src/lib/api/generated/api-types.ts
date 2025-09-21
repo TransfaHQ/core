@@ -109,6 +109,30 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /**
+         * Update a ledger
+         * @description Updates an existing ledger with the provided data
+         */
+        patch: operations["LedgerController_updateLedger_v1"];
+        trace?: never;
+    };
+    "/v0/ledgers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List ledgers following Modern Treasury format
+         * @description Retrieves a paginated list of ledgers
+         */
+        get: operations["MTLedgerController_listLegders_v0"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -120,6 +144,18 @@ export interface components {
         LoginDto: Record<string, never>;
         CreateKeyDto: Record<string, never>;
         DeleteKeyDto: Record<string, never>;
+        LedgerMetadataDto: {
+            /**
+             * @description Name of key
+             * @example key
+             */
+            key: string;
+            /**
+             * @description Value associated with the key
+             * @example value
+             */
+            value: string;
+        };
         CreateLedgerDto: {
             /**
              * @description Name of the ledger
@@ -131,6 +167,20 @@ export interface components {
              * @example Main accounting ledger for company operations
              */
             description?: string;
+            /**
+             * @description Additional data represented as key-value pairs. Both the key and value must be strings.
+             * @example [
+             *       {
+             *         "key": "currency",
+             *         "value": "USD"
+             *       },
+             *       {
+             *         "key": "region",
+             *         "value": "NA"
+             *       }
+             *     ]
+             */
+            metadata?: components["schemas"]["LedgerMetadataDto"][];
         };
         LedgerResponseDto: {
             /**
@@ -149,6 +199,20 @@ export interface components {
              */
             description: string;
             /**
+             * @description Additional data represented as key-value pairs. Both the key and value must be strings.
+             * @example [
+             *       {
+             *         "key": "currency",
+             *         "value": "USD"
+             *       },
+             *       {
+             *         "key": "region",
+             *         "value": "NA"
+             *       }
+             *     ]
+             */
+            metadata?: components["schemas"]["LedgerMetadataDto"][];
+            /**
              * Format: date-time
              * @description Timestamp when the ledger was created
              * @example 2023-12-01T10:00:00Z
@@ -160,6 +224,32 @@ export interface components {
              * @example 2023-12-01T10:00:00Z
              */
             updatedAt: string;
+        };
+        UpdateLedgerDto: {
+            /**
+             * @description Name of the ledger
+             * @example Company General Ledger
+             */
+            name?: string;
+            /**
+             * @description Description of the ledger purpose
+             * @example Main accounting ledger for company operations
+             */
+            description?: string;
+            /**
+             * @description Additional data represented as key-value pairs. Both the key and value must be strings.
+             * @example [
+             *       {
+             *         "key": "currency",
+             *         "value": "USD"
+             *       },
+             *       {
+             *         "key": "region",
+             *         "value": "NA"
+             *       }
+             *     ]
+             */
+            metadata?: components["schemas"]["LedgerMetadataDto"][];
         };
     };
     responses: never;
@@ -389,6 +479,88 @@ export interface operations {
             };
             /** @description Ledger not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LedgerController_updateLedger_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the ledger to update */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLedgerDto"];
+            };
+        };
+        responses: {
+            /** @description The ledger has been successfully updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerResponseDto"];
+                };
+            };
+            /** @description Invalid input data */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid or missing API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ledger not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MTLedgerController_listLegders_v0: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return per page */
+                limit?: number;
+                /** @description Page number for pagination (1-based) */
+                page?: number;
+                /** @description Cursor for cursor-based pagination */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The ledgers have been successfully retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerResponseDto"][];
+                };
+            };
+            /** @description Invalid or missing API key */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

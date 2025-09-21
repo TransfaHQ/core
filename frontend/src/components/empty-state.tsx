@@ -1,5 +1,5 @@
 import { BookOpen } from "lucide-react";
-import { CreateLedgerDialog } from "./create-ledger-dialog";
+import { CreateLedgerDialog } from "../pages/ledger/dialogs/create";
 
 export function EmptyState() {
   return (
@@ -10,7 +10,8 @@ export function EmptyState() {
           No ledgers yet
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Get started by creating your first ledger to organize your financial transactions.
+          Get started by creating your first ledger to organize your financial
+          transactions.
         </p>
         <div className="mt-8">
           <CreateLedgerDialog />

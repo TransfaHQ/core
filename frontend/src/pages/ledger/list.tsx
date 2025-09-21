@@ -1,6 +1,15 @@
 import Layout from "@/components/layout";
-import { CreateLedgerDialog } from "@/components/create-ledger-dialog";
+import { CreateLedgerDialog } from "@/pages/ledger/dialogs/create";
+import { EditLedgerDialog } from "@/pages/ledger/dialogs/edit";
 import { EmptyState } from "@/components/empty-state";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { $api } from "@/lib/api/client";
 
 export function LedgerList() {
@@ -43,32 +52,41 @@ export function LedgerList() {
             </div>
           )}
 
-          {!isLoading && !error && ledgers?.data && ledgers.data.length === 0 && (
-            <EmptyState />
-          )}
+          {!isLoading &&
+            !error &&
+            ledgers?.data &&
+            ledgers.data.length === 0 && <EmptyState />}
 
           {!isLoading && !error && ledgers?.data && ledgers.data.length > 0 && (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {ledgers.data.map((ledger) => (
-                <div
-                  key={ledger.id}
-                  className="rounded-lg border bg-card text-card-foreground shadow-sm p-6"
-                >
-                  <div className="space-y-2">
-                    <h3 className="font-semibold leading-none tracking-tight">
-                      {ledger.name}
-                    </h3>
-                    {ledger.description && (
-                      <p className="text-sm text-muted-foreground">
-                        {ledger.description}
-                      </p>
-                    )}
-                    <div className="text-xs text-muted-foreground">
-                      Created {new Date(ledger.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ledgers.data.map((ledger) => (
+                    <TableRow key={ledger.id}>
+                      <TableCell className="font-medium">
+                        {ledger.name}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {ledger.description || "No description"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(ledger.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <EditLedgerDialog ledger={ledger} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

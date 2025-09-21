@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -27,6 +28,7 @@ import { CursorPaginatedResult } from '@libs/database';
 
 import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
 import { CreateLedgerDto } from '@modules/ledger/dto/create-ledger.dto';
+import { UpdateLedgerDto } from '@modules/ledger/dto/update-ledger.dto';
 import { LedgerResponseDto } from '@modules/ledger/dto/ledger-response.dto';
 import { ListLedgerRequestDto } from '@modules/ledger/dto/list-ledger.dto';
 import { LedgerService } from '@modules/ledger/services/ledger.service';
@@ -84,6 +86,37 @@ export class LedgerController {
   })
   async retrieveLedger(@Param('id') id: string): Promise<LedgerResponseDto> {
     return this.ledgerService.retrieveLedger(id);
+  }
+
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update a ledger',
+    description: 'Updates an existing ledger with the provided data',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the ledger to update',
+    example: '01234567-89ab-cdef-0123-456789abcdef',
+  })
+  @ApiOkResponse({
+    description: 'The ledger has been successfully updated',
+    type: LedgerResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid input data',
+  })
+  @ApiNotFoundResponse({
+    description: 'Ledger not found',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid or missing API key',
+  })
+  async updateLedger(
+    @Param('id') id: string,
+    @Body() body: UpdateLedgerDto,
+  ): Promise<LedgerResponseDto> {
+    return this.ledgerService.updateLedger(id, body);
   }
 
   @Get()

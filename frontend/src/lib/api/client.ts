@@ -34,6 +34,16 @@ const fetchClient = createFetchClient<paths>({
   },
 });
 
+fetchClient.use({
+  onResponse: ({ response }) => {
+    if (response.status === 401) {
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+    }
+  },
+});
+
 const $api = createClient(fetchClient);
 
 export { apiClient, $api };
