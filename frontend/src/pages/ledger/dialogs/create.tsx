@@ -17,14 +17,14 @@ import { useQueryClient } from "@tanstack/react-query";
 
 interface FormData {
   name: string;
-  description: string;
+  description?: string;
 }
 
 export function CreateLedgerDialog() {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: "",
-    description: "",
+    description: undefined,
   });
 
   const queryClient = useQueryClient()
@@ -32,7 +32,7 @@ export function CreateLedgerDialog() {
 
   const createLedger = $api.useMutation("post", "/v1/ledgers", {
     onSuccess: () => {
-      setFormData({ name: "", description: "" });
+      setFormData({ name: "", description: undefined });
       setOpen(false);
       queryClient.invalidateQueries({
         queryKey: $api.queryOptions("get", "/v1/ledgers").queryKey,
@@ -47,7 +47,7 @@ export function CreateLedgerDialog() {
     createLedger.mutate({
       body: {
         name: formData.name.trim(),
-        description: formData.description.trim(),
+        description: formData.description?.trim(),
       },
     });
   };
