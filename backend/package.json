@@ -17,16 +17,16 @@
     "test:watch": "NODE_ENV=test jest --watch",
     "test:cov": "NODE_ENV=test jest --coverage",
     "test:debug": "NODE_ENV=test node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "NODE_ENV=test npm run db:migrate && jest --config jest.e2e.config.js",
+    "test:e2e": "scripts/tigerbeetle/configure.sh e2e_test && scripts/tigerbeetle/start.sh e2e_test 6064 && NODE_ENV=test npm run db:migrate && NODE_ENV=test jest --config jest.e2e.config.js",
     "repl": "NODE_ENV=development nest start --entryFile repl --watch",
     "typeorm": "ts-node --files -r tsconfig-paths/register ./node_modules/typeorm/cli.js --dataSource ./src/database/config.ts",
     "db:migrate": "ts-node --files -r tsconfig-paths/register scripts/npm/db-migrate.ts",
     "db:revert": "ts-node --files -r tsconfig-paths/register scripts/npm/db-revert.ts",
     "db:show": "npm run typeorm migration:show",
     "db:create-migration": "cd src/database/migrations && ts-node --files -r tsconfig-paths/register ../../../node_modules/typeorm/cli.js migration:create",
-    "tb:start": "scripts/tigerbeetle/start.sh",
-    "tb:download": "scripts/tigerbeetle/download.sh",
-    "tb:configure": "scripts/tigerbeetle/configure.sh"
+    "tb:start:dev": "scripts/tigerbeetle/start.sh 0_0_transfa_dev",
+    "tb:configure:dev": "scripts/tigerbeetle/configure.sh 0_0_transfa_dev",
+    "tb:download": "scripts/tigerbeetle/download.sh"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

@@ -14,4 +14,6 @@ module.exports = {
     '^@src/(.*)$': '<rootDir>/src/$1',
   },
   testTimeout: 30000,
+  setupFilesAfterEnv: ["<rootDir>/src/jest-e2e.setup.ts"],
+  globalTeardown: "<rootDir>/src/jest-e2e-global-teardown.ts",
 };
