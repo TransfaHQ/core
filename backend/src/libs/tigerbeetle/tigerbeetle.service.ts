@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { Account, CreateAccountError, createClient } from 'tigerbeetle-node';
 
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 
 import { ConfigService } from '../config/config.service';
 
@@ -31,5 +31,15 @@ export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
 
   createTransfers(): Promise<void> {
     throw new Error('NotImplementedEror');
+  }
+
+  async retrieveAccounts(ids: bigint[]): Promise<Account[]> {
+    return this.client.lookupAccounts(ids);
+  }
+
+  async retrieveAccount(id: bigint): Promise<Account> {
+    const response = await this.retrieveAccounts([id]);
+    if (response.length === 0) throw new NotFoundException();
+    return response[0];
   }
 }

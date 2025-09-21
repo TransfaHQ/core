@@ -5,13 +5,17 @@ meta {
 }
 
 get {
-  url: {{APP_URL}}/{{APP_VERSION}}/ledgers/:id
+  url: {{APP_URL}}/{{APP_VERSION}}/ledger_accounts/:id
   body: none
   auth: inherit
 }
 
 params:path {
   id: {{LEDGER_ACCOUNT_ID}}
+}
+
+script:post-response {
+  bru.setEnvVar('LEDGER_ACCOUNT_ID',res.body.id)
 }
 
 settings {

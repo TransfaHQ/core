@@ -28,9 +28,9 @@ export class LedgerAccountMetadataEntity extends BaseTypeormEntity {
   @Column({ type: 'varchar', length: 255 })
   value: string;
 
-  @ManyToOne(() => LedgerAccountEntity, (ledger) => ledger.metadata, {
+  @ManyToOne(() => LedgerAccountEntity, (ledgerAccount) => ledgerAccount.metadata, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'ledger_account_id' })
-  ledger: LedgerAccountEntity;
+  ledgerAccount: LedgerAccountEntity;
 }

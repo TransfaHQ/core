@@ -15,10 +15,6 @@ params:query {
   cursor: 01996177-25ff-78a6-9f00-7e614570a32c
 }
 
-script:post-response {
-  bru.setEnvVar('LEDGER_ACCOUNT_ID',res.body.id)
-}
-
 settings {
   encodeUrl: true
 }

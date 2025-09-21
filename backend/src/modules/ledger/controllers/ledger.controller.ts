@@ -18,6 +18,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiSecurity,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -27,8 +28,8 @@ import { MTCursorPaginationInterceptor } from '@libs/api/interceptors/mt-cursor-
 import { CursorPaginatedResult } from '@libs/database';
 
 import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
+import { ledgerEntityToApiV1Response } from '@modules/ledger/controllers/api-response';
 import { CreateLedgerDto } from '@modules/ledger/dto/create-ledger.dto';
-import { UpdateLedgerDto } from '@modules/ledger/dto/update-ledger.dto';
 import { LedgerResponseDto } from '@modules/ledger/dto/ledger-response.dto';
 import { ListLedgerRequestDto } from '@modules/ledger/dto/list-ledger.dto';
 import { UpdateLedgerDto } from '@modules/ledger/dto/update-ledger.dto';
@@ -61,7 +62,8 @@ export class LedgerController {
     @Body()
     body: CreateLedgerDto,
   ): Promise<LedgerResponseDto> {
-    return this.ledgerService.createLedger(body);
+    const response = await this.ledgerService.createLedger(body);
+    return ledgerEntityToApiV1Response(response);
   }
 
   @Get(':id')
@@ -86,7 +88,8 @@ export class LedgerController {
     description: 'Invalid or missing API key',
   })
   async retrieveLedger(@Param('id') id: string): Promise<LedgerResponseDto> {
-    return this.ledgerService.retrieveLedger(id);
+    const response = await this.ledgerService.retrieveLedger(id);
+    return ledgerEntityToApiV1Response(response);
   }
 
   @Patch(':id')
@@ -114,7 +117,8 @@ export class LedgerController {
     @Param('id') id: string,
     @Body() data: UpdateLedgerDto,
   ): Promise<LedgerResponseDto> {
-    return this.ledgerService.update(id, data);
+    const response = await this.ledgerService.update(id, data);
+    return ledgerEntityToApiV1Response(response);
   }
 
   @Get()
@@ -156,10 +160,25 @@ export class LedgerController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing API key',
   })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'cursor',
+    required: false,
+    type: String,
+    description: 'Cursor for pagination',
+    example: '01234567-89ab-cdef-0123-456789abcdef',
+  })
   async listLegders(
     @Query() queryParams: ListLedgerRequestDto,
   ): Promise<CursorPaginatedResult<LedgerResponseDto>> {
-    return this.ledgerService.paginate(queryParams.limit, queryParams.cursor);
+    const response = await this.ledgerService.paginate(queryParams.limit, queryParams.cursor);
+    return { ...response, data: response.data.map(ledgerEntityToApiV1Response) };
   }
 }
 
@@ -190,6 +209,7 @@ export class MTLedgerController {
   async listLegders(
     @Query() queryParams: ListLedgerRequestDto,
   ): Promise<CursorPaginatedResult<LedgerResponseDto>> {
-    return this.ledgerService.paginate(queryParams.limit, queryParams.cursor);
+    const response = await this.ledgerService.paginate(queryParams.limit, queryParams.cursor);
+    return { ...response, data: response.data.map(ledgerEntityToApiV1Response) };
   }
 }
