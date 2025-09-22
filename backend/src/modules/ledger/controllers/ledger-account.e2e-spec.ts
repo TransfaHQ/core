@@ -210,6 +210,70 @@ describe('LedgerAccountController', () => {
   });
 
   describe('PATCH /v1/ledger_accounts/:id', () => {
-    it('should return 200', async () => {});
+    it('should return 200', async () => {
+      const beforeUpdate = await ledgerAccountRepository.findOneBy({
+        id: __TEST_CREDIT_LEDGER_ACCOUNT_ID__,
+      });
+      expect(beforeUpdate!.name).toBe('credit account');
+
+      await request(app.getHttpServer())
+        .patch(`/v1/ledger_accounts/${__TEST_CREDIT_LEDGER_ACCOUNT_ID__}`)
+        .set(setTestBasicAuthHeader())
+        .send({
+          name: 'test',
+          description: 'description',
+          metadata: {
+            test: 'transfa',
+          },
+        })
+        .expect(HttpStatus.OK)
+        .expect((response) => {
+          expect(response.body.id).toBe(__TEST_CREDIT_LEDGER_ACCOUNT_ID__);
+          expect(response.body.name).toBe('test');
+          expect(response.body.description).toBe('description');
+          expect(response.body.metadata.test).toBe('transfa');
+        });
+
+      const afterUpdate = (await ledgerAccountRepository.findOneBy({
+        id: __TEST_CREDIT_LEDGER_ACCOUNT_ID__,
+      }))!;
+
+      expect(afterUpdate.name).toBe('test');
+      expect(afterUpdate.description).toBe('description');
+    });
+
+    it('should update description & metadata', async () => {
+      const beforeUpdate = await ledgerAccountRepository.findOneBy({
+        id: __TEST_CREDIT_LEDGER_ACCOUNT_ID__,
+      });
+      const description = 'Transfa Ledger';
+      const metadata = { test: 'value' };
+
+      await request(app.getHttpServer())
+        .patch(`/v1/ledger_accounts/${__TEST_CREDIT_LEDGER_ACCOUNT_ID__}`)
+        .set(setTestBasicAuthHeader())
+        .send({ description, metadata })
+        .expect((r) => console.log(`here we are => ${JSON.stringify(r.body)}`))
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.description).toBe(description);
+          expect(response.body.metadata).toMatchObject(metadata);
+        });
+
+      const ledgerAfterUpdate = await ledgerAccountRepository.findOneBy({
+        id: __TEST_CREDIT_LEDGER_ACCOUNT_ID__,
+      });
+      expect(ledgerAfterUpdate!.description).not.toBe(beforeUpdate!.description);
+      expect(ledgerAfterUpdate!.description).toBe(description);
+
+      // Make sure metadata are saved in DB
+      expect(
+        await ledgerAccountMetadataRepository.findOneBy({
+          ledgerAccount: { id: __TEST_CREDIT_LEDGER_ACCOUNT_ID__ },
+          key: 'test',
+          value: 'value',
+        }),
+      ).toBeDefined();
+    });
   });
 });

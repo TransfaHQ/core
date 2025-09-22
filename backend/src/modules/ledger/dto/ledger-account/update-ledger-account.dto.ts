@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -11,7 +11,7 @@ export class UpdateLedgerAccountDto {
     minLength: 3,
     maxLength: 255,
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @MinLength(3)
   @MaxLength(255)
