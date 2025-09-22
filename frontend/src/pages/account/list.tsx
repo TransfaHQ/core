@@ -1,22 +1,36 @@
+import { useState } from "react";
 import Layout from "@/components/layout";
 import { ListPageLayout } from "@/components/list-page-layout";
 import { DataTable } from "@/components/data-table";
 import type { TableColumn } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { CreateAccountDialog } from "@/pages/account/dialogs/create";
-import { EditAccountDialog } from "@/pages/account/dialogs/edit";
 import { AccountEmptyState } from "@/pages/account/empty-state";
+import { AccountDetailsPanel } from "@/pages/account/components/account-details-panel";
 import { $api } from "@/lib/api/client";
 import type { components } from "@/lib/api/generated/api-types";
 
 type LedgerAccountResponse = components["schemas"]["LedgerAccountResponseDto"];
 
 export function AccountList() {
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+
   const {
     data: accounts,
     isLoading,
     error,
   } = $api.useQuery("get", "/v1/ledger_accounts");
+
+  const handleRowClick = (account: LedgerAccountResponse) => {
+    setSelectedAccountId(account.id);
+    setIsPanelOpen(true);
+  };
+
+  const handlePanelClose = () => {
+    setIsPanelOpen(false);
+    setSelectedAccountId(null);
+  };
 
   const formatBalance = (
     balance: number,
@@ -110,11 +124,6 @@ export function AccountList() {
         </div>
       ),
     },
-    {
-      header: "Actions",
-      cell: (account) => <EditAccountDialog account={account} />,
-      className: "text-right",
-    },
   ];
 
   return (
@@ -131,6 +140,12 @@ export function AccountList() {
           error={error}
           emptyState={<AccountEmptyState />}
           getRowKey={(account) => account.id}
+          onRowClick={handleRowClick}
+        />
+        <AccountDetailsPanel
+          accountId={selectedAccountId}
+          isOpen={isPanelOpen}
+          onClose={handlePanelClose}
         />
       </ListPageLayout>
     </Layout>

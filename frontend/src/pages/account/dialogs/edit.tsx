@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,9 +26,13 @@ interface FormData {
 
 interface EditAccountDialogProps {
   account: LedgerAccountResponse;
+  children?: ReactNode;
 }
 
-export function EditAccountDialog({ account }: EditAccountDialogProps) {
+export function EditAccountDialog({
+  account,
+  children,
+}: EditAccountDialogProps) {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -54,6 +58,11 @@ export function EditAccountDialog({ account }: EditAccountDialogProps) {
       setOpen(false);
       queryClient.invalidateQueries({
         queryKey: $api.queryOptions("get", "/v1/ledger_accounts").queryKey,
+      });
+      queryClient.invalidateQueries({
+        queryKey: $api.queryOptions("get", "/v1/ledger_accounts/{id}", {
+          params: { path: { id: account.id } },
+        }).queryKey,
       });
     },
   });
@@ -83,10 +92,14 @@ export function EditAccountDialog({ account }: EditAccountDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <Pencil className="h-4 w-4" />
-          Edit
-        </Button>
+        {children ? (
+          children
+        ) : (
+          <Button variant="ghost" size="sm">
+            <Pencil className="h-4 w-4" />
+            Edit
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>

@@ -22,6 +22,7 @@ interface DataTableProps<T> {
   error?: any;
   emptyState?: ReactNode;
   getRowKey: (item: T) => string;
+  onRowClick?: (item: T) => void;
 }
 
 export function DataTable<T>({
@@ -30,7 +31,8 @@ export function DataTable<T>({
   isLoading,
   error,
   emptyState,
-  getRowKey
+  getRowKey,
+  onRowClick
 }: DataTableProps<T>) {
   if (isLoading) {
     return (
@@ -75,7 +77,11 @@ export function DataTable<T>({
         </TableHeader>
         <TableBody>
           {data.map((item) => (
-            <TableRow key={getRowKey(item)}>
+            <TableRow
+              key={getRowKey(item)}
+              className={onRowClick ? "cursor-pointer hover:bg-muted/50" : undefined}
+              onClick={onRowClick ? () => onRowClick(item) : undefined}
+            >
               {columns.map((column, index) => (
                 <TableCell key={index} className={column.className}>
                   {column.cell
