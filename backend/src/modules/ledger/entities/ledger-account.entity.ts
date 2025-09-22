@@ -8,7 +8,7 @@ import { LedgerAccountMetadataEntity } from '@modules/ledger/entities/ledger-met
 import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
 import { LedgerAccountBalances } from '@modules/ledger/types';
 
-@Entity('ledger_account')
+@Entity('ledger_accounts')
 export class LedgerAccountEntity extends BaseTypeormEntity {
   @Column({ type: 'varchar', length: 255 })
   name: string;

@@ -5,7 +5,7 @@ import { BaseTypeormEntity } from '@libs/database';
 import { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
 import { LedgerMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
 
-@Entity('ledger')
+@Entity('ledgers')
 export class LedgerEntity extends BaseTypeormEntity {
   @Column({ type: 'varchar', length: 255 })
   name: string;
