@@ -8,6 +8,7 @@ async function bootstrap() {
   await setupApp(app);
   await repl(AppModule);
 }
+
 bootstrap().catch(() => {
   process.exit(-1);
 });

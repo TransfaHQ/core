@@ -5,6 +5,8 @@ import { Repository } from 'typeorm';
 import { INestApplication } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
+import { setupTestApp } from '@src/setup-test';
+
 import { ConfigService } from '@libs/config/config.service';
 
 import { CreateUserDto } from './dto/create-user.dto';
@@ -27,16 +29,8 @@ describe('AuthController', () => {
     'x-admin-key': adminSecret,
   });
 
-  const generateBasicAuthHeader = (keyId: string, secret: string) => {
-    const credentials = `${keyId}:${secret}`;
-    const base64Credentials = Buffer.from(credentials, 'utf-8').toString('base64');
-    return {
-      Authorization: `Basic ${base64Credentials}`,
-    };
-  };
-
   beforeAll(async () => {
-    app = __TEST_APP__!;
+    app = await setupTestApp();
 
     userRepository = app.get<Repository<UserEntity>>(getRepositoryToken(UserEntity));
     keysRepository = app.get<Repository<KeysEntity>>(getRepositoryToken(KeysEntity));
@@ -50,7 +44,7 @@ describe('AuthController', () => {
 
   beforeEach(async () => {
     await userRepository.deleteAll();
-    await keysRepository.query(`delete from keys where id != '${__TEST_CORE_API_KEY__}';`);
+    await keysRepository.deleteAll();
   });
 
   describe('POST /v1/auth/user', () => {
