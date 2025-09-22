@@ -2,19 +2,19 @@ import BigNumber from 'bignumber.js';
 import { AccountFlags, Account as TigerBeetleAccount, id } from 'tigerbeetle-node';
 import { Repository } from 'typeorm';
 
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { CursorPaginatedResult, Transactional, cursorPaginate } from '@libs/database';
 import { NormalBalanceEnum } from '@libs/enums';
 import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
-import { getCurrency } from '@libs/utils/currency';
 
 import { CreateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/create-ledger-account.dto';
 import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/update-ledger-account.dto';
 import { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
 import { LedgerAccountMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
 import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
+import { CurrencyService } from '@modules/ledger/services/currency.service';
 
 @Injectable()
 export class LedgerAccountService {
@@ -26,30 +26,26 @@ export class LedgerAccountService {
     private readonly ledgerRepository: Repository<LedgerEntity>,
     @InjectRepository(LedgerAccountMetadataEntity)
     private readonly ledgerAccountMetadataRepository: Repository<LedgerAccountMetadataEntity>,
+    private readonly currencyService: CurrencyService,
   ) {}
 
   @Transactional()
   async createLedgerAccount(data: CreateLedgerAccountDto): Promise<LedgerAccountEntity> {
     const ledger = await this.ledgerRepository.findOneByOrFail({ id: data.ledgerId });
 
-    const currency = getCurrency(data.currency);
-
-    if (!currency && !data.currencyExponent) {
-      throw new BadRequestException('currencyExponent should be defined for customs currencies');
-    }
+    // Get currency from database
+    const currency = await this.currencyService.findByCode(data.currency);
 
     const accountObj = this.ledgerAccountRepository.create({
       ledgerId: data.ledgerId,
       name: data.name,
-      currency: currency?.code ?? data.currency,
-      currencyExponent: currency?.digits ?? data.currencyExponent,
+      currencyCode: currency.code,
       description: data.description,
       externalId: data.externalId,
       normalBalance: data.normalBalance,
       tigerBeetleId: id(),
     });
 
-    const currencyNumericCode = currency?.number ?? '999'; // todo; might be good to let the client define its code for a custom currency
 
     const savedAccount = await this.ledgerAccountRepository.save(accountObj);
 
@@ -63,13 +59,7 @@ export class LedgerAccountService {
       },
     );
 
-    metadata.push(
-      this.ledgerAccountMetadataRepository.create({
-        ledgerAccount: savedAccount,
-        key: 'currency_numeric_code',
-        value: currencyNumericCode,
-      }),
-    );
+    
 
     if (metadata.length > 0) await this.ledgerAccountMetadataRepository.save(metadata);
 
@@ -93,7 +83,7 @@ export class LedgerAccountService {
       user_data_128: 0n,
       user_data_64: 0n,
       user_data_32: savedAccount.normalBalance === NormalBalanceEnum.CREDIT ? 1 : 0, // account normal balance
-      code: +currencyNumericCode,
+      code: currency.id,
     });
 
     const tbAccount = await this.tigerBeetleService.retrieveAccount(savedAccount.tigerBeetleId);
@@ -105,7 +95,7 @@ export class LedgerAccountService {
   async retrieveLedgerAccount(id: string): Promise<LedgerAccountEntity> {
     const response = await this.ledgerAccountRepository.findOneOrFail({
       where: { id },
-      relations: ['metadata'],
+      relations: ['metadata', 'currency'],
     });
 
     const tbAccount = await this.tigerBeetleService.retrieveAccount(response.tigerBeetleId);
@@ -125,13 +115,13 @@ export class LedgerAccountService {
       limit,
       cursor,
       order: 'ASC',
-      relations: ['metadata'],
+      relations: ['metadata', 'currency'],
       where: (qb) => {
         if (ledgerId) {
           qb = qb.andWhere('entity.ledgerId = :ledgerId', { ledgerId });
         }
         if (currency) {
-          qb = qb.andWhere('entity.currency = :currency', { currency });
+          qb = qb.andWhere('entity.currencyCode = :currency', { currency });
         }
         if (normalBalance) {
           qb = qb.andWhere('entity.normalBalance = :normalBalance', { normalBalance });
@@ -146,7 +136,7 @@ export class LedgerAccountService {
     return {
       ...response,
       data: response.data.map((entity) => {
-        const tbAccount = tbAccounts.filter((entity) => entity.id)[0];
+        const tbAccount = tbAccounts.filter((account) => account.id === entity.tigerBeetleId)[0];
         this.parseAccountBalanceFromTBAccount(entity, tbAccount);
         return entity;
       }),
@@ -157,7 +147,7 @@ export class LedgerAccountService {
   async update(id: string, data: UpdateLedgerAccountDto): Promise<LedgerAccountEntity> {
     const ledger = await this.ledgerAccountRepository.findOneOrFail({
       where: { id },
-      relations: ['metadata'],
+      relations: ['metadata', 'currency'],
     });
 
     ledger.name = data.name ?? ledger.name;
@@ -185,7 +175,7 @@ export class LedgerAccountService {
     }
     const updateLedgerAccount = await this.ledgerAccountRepository.findOne({
       where: { id },
-      relations: ['metadata'],
+      relations: ['metadata', 'currency'],
     });
 
     const tbAccount = await this.tigerBeetleService.retrieveAccount(
@@ -263,22 +253,22 @@ export class LedgerAccountService {
         credits: pendingCredit,
         debits: pendingDebit,
         amount: pendingAmount,
-        currency: entity.currency,
-        currencyExponent: entity.currencyExponent,
+        currency: entity.currency.code,
+        currencyExponent: entity.currency.exponent,
       },
       postedBalance: {
         credits: postedCredit,
         debits: postedDebit,
         amount: postedAmount,
-        currency: entity.currency,
-        currencyExponent: entity.currencyExponent,
+        currency: entity.currency.code,
+        currencyExponent: entity.currency.exponent,
       },
       avalaibleBalance: {
         credits: postedCredit,
         debits: pendingDebit,
         amount: availableAmount,
-        currency: entity.currency,
-        currencyExponent: entity.currencyExponent,
+        currency: entity.currency.code,
+        currencyExponent: entity.currency.exponent,
       },
     };
   }
