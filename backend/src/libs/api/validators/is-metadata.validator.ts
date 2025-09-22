@@ -1,7 +1,7 @@
 import { ValidationArguments, ValidationOptions, registerDecorator } from 'class-validator';
 
 export function IsMetadata(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isMetadata',
       target: object.constructor,

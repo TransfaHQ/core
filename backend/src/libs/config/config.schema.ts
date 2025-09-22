@@ -16,6 +16,7 @@ export const ConfigSchema = DBConfigSchema.extend({
   AUTH_SALT_ROUNDS: z.string().transform(Number).default(12),
   JWT_SECRET: z.string(),
   JWT_EXPIRES_IN: z.string().default('24h'),
+  LOG_LEVEL: z.string().default('info'),
   TIGER_BEETLE_CLUSTER_ID: z.string().transform(BigInt),
   TIGER_BEETLE_REPLICAS_ADDRESSES: z
     .string()

@@ -56,6 +56,10 @@ export class ConfigService {
     return this.envConfig.JWT_EXPIRES_IN;
   }
 
+  get logLevel(): string {
+    return this.envConfig.LOG_LEVEL;
+  }
+
   get typeOrmConfig(): TypeOrmModuleOptions {
     return {
       type: 'postgres',

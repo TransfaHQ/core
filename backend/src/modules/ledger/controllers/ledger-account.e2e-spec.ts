@@ -91,7 +91,7 @@ describe('LedgerAccountController', () => {
       expect(account).toBeDefined();
 
       // Make sure that account is created in TigerBeetle
-      const tbAccount = await tigerBeetleService.retrieveAccount(account!.tigerBeetleId);
+      const tbAccount = await tigerBeetleService.retrieveAccount(account.tigerBeetleId);
 
       expect(tbAccount.ledger).toEqual(account.ledger.tigerBeetleId);
       expect(tbAccount.code).toBe(+currency.number);
@@ -159,7 +159,7 @@ describe('LedgerAccountController', () => {
       expect(account).toBeDefined();
 
       // Make sure that account is created in TigerBeetle
-      const tbAccount = await tigerBeetleService.retrieveAccount(account!.tigerBeetleId);
+      const tbAccount = await tigerBeetleService.retrieveAccount(account.tigerBeetleId);
 
       expect(tbAccount.ledger).toEqual(account.ledger.tigerBeetleId);
       expect(tbAccount.code).toBe(+currency.number);
@@ -253,7 +253,6 @@ describe('LedgerAccountController', () => {
         .patch(`/v1/ledger_accounts/${__TEST_CREDIT_LEDGER_ACCOUNT_ID__}`)
         .set(setTestBasicAuthHeader())
         .send({ description, metadata })
-        .expect((r) => console.log(`here we are => ${JSON.stringify(r.body)}`))
         .expect(HttpStatus.OK)
         .expect(async (response) => {
           expect(response.body.description).toBe(description);
