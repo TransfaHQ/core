@@ -6,7 +6,11 @@ import { Test } from '@nestjs/testing';
 import { AppModule } from '@src/app.module';
 import { setupApp } from '@src/setup';
 
+import { NormalBalanceEnum } from '@libs/enums';
+import { getCurrency } from '@libs/utils/currency';
+
 import { AuthService } from '@modules/auth/auth.service';
+import { LedgerAccountService } from '@modules/ledger/services/ledger-account.service';
 import { LedgerService } from '@modules/ledger/services/ledger.service';
 
 let app: INestApplication;
@@ -44,6 +48,31 @@ beforeAll(async () => {
   });
 
   global.__TEST_LEDGER_ID__ = ledger.id;
+
+  // Setup test ledger account
+  const currency = getCurrency('USD');
+  const ledgerAccountService = app.get(LedgerAccountService);
+  const creditLedgerAccount = await ledgerAccountService.createLedgerAccount({
+    ledgerId: ledger.id,
+    name: 'credit account',
+    description: 'test',
+    normalBalance: NormalBalanceEnum.CREDIT,
+    currency: currency!.code,
+    currencyExponent: currency!.digits,
+  });
+
+  global.__TEST_CREDIT_LEDGER_ACCOUNT_ID__ = creditLedgerAccount.id;
+
+  const debitLedgerAccount = await ledgerAccountService.createLedgerAccount({
+    ledgerId: ledger.id,
+    name: 'debit account',
+    description: 'test',
+    normalBalance: NormalBalanceEnum.CREDIT,
+    currency: currency!.code,
+    currencyExponent: currency!.digits,
+  });
+
+  global.__TEST_DEBIT_LEDGER_ACCOUNT_ID__ = debitLedgerAccount.id;
 });
 
 afterAll(async () => {
@@ -52,4 +81,7 @@ afterAll(async () => {
   global.__TEST_CORE_API_KEY__ = undefined;
   global.__TEST_CORE_API_SECRET__ = undefined;
   global.__TEST_LEDGER_ID__ = undefined;
+  global.__TEST_LEDGER_ACCOUNT_ID__ = undefined;
+  global.__TEST_DEBIT_LEDGER_ACCOUNT_ID__ = undefined;
+  global.__TEST_CREDIT_LEDGER_ACCOUNT_ID__ = undefined;
 });

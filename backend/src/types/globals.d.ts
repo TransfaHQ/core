@@ -8,6 +8,8 @@ declare global {
   var __TEST_CORE_API_SECRET__: string | undefined;
 
   var __TEST_LEDGER_ID__: string | undefined;
+  var __TEST_CREDIT_LEDGER_ACCOUNT_ID__: string | undefined;
+  var __TEST_DEBIT_LEDGER_ACCOUNT_ID__: string | undefined;
 }
 
 export {};

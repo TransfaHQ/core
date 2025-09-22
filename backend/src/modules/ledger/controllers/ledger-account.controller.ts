@@ -30,8 +30,8 @@ import { ledgerAccountEntityToApiV1Response } from '@modules/ledger/controllers/
 import { CreateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/create-ledger-account.dto';
 import { LedgerAccountResponseDto } from '@modules/ledger/dto/ledger-account/ledger-account-response.dto';
 import { ListLedgerAccountRequestDto } from '@modules/ledger/dto/ledger-account/list-ledger-account-request.dto';
-import { LedgerAccountService } from '@modules/ledger/services/ledger-account.service';
 import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/update-ledger-account.dto';
+import { LedgerAccountService } from '@modules/ledger/services/ledger-account.service';
 
 @ApiTags('ledger-accounts')
 @ApiSecurity('api-key')
@@ -56,7 +56,9 @@ export class LedgerAccountController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing API key',
   })
-  async createLedgerAccount(@Body() body: CreateLedgerAccountDto): Promise<LedgerAccountResponseDto> {
+  async createLedgerAccount(
+    @Body() body: CreateLedgerAccountDto,
+  ): Promise<LedgerAccountResponseDto> {
     const response = await this.ledgerAccountService.createLedgerAccount(body);
     return ledgerAccountEntityToApiV1Response(response);
   }
