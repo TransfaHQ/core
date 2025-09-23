@@ -12,7 +12,7 @@ export class LedgerEntity extends BaseTypeormEntity {
   @Column({ type: 'varchar', length: 255 })
   description: string;
 
-  @Column({ type: 'int', name: 'tiger_beetle_id' })
+  @Column({ type: 'int', name: 'tiger_beetle_id', update: false })
   tigerBeetleId: number;
 
   @OneToMany(() => LedgerMetadataEntity, (metadata) => metadata.ledger, {

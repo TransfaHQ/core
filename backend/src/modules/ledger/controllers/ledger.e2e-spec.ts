@@ -85,6 +85,32 @@ describe('LedgerController', () => {
           expect(response.body.metadata).toMatchObject({ key: 'value' });
         });
     });
+
+    it('should not accept invalid data', async () => {
+      await request(app.getHttpServer())
+        .post('/v1/ledgers')
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send({ name: 1 })
+        .expect(HttpStatus.BAD_REQUEST);
+
+      await request(app.getHttpServer())
+        .post('/v1/ledgers')
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send({ name: 'na' })
+        .expect(HttpStatus.BAD_REQUEST);
+
+      await request(app.getHttpServer())
+        .post('/v1/ledgers')
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send({ name: 'nan', description: '1' })
+        .expect(HttpStatus.BAD_REQUEST);
+
+      await request(app.getHttpServer())
+        .post('/v1/ledgers')
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send({ name: 'nan', description: '123', metadata: { test: 1 } })
+        .expect(HttpStatus.BAD_REQUEST);
+    });
   });
 
   describe('GET /v1/ledgers', () => {
@@ -170,6 +196,34 @@ describe('LedgerController', () => {
           value: 'value',
         }),
       ).toBeDefined();
+    });
+
+    it('should remove metadata', async () => {
+      const metadata = { test: '' };
+      // Make sure metadata are saved in DB
+      expect(
+        await ledgerMetadataRepository.findOneBy({
+          ledger: { id: ledger.id },
+          key: 'test',
+        }),
+      ).not.toBeNull();
+
+      await request(app.getHttpServer())
+        .patch(`/v1/ledgers/${ledger.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send({ metadata })
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.metadata.test).toBeUndefined();
+        });
+
+      // Make sure metadata are saved in DB
+      expect(
+        await ledgerMetadataRepository.findOneBy({
+          ledger: { id: ledger.id },
+          key: 'test',
+        }),
+      ).toBeNull();
     });
   });
 });
