@@ -20,7 +20,7 @@ export function ListPageLayout({ title, description, actionButton, children }: L
       </div>
 
       {/* Content */}
-      <div className="space-y-4">
+      <div className="space-y-4 mt-6">
         {children}
       </div>
     </div>

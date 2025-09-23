@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Layout from "@/components/layout";
 import { ListPageLayout } from "@/components/list-page-layout";
 import { DataTable } from "@/components/data-table";
@@ -11,6 +11,7 @@ import {
   AccountFilterBar,
   type AccountFilters,
 } from "@/pages/account/components/account-filter-bar";
+import { Pagination, type PaginationInfo } from "@/components/ui/pagination";
 import { $api } from "@/lib/api/client";
 import type { components } from "@/lib/api/generated/api-types";
 import { formatBalance } from "@/lib/currency";
@@ -27,16 +28,24 @@ export function AccountList() {
     normalBalance: "all",
   });
 
-  // Build query parameters from filters
+  // Pagination state
+  const [pageSize, setPageSize] = useState(20);
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
+
+  // Build query parameters from filters and pagination
   const queryParams = useMemo(() => {
-    const params: any = {};
+    const params: any = {
+      limit: pageSize,
+    };
+
+    if (cursor) params.cursor = cursor;
     if (filters.ledgerId && filters.ledgerId !== "all") params.ledger_id = filters.ledgerId;
     if (filters.currency) params.currency = filters.currency;
     if (filters.normalBalance && filters.normalBalance !== "all") {
       params.normal_balance = filters.normalBalance as "debit" | "credit";
     }
     return params;
-  }, [filters.ledgerId, filters.currency, filters.normalBalance]);
+  }, [filters.ledgerId, filters.currency, filters.normalBalance, pageSize, cursor]);
 
   const {
     data: accounts,
@@ -58,7 +67,7 @@ export function AccountList() {
     setSelectedAccountId(null);
   };
 
-  // Filter accounts client-side by search term
+  // Filter accounts client-side by search term (only for current page)
   const filteredAccounts = useMemo(() => {
     if (!accounts?.data) return [];
 
@@ -74,7 +83,24 @@ export function AccountList() {
     );
   }, [accounts?.data, filters.search]);
 
+  const paginationInfo: PaginationInfo = {
+    hasNext: accounts?.hasNext ?? false,
+    hasPrev: accounts?.hasPrev ?? false,
+    nextCursor: accounts?.nextCursor,
+    prevCursor: accounts?.prevCursor,
+  };
+
   const handleFiltersChange = (newFilters: AccountFilters) => {
+    // Reset pagination when filters change (except for search which is client-side)
+    const shouldResetPagination =
+      newFilters.ledgerId !== filters.ledgerId ||
+      newFilters.currency !== filters.currency ||
+      newFilters.normalBalance !== filters.normalBalance;
+
+    if (shouldResetPagination) {
+      setCursor(undefined);
+    }
+
     setFilters(newFilters);
   };
 
@@ -85,7 +111,18 @@ export function AccountList() {
       currency: "",
       normalBalance: "all",
     });
+    setCursor(undefined); // Reset to first page when clearing filters
   };
+
+  // Pagination event handlers
+  const handlePageSizeChange = useCallback((newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCursor(undefined); // Reset to first page when changing page size
+  }, []);
+
+  const handleCursorChange = useCallback((newCursor: string | undefined, direction: 'next' | 'prev') => {
+    setCursor(newCursor);
+  }, []);
 
 
   const columns: TableColumn<LedgerAccountResponse>[] = [
@@ -175,7 +212,7 @@ export function AccountList() {
         description="Manage your ledger accounts and track balances"
         actionButton={<CreateAccountDialog />}
       >
-        <div className="space-y-6">
+        <div className="space-y-3">
           <AccountFilterBar
             filters={filters}
             onFiltersChange={handleFiltersChange}
@@ -191,6 +228,18 @@ export function AccountList() {
             getRowKey={(account) => account.id}
             onRowClick={handleRowClick}
           />
+
+          {/* Pagination Controls */}
+          {!isLoading && accounts?.data && (
+            <Pagination
+              pageSize={pageSize}
+              onPageSizeChange={handlePageSizeChange}
+              paginationInfo={paginationInfo}
+              onCursorChange={handleCursorChange}
+              currentDataLength={filteredAccounts.length}
+              disabled={isLoading}
+            />
+          )}
         </div>
         <AccountDetailsPanel
           accountId={selectedAccountId}
