@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CurrencyCombobox } from "@/components/currency-combobox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { $api } from "@/lib/api/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -128,63 +129,6 @@ export function CreateAccountDialog() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ledger">Ledger *</Label>
-              <Select
-                value={formData.ledgerId}
-                onValueChange={handleSelectChange("ledgerId")}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a ledger" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ledgers?.data?.map((ledger) => (
-                    <SelectItem key={ledger.id} value={ledger.id}>
-                      {ledger.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Input
-                id="description"
-                value={formData.description}
-                onChange={handleInputChange("description")}
-                placeholder="e.g., Company cash account for daily operations"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="currency">Currency</Label>
-                <Select
-                  value={formData.currency}
-                  onValueChange={handleSelectChange("currency")}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                    <SelectItem value="JPY">JPY</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="externalId">External ID</Label>
-                <Input
-                  id="externalId"
-                  value={formData.externalId}
-                  onChange={handleInputChange("externalId")}
-                  placeholder="e.g., ACC-001"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
               <Label>Normal Balance *</Label>
               <RadioGroup
                 value={formData.normalBalance}
@@ -203,6 +147,61 @@ export function CreateAccountDialog() {
                 </div>
               </RadioGroup>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="ledger">Ledger *</Label>
+              <Select
+                value={formData.ledgerId}
+                onValueChange={handleSelectChange("ledgerId")}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a ledger" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ledgers?.data && ledgers.data.length > 0 ? (
+                    ledgers.data.map((ledger) => (
+                      <SelectItem key={ledger.id} value={ledger.id}>
+                        {ledger.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="null" disabled>
+                      No ledgers available
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                value={formData.description}
+                onChange={handleInputChange("description")}
+                placeholder="e.g., Company cash account for daily operations"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="currency">Currency</Label>
+                <CurrencyCombobox
+                  value={formData.currency}
+                  onValueChange={handleSelectChange("currency")}
+                  placeholder="Select currency..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="externalId">External ID</Label>
+                <Input
+                  id="externalId"
+                  value={formData.externalId}
+                  onChange={handleInputChange("externalId")}
+                  placeholder="e.g., ACC-001"
+                />
+              </div>
+            </div>
+
+            
           </div>
           <DialogFooter>
             <Button

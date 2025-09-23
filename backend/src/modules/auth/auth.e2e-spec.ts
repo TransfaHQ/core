@@ -47,13 +47,13 @@ describe('AuthController', () => {
     await keysRepository.deleteAll();
   });
 
-  describe('POST /v1/auth/user', () => {
+  describe('POST /v1/auth/users', () => {
     describe('Admin Guard Authentication', () => {
       const testUser = generateTestUser();
 
       it('should reject request without x-admin-key header', () => {
         return request(app.getHttpServer())
-          .post('/v1/auth/user')
+          .post('/v1/auth/users')
           .send(testUser)
           .expect(401)
           .expect((res) => {
@@ -63,7 +63,7 @@ describe('AuthController', () => {
 
       it('should reject request with incorrect x-admin-key header', () => {
         return request(app.getHttpServer())
-          .post('/v1/auth/user')
+          .post('/v1/auth/users')
           .set('x-admin-key', 'wrong-key')
           .send(testUser)
           .expect(401)
@@ -74,7 +74,7 @@ describe('AuthController', () => {
 
       it('should accept request with correct x-admin-key header', () => {
         return request(app.getHttpServer())
-          .post('/v1/auth/user')
+          .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send(testUser)
           .expect(201);
@@ -86,7 +86,7 @@ describe('AuthController', () => {
         const testUser = generateTestUser();
 
         const response = await request(app.getHttpServer())
-          .post('/v1/auth/user')
+          .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send(testUser)
           .expect(201);
@@ -114,7 +114,7 @@ describe('AuthController', () => {
         const testUser = generateTestUser();
 
         await request(app.getHttpServer())
-          .post('/v1/auth/user')
+          .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send(testUser)
           .expect(201);
@@ -133,14 +133,14 @@ describe('AuthController', () => {
 
         // Create first user
         await request(app.getHttpServer())
-          .post('/v1/auth/user')
+          .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send(testUser)
           .expect(201);
 
         // Attempt to create second user with same email
         const response = await request(app.getHttpServer())
-          .post('/v1/auth/user')
+          .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send(testUser)
           .expect(409);
@@ -158,7 +158,7 @@ describe('AuthController', () => {
     describe('Input Validation', () => {
       it('should reject invalid email format', () => {
         return request(app.getHttpServer())
-          .post('/v1/auth/user')
+          .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send({
             email: 'invalid-email',
@@ -172,7 +172,7 @@ describe('AuthController', () => {
         testUser.password = '12345'; // Only 5 characters
 
         return request(app.getHttpServer())
-          .post('/v1/auth/user')
+          .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send(testUser)
           .expect(400);
@@ -180,7 +180,7 @@ describe('AuthController', () => {
 
       it('should reject missing email', () => {
         return request(app.getHttpServer())
-          .post('/v1/auth/user')
+          .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send({
             password: 'password123',
@@ -190,7 +190,7 @@ describe('AuthController', () => {
 
       it('should reject missing password', () => {
         return request(app.getHttpServer())
-          .post('/v1/auth/user')
+          .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send({
             email: 'test@example.com',
@@ -208,7 +208,7 @@ describe('AuthController', () => {
 
       // Create a test user for login tests
       await request(app.getHttpServer())
-        .post('/v1/auth/user')
+        .post('/v1/auth/users')
         .set(setAdminHeaders())
         .send(testUser)
         .expect(201);

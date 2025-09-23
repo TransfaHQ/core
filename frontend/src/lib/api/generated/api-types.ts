@@ -20,7 +20,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/user": {
+    "/v1/auth/users": {
         parameters: {
             query?: never;
             header?: never;
@@ -182,6 +182,54 @@ export interface paths {
          * @description Updates an existing ledger account by its unique identifier with the provided fields
          */
         patch: operations["LedgerAccountController_updateLedgerAccount_v1"];
+        trace?: never;
+    };
+    "/v1/currencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List currencies
+         * @description Retrieves a paginated list of currencies
+         */
+        get: operations["CurrencyController_listCurrencies_v1"];
+        put?: never;
+        /**
+         * Create a new currency
+         * @description Creates a new currency with the provided details
+         */
+        post: operations["CurrencyController_createCurrency_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/currencies/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a currency by code
+         * @description Retrieves a single currency by its code
+         */
+        get: operations["CurrencyController_getCurrency_v1"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a currency by code
+         * @description Deletes a currency by its code. Cannot delete if ledger accounts are using it.
+         */
+        delete: operations["CurrencyController_deleteCurrency_v1"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
 }
@@ -404,13 +452,13 @@ export interface components {
             /**
              * Format: date-time
              * @description Creation timestamp
-             * @example 2025-09-21T22:04:48.633Z
+             * @example 2025-09-23T20:11:02.614Z
              */
             createdAt: string;
             /**
              * Format: date-time
              * @description Last update timestamp
-             * @example 2025-09-21T22:04:48.633Z
+             * @example 2025-09-23T20:11:02.614Z
              */
             updatedAt: string;
         };
@@ -435,6 +483,57 @@ export interface components {
             metadata?: {
                 [key: string]: string;
             };
+        };
+        CreateCurrencyDto: {
+            /**
+             * @description Currency code (e.g., USD, EUR, BTC)
+             * @example BTC
+             */
+            code: string;
+            /**
+             * @description Number of decimal places for the currency
+             * @example 8
+             */
+            exponent: number;
+            /**
+             * @description Full name of the currency
+             * @example Bitcoin
+             */
+            name: string;
+        };
+        CurrencyResponseDto: {
+            /**
+             * @description Unique identifier of the currency
+             * @example 1
+             */
+            id: number;
+            /**
+             * @description Currency code
+             * @example USD
+             */
+            code: string;
+            /**
+             * @description Number of decimal places for the currency
+             * @example 2
+             */
+            exponent: number;
+            /**
+             * @description Full name of the currency
+             * @example US Dollar
+             */
+            name: string;
+            /**
+             * Format: date-time
+             * @description When the currency was created
+             * @example 2023-01-01T00:00:00Z
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description When the currency was last updated
+             * @example 2023-01-01T00:00:00Z
+             */
+            updatedAt: string;
         };
     };
     responses: never;
@@ -839,7 +938,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Unique identifier of the ledger account */
+                /** @description Unique identifier or externalId of the ledger account */
                 id: string;
             };
             cookie?: never;
@@ -911,6 +1010,167 @@ export interface operations {
                 content?: never;
             };
             /** @description Ledger account not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CurrencyController_listCurrencies_v1: {
+        parameters: {
+            query?: {
+                /** @description Page number */
+                page?: number;
+                /** @description Number of items per page */
+                limit?: number;
+                /** @description Filter by currency code (partial match) */
+                code?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The currencies have been successfully retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["CurrencyResponseDto"][];
+                        /** @description Total number of currencies */
+                        total?: number;
+                        /** @description Current page number */
+                        page?: number;
+                        /** @description Items per page */
+                        limit?: number;
+                        /** @description Total number of pages */
+                        totalPages?: number;
+                    };
+                };
+            };
+            /** @description Invalid or missing API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CurrencyController_createCurrency_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCurrencyDto"];
+            };
+        };
+        responses: {
+            /** @description The currency has been successfully created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrencyResponseDto"];
+                };
+            };
+            /** @description Invalid input data or currency code already exists */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid or missing API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CurrencyController_getCurrency_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Currency code (e.g., USD, EUR) */
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The currency has been successfully retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrencyResponseDto"];
+                };
+            };
+            /** @description Invalid or missing API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Currency not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CurrencyController_deleteCurrency_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Currency code to delete */
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The currency has been successfully deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Currency is being used by ledger accounts and cannot be deleted */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid or missing API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Currency not found */
             404: {
                 headers: {
                     [name: string]: unknown;

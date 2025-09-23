@@ -9,6 +9,7 @@ import { AccountEmptyState } from "@/pages/account/empty-state";
 import { AccountDetailsPanel } from "@/pages/account/components/account-details-panel";
 import { $api } from "@/lib/api/client";
 import type { components } from "@/lib/api/generated/api-types";
+import { formatBalance } from "@/lib/currency";
 
 type LedgerAccountResponse = components["schemas"]["LedgerAccountResponseDto"];
 
@@ -32,19 +33,6 @@ export function AccountList() {
     setSelectedAccountId(null);
   };
 
-  const formatBalance = (
-    balance: number,
-    currency: string,
-    exponent: number
-  ) => {
-    const amount = balance / Math.pow(10, exponent);
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency,
-      minimumFractionDigits: exponent,
-      maximumFractionDigits: exponent,
-    }).format(amount);
-  };
 
   const columns: TableColumn<LedgerAccountResponse>[] = [
     {

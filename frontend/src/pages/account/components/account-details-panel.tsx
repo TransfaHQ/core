@@ -10,9 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EditAccountDialog } from "@/pages/account/dialogs/edit";
 import { $api } from "@/lib/api/client";
-import type { components } from "@/lib/api/generated/api-types";
+import { formatBalance } from "@/lib/currency";
 
-type LedgerAccountResponse = components["schemas"]["LedgerAccountResponseDto"];
 
 interface AccountDetailsPanelProps {
   accountId: string | null;
@@ -39,19 +38,6 @@ export function AccountDetailsPanel({
 
   if (!accountId) return null;
 
-  const formatBalance = (
-    balance: number,
-    currency: string,
-    exponent: number
-  ) => {
-    const amount = balance / Math.pow(10, exponent);
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency,
-      minimumFractionDigits: exponent,
-      maximumFractionDigits: exponent,
-    }).format(amount);
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("en-US", {

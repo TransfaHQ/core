@@ -50,7 +50,7 @@ export class AuthController {
     private readonly jwtService: JwtService,
   ) {}
 
-  @Post('user')
+  @Post('users')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.CREATED)
   async createUser(
