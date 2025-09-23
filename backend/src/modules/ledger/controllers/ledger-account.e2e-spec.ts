@@ -10,7 +10,6 @@ import { setupTestApp } from '@src/setup-test';
 
 import { NormalBalanceEnum } from '@libs/enums';
 import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
-import { getCurrency } from '@libs/utils/currency';
 import { setTestBasicAuthHeader } from '@libs/utils/tests';
 import { uuidV7 } from '@libs/utils/uuid';
 
@@ -18,6 +17,7 @@ import { KeyResponseDto } from '@modules/auth/dto';
 import { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
 import { LedgerAccountMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
 import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
+import { CurrencyService } from '@modules/ledger/services/currency.service';
 import { loadLedgerModuleFixtures } from '@modules/ledger/tests';
 
 describe('LedgerAccountController', () => {
@@ -55,7 +55,7 @@ describe('LedgerAccountController', () => {
     });
 
     it('should create credit ledger account', async () => {
-      const currency = getCurrency('USD')!;
+      const currency = await app.get(CurrencyService).findByCode('USD')!;
       let accountId: string = '';
       await request(app.getHttpServer())
         .post('/v1/ledger_accounts')
@@ -79,7 +79,7 @@ describe('LedgerAccountController', () => {
             debits: 0,
             amount: 0,
             currency: currency.code,
-            currencyExponent: currency.digits,
+            currencyExponent: currency.exponent,
           });
 
           expect(response.body.balances.avalaibleBalance).toMatchObject({
@@ -87,7 +87,7 @@ describe('LedgerAccountController', () => {
             debits: 0,
             amount: 0,
             currency: currency.code,
-            currencyExponent: currency.digits,
+            currencyExponent: currency.exponent,
           });
 
           expect(response.body.balances.postedBalance).toMatchObject({
@@ -95,7 +95,7 @@ describe('LedgerAccountController', () => {
             debits: 0,
             amount: 0,
             currency: currency.code,
-            currencyExponent: currency.digits,
+            currencyExponent: currency.exponent,
           });
           accountId = response.body.id;
         });
@@ -112,7 +112,7 @@ describe('LedgerAccountController', () => {
       const tbAccount = await tigerBeetleService.retrieveAccount(account.tigerBeetleId);
 
       expect(tbAccount.ledger).toEqual(account.ledger.tigerBeetleId);
-      expect(tbAccount.code).toBe(+currency.number);
+      expect(tbAccount.code).toBe(+currency.id);
       expect(tbAccount.user_data_32).toBe(1);
       expect(tbAccount.flags).toBe(AccountFlags.debits_must_not_exceed_credits);
       expect(tbAccount.credits_pending).toBe(0n);
@@ -122,7 +122,7 @@ describe('LedgerAccountController', () => {
     });
 
     it('should create debit ledger account', async () => {
-      const currency = getCurrency('USD')!;
+      const currency = await app.get(CurrencyService).findByCode('USD')!;
       const externalId = uuidV7();
 
       let accountId: string = '';
@@ -150,7 +150,7 @@ describe('LedgerAccountController', () => {
             debits: 0,
             amount: 0,
             currency: currency.code,
-            currencyExponent: currency.digits,
+            currencyExponent: currency.exponent,
           });
 
           expect(response.body.balances.avalaibleBalance).toMatchObject({
@@ -158,7 +158,7 @@ describe('LedgerAccountController', () => {
             debits: 0,
             amount: 0,
             currency: currency.code,
-            currencyExponent: currency.digits,
+            currencyExponent: currency.exponent,
           });
 
           expect(response.body.balances.postedBalance).toMatchObject({
@@ -166,7 +166,7 @@ describe('LedgerAccountController', () => {
             debits: 0,
             amount: 0,
             currency: currency.code,
-            currencyExponent: currency.digits,
+            currencyExponent: currency.exponent,
           });
           accountId = response.body.id;
         });
@@ -183,7 +183,7 @@ describe('LedgerAccountController', () => {
       const tbAccount = await tigerBeetleService.retrieveAccount(account.tigerBeetleId);
 
       expect(tbAccount.ledger).toEqual(account.ledger.tigerBeetleId);
-      expect(tbAccount.code).toBe(+currency.number);
+      expect(tbAccount.code).toBe(+currency.id);
       expect(tbAccount.user_data_32).toBe(0);
       expect(tbAccount.credits_pending).toBe(0n);
       expect(tbAccount.debits_pending).toBe(0n);
