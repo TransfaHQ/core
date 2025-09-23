@@ -44,8 +44,9 @@ export function AccountList() {
     if (filters.normalBalance && filters.normalBalance !== "all") {
       params.normal_balance = filters.normalBalance as "debit" | "credit";
     }
+    if (filters.search.trim()) params.search = filters.search.trim();
     return params;
-  }, [filters.ledgerId, filters.currency, filters.normalBalance, pageSize, cursor]);
+  }, [filters.ledgerId, filters.currency, filters.normalBalance, filters.search, pageSize, cursor]);
 
   const {
     data: accounts,
@@ -67,21 +68,7 @@ export function AccountList() {
     setSelectedAccountId(null);
   };
 
-  // Filter accounts client-side by search term (only for current page)
-  const filteredAccounts = useMemo(() => {
-    if (!accounts?.data) return [];
-
-    if (!filters.search.trim()) {
-      return accounts.data;
-    }
-
-    const searchTerm = filters.search.toLowerCase().trim();
-    return accounts.data.filter((account) =>
-      account.name.toLowerCase().includes(searchTerm) ||
-      account.description?.toLowerCase().includes(searchTerm) ||
-      account.externalId?.toLowerCase().includes(searchTerm)
-    );
-  }, [accounts?.data, filters.search]);
+  const displayedAccounts = accounts?.data ?? [];
 
   const paginationInfo: PaginationInfo = {
     hasNext: accounts?.hasNext ?? false,
@@ -91,11 +78,11 @@ export function AccountList() {
   };
 
   const handleFiltersChange = (newFilters: AccountFilters) => {
-    // Reset pagination when filters change (except for search which is client-side)
     const shouldResetPagination =
       newFilters.ledgerId !== filters.ledgerId ||
       newFilters.currency !== filters.currency ||
-      newFilters.normalBalance !== filters.normalBalance;
+      newFilters.normalBalance !== filters.normalBalance ||
+      newFilters.search !== filters.search;
 
     if (shouldResetPagination) {
       setCursor(undefined);
@@ -120,7 +107,7 @@ export function AccountList() {
     setCursor(undefined); // Reset to first page when changing page size
   }, []);
 
-  const handleCursorChange = useCallback((newCursor: string | undefined, direction: 'next' | 'prev') => {
+  const handleCursorChange = useCallback((newCursor: string | undefined) => {
     setCursor(newCursor);
   }, []);
 
@@ -131,13 +118,10 @@ export function AccountList() {
       cell: (account) => <div className="font-medium">{account.name}</div>,
     },
     {
-      header: "Description",
-      cell: (account) => (
-        <div className="text-muted-foreground">
-          {account.description || "No description"}
-        </div>
-      ),
+      header: "External ID",
+      cell: (account) => <div>{account.externalId ?? "-"}</div>,
     },
+    
     {
       header: "Currency",
       cell: (account) => (
@@ -217,11 +201,11 @@ export function AccountList() {
             filters={filters}
             onFiltersChange={handleFiltersChange}
             onClearFilters={handleClearFilters}
-            resultCount={filteredAccounts.length}
+            resultCount={displayedAccounts.length}
           />
           <DataTable
             columns={columns}
-            data={filteredAccounts}
+            data={displayedAccounts}
             isLoading={isLoading}
             error={error}
             emptyState={<AccountEmptyState />}
@@ -230,13 +214,13 @@ export function AccountList() {
           />
 
           {/* Pagination Controls */}
-          {!isLoading && accounts?.data && (
+          {!isLoading && accounts?.data && accounts.data.length > 0 && (
             <Pagination
               pageSize={pageSize}
               onPageSizeChange={handlePageSizeChange}
               paginationInfo={paginationInfo}
               onCursorChange={handleCursorChange}
-              currentDataLength={filteredAccounts.length}
+              currentDataLength={displayedAccounts.length}
               disabled={isLoading}
             />
           )}

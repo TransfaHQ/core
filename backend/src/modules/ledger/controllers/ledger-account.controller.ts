@@ -130,6 +130,13 @@ export class LedgerAccountController {
     description: 'Filter by normal balance type',
     example: 'debit',
   })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by account name, description, or external ID',
+    example: 'Cash Account',
+  })
   @ApiOkResponse({
     description: 'The ledger accounts have been successfully retrieved',
     schema: {
@@ -172,6 +179,7 @@ export class LedgerAccountController {
       queryParams.ledger_id,
       queryParams.currency,
       queryParams.normal_balance,
+      queryParams.search,
     );
     return { ...response, data: response.data.map(ledgerAccountEntityToApiV1Response) };
   }

@@ -30,4 +30,12 @@ export class ListLedgerAccountRequestDto extends PaginatedRequestDto {
   @IsOptional()
   @IsEnum(NormalBalanceEnum)
   normal_balance?: NormalBalanceEnum;
+
+  @ApiPropertyOptional({
+    description: 'Search by account name, description, or external ID',
+    example: 'Cash Account',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

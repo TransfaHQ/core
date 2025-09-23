@@ -115,6 +115,7 @@ export class LedgerAccountService {
     ledgerId?: string,
     currency?: string,
     normalBalance?: string,
+    search?: string,
   ): Promise<CursorPaginatedResult<LedgerAccountEntity>> {
     const response = await cursorPaginate<LedgerAccountEntity>({
       repo: this.ledgerAccountRepository,
@@ -131,6 +132,12 @@ export class LedgerAccountService {
         }
         if (normalBalance) {
           qb = qb.andWhere('entity.normalBalance = :normalBalance', { normalBalance });
+        }
+        if (search) {
+          qb = qb.andWhere(
+            '(LOWER(entity.name) LIKE LOWER(:search) OR LOWER(entity.description) LIKE LOWER(:search) OR LOWER(entity.externalId) LIKE LOWER(:search))',
+            { search: `%${search}%` }
+          );
         }
         return qb;
       },

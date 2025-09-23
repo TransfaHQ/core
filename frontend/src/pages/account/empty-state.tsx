@@ -6,8 +6,8 @@ export function AccountEmptyState() {
   return (
     <GenericEmptyState
       icon={Wallet}
-      title="No accounts yet"
-      description="Get started by creating your first ledger account to track balances and transactions."
+      title="No accounts found"
+      description="Get started by creating a ledger account to track balances and transactions."
       actionButton={<CreateAccountDialog />}
     />
   );
