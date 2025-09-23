@@ -3,13 +3,14 @@ module.exports = {
   rootDir: 'src',
   testRegex: '.*\\.spec\\.ts$',
   transform: {
-    '^.+\\.(t|j)s$': ['ts-jest', {
-      transpilation: true
-    }],
+    '^.+\\.(t|j)s$': [
+      'ts-jest',
+      {
+        transpilation: true,
+      },
+    ],
   },
-  collectCoverageFrom: [
-    '**/*.(t|j)s',
-  ],
+  collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
   moduleNameMapper: {
@@ -17,4 +18,7 @@ module.exports = {
     '^@modules/(.*)$': '<rootDir>/modules/$1',
     '^@src/(.*)$': '<rootDir>/$1',
   },
+  transformIgnorePatterns: [
+    '/node_modules/(?!uuid)/', // transform uuid even though it's in node_modules
+  ],
 };

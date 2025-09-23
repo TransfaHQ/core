@@ -10,13 +10,14 @@ import { setupTestApp } from '@src/setup-test';
 
 import { NormalBalanceEnum } from '@libs/enums';
 import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
-import { getCurrency } from '@libs/utils/currency';
 import { setTestBasicAuthHeader } from '@libs/utils/tests';
+import { uuidV7 } from '@libs/utils/uuid';
 
 import { KeyResponseDto } from '@modules/auth/dto';
 import { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
 import { LedgerAccountMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
 import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
+import { CurrencyService } from '@modules/ledger/services/currency.service';
 import { loadLedgerModuleFixtures } from '@modules/ledger/tests';
 
 describe('LedgerAccountController', () => {
@@ -27,14 +28,12 @@ describe('LedgerAccountController', () => {
   let authKey: KeyResponseDto;
   let ledger: LedgerEntity;
   let creditLedgerAccount: LedgerAccountEntity;
-  let debitLedgerAccount: LedgerAccountEntity;
 
   beforeAll(async () => {
     app = await setupTestApp()!;
     const response = await loadLedgerModuleFixtures(app);
 
     authKey = response.authKey;
-    debitLedgerAccount = response.debitLedgerAccount;
     creditLedgerAccount = response.creditLedgerAccount;
     ledger = response.ledger;
 
@@ -56,8 +55,7 @@ describe('LedgerAccountController', () => {
     });
 
     it('should create credit ledger account', async () => {
-      const currency = getCurrency('USD')!;
-
+      const currency = await app.get(CurrencyService).findByCode('USD')!;
       let accountId: string = '';
       await request(app.getHttpServer())
         .post('/v1/ledger_accounts')
@@ -81,7 +79,7 @@ describe('LedgerAccountController', () => {
             debits: 0,
             amount: 0,
             currency: currency.code,
-            currencyExponent: currency.digits,
+            currencyExponent: currency.exponent,
           });
 
           expect(response.body.balances.avalaibleBalance).toMatchObject({
@@ -89,7 +87,7 @@ describe('LedgerAccountController', () => {
             debits: 0,
             amount: 0,
             currency: currency.code,
-            currencyExponent: currency.digits,
+            currencyExponent: currency.exponent,
           });
 
           expect(response.body.balances.postedBalance).toMatchObject({
@@ -97,7 +95,7 @@ describe('LedgerAccountController', () => {
             debits: 0,
             amount: 0,
             currency: currency.code,
-            currencyExponent: currency.digits,
+            currencyExponent: currency.exponent,
           });
           accountId = response.body.id;
         });
@@ -114,7 +112,7 @@ describe('LedgerAccountController', () => {
       const tbAccount = await tigerBeetleService.retrieveAccount(account.tigerBeetleId);
 
       expect(tbAccount.ledger).toEqual(account.ledger.tigerBeetleId);
-      expect(tbAccount.code).toBe(+currency.number);
+      expect(tbAccount.code).toBe(+currency.id);
       expect(tbAccount.user_data_32).toBe(1);
       expect(tbAccount.flags).toBe(AccountFlags.debits_must_not_exceed_credits);
       expect(tbAccount.credits_pending).toBe(0n);
@@ -124,7 +122,8 @@ describe('LedgerAccountController', () => {
     });
 
     it('should create debit ledger account', async () => {
-      const currency = getCurrency('USD')!;
+      const currency = await app.get(CurrencyService).findByCode('USD')!;
+      const externalId = uuidV7();
 
       let accountId: string = '';
       await request(app.getHttpServer())
@@ -136,6 +135,7 @@ describe('LedgerAccountController', () => {
           ledgerId: ledger.id,
           currency: currency.code,
           normalBalance: NormalBalanceEnum.DEBIT,
+          externalId,
         })
         .expect(HttpStatus.CREATED)
         .expect((response) => {
@@ -144,12 +144,13 @@ describe('LedgerAccountController', () => {
           expect(response.body.ledgerId).toBe(ledger.id);
           expect(response.body.createdAt).toBeDefined();
           expect(response.body.updatedAt).toBeDefined();
+          expect(response.body.externalId).toBe(externalId);
           expect(response.body.balances.pendingBalance).toMatchObject({
             credits: 0,
             debits: 0,
             amount: 0,
             currency: currency.code,
-            currencyExponent: currency.digits,
+            currencyExponent: currency.exponent,
           });
 
           expect(response.body.balances.avalaibleBalance).toMatchObject({
@@ -157,7 +158,7 @@ describe('LedgerAccountController', () => {
             debits: 0,
             amount: 0,
             currency: currency.code,
-            currencyExponent: currency.digits,
+            currencyExponent: currency.exponent,
           });
 
           expect(response.body.balances.postedBalance).toMatchObject({
@@ -165,7 +166,7 @@ describe('LedgerAccountController', () => {
             debits: 0,
             amount: 0,
             currency: currency.code,
-            currencyExponent: currency.digits,
+            currencyExponent: currency.exponent,
           });
           accountId = response.body.id;
         });
@@ -182,13 +183,63 @@ describe('LedgerAccountController', () => {
       const tbAccount = await tigerBeetleService.retrieveAccount(account.tigerBeetleId);
 
       expect(tbAccount.ledger).toEqual(account.ledger.tigerBeetleId);
-      expect(tbAccount.code).toBe(+currency.number);
+      expect(tbAccount.code).toBe(+currency.id);
       expect(tbAccount.user_data_32).toBe(0);
       expect(tbAccount.credits_pending).toBe(0n);
       expect(tbAccount.debits_pending).toBe(0n);
       expect(tbAccount.credits_posted).toBe(0n);
       expect(tbAccount.debits_posted).toBe(0n);
       expect(tbAccount.flags).toBe(AccountFlags.credits_must_not_exceed_debits);
+    });
+
+    it('should not accept invalid data', async () => {
+      await request(app.getHttpServer())
+        .post('/v1/ledger_accounts')
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send({
+          name: 1,
+          description: 'tes',
+          ledgerId: ledger.id,
+          currency: 'USD',
+          normalBalance: NormalBalanceEnum.CREDIT,
+        })
+        .expect(HttpStatus.BAD_REQUEST);
+
+      await request(app.getHttpServer())
+        .post('/v1/ledger_accounts')
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send({
+          name: '21',
+          description: 'tes',
+          ledgerId: ledger.id,
+          currency: 'USD',
+          normalBalance: NormalBalanceEnum.CREDIT,
+        })
+        .expect(HttpStatus.BAD_REQUEST);
+
+      await request(app.getHttpServer())
+        .post('/v1/ledger_accounts')
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send({
+          name: '21',
+          description: '1',
+          ledgerId: ledger.id,
+          currency: 'USD',
+          normalBalance: NormalBalanceEnum.CREDIT,
+        })
+        .expect(HttpStatus.BAD_REQUEST);
+
+      await request(app.getHttpServer())
+        .post('/v1/ledger_accounts')
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send({
+          name: '21',
+          description: '1',
+          ledgerId: '123',
+          currency: 'USD',
+          normalBalance: NormalBalanceEnum.CREDIT,
+        })
+        .expect(HttpStatus.BAD_REQUEST);
     });
   });
 
@@ -225,6 +276,19 @@ describe('LedgerAccountController', () => {
           expect(response.body.id).toBe(creditLedgerAccount.id);
           expect(response.body.name).toBe('credit account');
           expect(response.body.description).toBe('test');
+        });
+    });
+
+    it('should retrieve using externalId', async () => {
+      return request(app.getHttpServer())
+        .get(`/v1/ledger_accounts/${creditLedgerAccount.externalId}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .expect(HttpStatus.OK)
+        .expect((response) => {
+          expect(response.body.id).toBe(creditLedgerAccount.id);
+          expect(response.body.name).toBe('credit account');
+          expect(response.body.description).toBe('test');
+          expect(response.body.externalId).toBe(creditLedgerAccount.externalId);
         });
     });
   });
@@ -293,6 +357,34 @@ describe('LedgerAccountController', () => {
           value: 'value',
         }),
       ).toBeDefined();
+    });
+
+    it('should remove metadata', async () => {
+      const metadata = { test: '' };
+      // Make sure metadata are saved in DB
+      expect(
+        await ledgerAccountMetadataRepository.findOneBy({
+          ledgerAccount: { id: creditLedgerAccount.id },
+          key: 'test',
+        }),
+      ).not.toBeNull();
+
+      await request(app.getHttpServer())
+        .patch(`/v1/ledger_accounts/${creditLedgerAccount.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send({ metadata })
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.metadata.test).toBeUndefined();
+        });
+
+      // Make sure metadata are saved in DB
+      expect(
+        await ledgerAccountMetadataRepository.findOneBy({
+          ledgerAccount: { id: creditLedgerAccount.id },
+          key: 'test',
+        }),
+      ).toBeNull();
     });
   });
 });

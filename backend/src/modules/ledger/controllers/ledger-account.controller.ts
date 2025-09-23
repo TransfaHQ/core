@@ -71,7 +71,7 @@ export class LedgerAccountController {
   })
   @ApiParam({
     name: 'id',
-    description: 'Unique identifier of the ledger account',
+    description: 'Unique identifier or externalId of the ledger account',
     example: '01234567-89ab-cdef-0123-456789abcdef',
   })
   @ApiOkResponse({

@@ -1,6 +1,7 @@
 import BigNumber from 'bignumber.js';
 import { AccountFlags, Account as TigerBeetleAccount, id } from 'tigerbeetle-node';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
+import { validate } from 'uuid';
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -8,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CursorPaginatedResult, Transactional, cursorPaginate } from '@libs/database';
 import { NormalBalanceEnum } from '@libs/enums';
 import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
+import { uuidV7 } from '@libs/utils/uuid';
 
 import { CreateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/create-ledger-account.dto';
 import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/update-ledger-account.dto';
@@ -36,7 +38,8 @@ export class LedgerAccountService {
     // Get currency from database
     const currency = await this.currencyService.findByCode(data.currency);
 
-    const accountObj = this.ledgerAccountRepository.create({
+    const account = this.ledgerAccountRepository.create({
+      id: uuidV7(),
       ledgerId: data.ledgerId,
       name: data.name,
       currencyCode: currency.code,
@@ -44,30 +47,30 @@ export class LedgerAccountService {
       externalId: data.externalId,
       normalBalance: data.normalBalance,
       tigerBeetleId: id(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      currencyExponent: currency.exponent,
     });
 
-
-    const savedAccount = await this.ledgerAccountRepository.save(accountObj);
+    await this.ledgerAccountRepository.insert(account);
 
     const metadata: LedgerAccountMetadataEntity[] = Object.entries(data.metadata ?? {}).map(
       ([key, value]) => {
         return this.ledgerAccountMetadataRepository.create({
-          ledgerAccount: savedAccount,
+          ledgerAccount: { id: account.id },
           key,
           value,
         });
       },
     );
 
-    
+    if (metadata.length > 0) await this.ledgerAccountMetadataRepository.insert(metadata);
 
-    if (metadata.length > 0) await this.ledgerAccountMetadataRepository.save(metadata);
-
-    savedAccount.metadata = metadata;
+    account.metadata = metadata;
 
     // Create account on tigerbeetle and save it
     await this.tigerBeetleService.createAccount({
-      id: savedAccount.tigerBeetleId,
+      id: account.tigerBeetleId,
       debits_pending: 0n,
       credits_pending: 0n,
       credits_posted: 0n,
@@ -76,27 +79,30 @@ export class LedgerAccountService {
       timestamp: 0n,
       reserved: 0,
       flags:
-        savedAccount.normalBalance === NormalBalanceEnum.CREDIT
+        account.normalBalance === NormalBalanceEnum.CREDIT
           ? AccountFlags.debits_must_not_exceed_credits
           : AccountFlags.credits_must_not_exceed_debits,
       // todo; might be good to use theses fields to link accounts together
       user_data_128: 0n,
       user_data_64: 0n,
-      user_data_32: savedAccount.normalBalance === NormalBalanceEnum.CREDIT ? 1 : 0, // account normal balance
+      user_data_32: account.normalBalance === NormalBalanceEnum.CREDIT ? 1 : 0, // account normal balance
       code: currency.id,
     });
 
-    const tbAccount = await this.tigerBeetleService.retrieveAccount(savedAccount.tigerBeetleId);
-    this.parseAccountBalanceFromTBAccount(savedAccount, tbAccount);
+    const tbAccount = await this.tigerBeetleService.retrieveAccount(account.tigerBeetleId);
+    this.parseAccountBalanceFromTBAccount(account, tbAccount);
 
-    return savedAccount;
+    return account;
   }
 
   async retrieveLedgerAccount(id: string): Promise<LedgerAccountEntity> {
-    const response = await this.ledgerAccountRepository.findOneOrFail({
-      where: { id },
-      relations: ['metadata', 'currency'],
-    });
+    let qb = this.ledgerAccountRepository
+      .createQueryBuilder('la')
+      .leftJoinAndSelect('la.metadata', 'metadata')
+      .where('la.externalId = :externalId', { externalId: id });
+
+    if (validate(id)) qb = qb.orWhere('la.id = :id', { id });
+    const response = await qb.getOneOrFail();
 
     const tbAccount = await this.tigerBeetleService.retrieveAccount(response.tigerBeetleId);
     this.parseAccountBalanceFromTBAccount(response, tbAccount);
@@ -145,38 +151,49 @@ export class LedgerAccountService {
 
   @Transactional()
   async update(id: string, data: UpdateLedgerAccountDto): Promise<LedgerAccountEntity> {
-    const ledger = await this.ledgerAccountRepository.findOneOrFail({
-      where: { id },
-      relations: ['metadata', 'currency'],
-    });
+    const account = await this.ledgerAccountRepository
+      .createQueryBuilder('la')
+      .where('la.id = :id', { id })
+      .getOneOrFail();
 
-    ledger.name = data.name ?? ledger.name;
-    ledger.description = data.description ?? ledger.description;
-    await this.ledgerAccountRepository.save(ledger);
+    account.name = data.name ?? account.name;
+    account.description = data.description ?? account.description;
+    await this.ledgerAccountRepository.update({ id: account.id }, account);
+
+    const metadataKeyToDelete: string[] = [];
+    const metadataToUpdate: LedgerAccountMetadataEntity[] = [];
 
     for (const [key, value] of Object.entries(data.metadata ?? {})) {
-      if (value === null || value === undefined) {
-        // Remove metadata where value is null
-        await this.ledgerAccountMetadataRepository.delete({
-          ledgerAccount: { id },
-          key: key,
-        });
+      if (value === null || value === undefined || !value) {
+        metadataKeyToDelete.push(key);
       } else {
-        // Upsert metadata (update if exists, create if not)
-        await this.ledgerAccountMetadataRepository.upsert(
-          {
+        metadataToUpdate.push(
+          this.ledgerAccountMetadataRepository.create({
             ledgerAccount: { id },
             key: key,
             value: value,
-          },
-          ['ledgerAccount', 'key'],
+          }),
         );
       }
     }
-    const updateLedgerAccount = await this.ledgerAccountRepository.findOne({
-      where: { id },
-      relations: ['metadata', 'currency'],
-    });
+
+    if (metadataKeyToDelete.length) {
+      await this.ledgerAccountMetadataRepository.delete({
+        ledgerAccount: { id },
+        key: In(metadataKeyToDelete),
+      });
+    }
+
+    // Upsert metadata (update if exists, create if not)
+    if (metadataToUpdate.length > 0) {
+      await this.ledgerAccountMetadataRepository.upsert(metadataToUpdate, ['ledgerAccount', 'key']);
+    }
+
+    const updateLedgerAccount = await this.ledgerAccountRepository
+      .createQueryBuilder('la')
+      .leftJoinAndSelect('la.metadata', 'metadata')
+      .where('la.id = :id', { id })
+      .getOne();
 
     const tbAccount = await this.tigerBeetleService.retrieveAccount(
       updateLedgerAccount!.tigerBeetleId,
@@ -253,22 +270,22 @@ export class LedgerAccountService {
         credits: pendingCredit,
         debits: pendingDebit,
         amount: pendingAmount,
-        currency: entity.currency.code,
-        currencyExponent: entity.currency.exponent,
+        currency: entity.currencyCode,
+        currencyExponent: entity.currencyExponent,
       },
       postedBalance: {
         credits: postedCredit,
         debits: postedDebit,
         amount: postedAmount,
-        currency: entity.currency.code,
-        currencyExponent: entity.currency.exponent,
+        currency: entity.currencyCode,
+        currencyExponent: entity.currencyExponent,
       },
       avalaibleBalance: {
         credits: postedCredit,
         debits: pendingDebit,
         amount: availableAmount,
-        currency: entity.currency.code,
-        currencyExponent: entity.currency.exponent,
+        currency: entity.currencyCode,
+        currencyExponent: entity.currencyExponent,
       },
     };
   }

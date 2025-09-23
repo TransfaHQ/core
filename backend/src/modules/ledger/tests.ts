@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 
 import { NormalBalanceEnum } from '@libs/enums';
 import { getCurrency } from '@libs/utils/currency';
+import { uuidV7 } from '@libs/utils/uuid';
 
 import { AuthService } from '@modules/auth/auth.service';
 import { KeyResponseDto } from '@modules/auth/dto';
@@ -38,6 +39,7 @@ export async function loadLedgerModuleFixtures(app: INestApplication): Promise<{
     normalBalance: NormalBalanceEnum.CREDIT,
     currency: currency!.code,
     currencyExponent: currency!.digits,
+    externalId: uuidV7(),
   });
 
   const debitLedgerAccount = await ledgerAccountService.createLedgerAccount({
@@ -47,6 +49,7 @@ export async function loadLedgerModuleFixtures(app: INestApplication): Promise<{
     normalBalance: NormalBalanceEnum.CREDIT,
     currency: currency!.code,
     currencyExponent: currency!.digits,
+    externalId: uuidV7(),
   });
 
   return {
