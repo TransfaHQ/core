@@ -29,7 +29,7 @@ export const formatBalance = (
       maximumFractionDigits: exponent,
     }).format(amount);
 
-    return `${currency} ${formattedAmount}`;
+    return `${formattedAmount} ${currency}`;
   }
 };
 
