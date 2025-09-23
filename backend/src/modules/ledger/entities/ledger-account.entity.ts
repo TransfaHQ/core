@@ -29,6 +29,9 @@ export class LedgerAccountEntity extends BaseTypeormEntity {
   @Column({ type: 'varchar', name: 'currency_code', length: 10 })
   currencyCode: string;
 
+  @Column({ type: 'smallint', name: 'currency_exponent' })
+  currencyExponent: number;
+
   @OneToMany(() => LedgerAccountMetadataEntity, (metadata) => metadata.ledgerAccount, {
     cascade: true,
   })

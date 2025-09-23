@@ -27,18 +27,13 @@ export class AddCurrencyCodeToLedgerAccount1758571051465 implements MigrationInt
             FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT;
         `);
 
-        await queryRunner.query(`
-            ALTER TABLE ledger_account
-            DROP COLUMN currency,
-            DROP COLUMN currency_exponent;
-        `);
+        
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`
             ALTER TABLE ledger_account
             ADD COLUMN currency VARCHAR(5),
-            ADD COLUMN currency_exponent SMALLINT;
         `);
 
         // Migrate data back with currency codes
@@ -47,19 +42,6 @@ export class AddCurrencyCodeToLedgerAccount1758571051465 implements MigrationInt
             SET currency = currency_code
             WHERE currency_code IS NOT NULL;
         `);
-
-        // Set currency_exponent based on currency-codes library
-        const currencies = currencyCodes.codes();
-        for (const code of currencies) {
-            const currency = currencyCodes.code(code);
-            if (currency) {
-                await queryRunner.query(`
-                    UPDATE ledger_account
-                    SET currency_exponent = $1
-                    WHERE currency_code = $2;
-                `, [currency.digits, currency.code]);
-            }
-        }
 
 
         await queryRunner.query(`
