@@ -46,7 +46,7 @@ export async function loadLedgerModuleFixtures(app: INestApplication): Promise<{
     ledgerId: ledger.id,
     name: 'debit account',
     description: 'test',
-    normalBalance: NormalBalanceEnum.CREDIT,
+    normalBalance: NormalBalanceEnum.DEBIT,
     currency: currency!.code,
     currencyExponent: currency!.digits,
     externalId: uuidV7(),

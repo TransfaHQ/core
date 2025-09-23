@@ -15,7 +15,6 @@ module.exports = {
     '^@libs/(.*)$': '<rootDir>/src/libs/$1',
     '^@modules/(.*)$': '<rootDir>/src/modules/$1',
     '^@src/(.*)$': '<rootDir>/src/$1',
-    '^uuid$': '<rootDir>/../node_modules/uuid/dist-node',
   },
   testTimeout: 30000,
   setupFilesAfterEnv: [],

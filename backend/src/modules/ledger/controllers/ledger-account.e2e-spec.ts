@@ -18,6 +18,8 @@ import { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.ent
 import { LedgerAccountMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
 import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
 import { CurrencyService } from '@modules/ledger/services/currency.service';
+import { LedgerService } from '@modules/ledger/services/ledger.service';
+import { LedgerAccountService } from '@modules/ledger/services/ledger-account.service';
 import { loadLedgerModuleFixtures } from '@modules/ledger/tests';
 
 describe('LedgerAccountController', () => {
@@ -28,6 +30,8 @@ describe('LedgerAccountController', () => {
   let authKey: KeyResponseDto;
   let ledger: LedgerEntity;
   let creditLedgerAccount: LedgerAccountEntity;
+  let secondLedger: LedgerEntity;
+  let eurAccount: LedgerAccountEntity;
 
   beforeAll(async () => {
     app = await setupTestApp()!;
@@ -40,6 +44,56 @@ describe('LedgerAccountController', () => {
     ledgerAccountRepository = app.get(getRepositoryToken(LedgerAccountEntity));
     ledgerAccountMetadataRepository = app.get(getRepositoryToken(LedgerAccountMetadataEntity));
     tigerBeetleService = app.get(TigerBeetleService);
+
+    // Set up additional test data for filtering tests
+    const ledgerService = app.get(LedgerService);
+    const ledgerAccountService = app.get(LedgerAccountService);
+    const currencyService = app.get(CurrencyService);
+
+    // Create a second ledger
+    secondLedger = await ledgerService.createLedger({
+      name: 'Second Test Ledger',
+      description: 'Second ledger for filtering tests',
+      metadata: {},
+    });
+
+    // Get EUR currency
+    const eurCurrency = await currencyService.findByCode('EUR');
+
+    // Create an account with EUR currency
+    eurAccount = await ledgerAccountService.createLedgerAccount({
+      ledgerId: ledger.id,
+      name: 'EUR Test Account',
+      description: 'Account for EUR currency testing',
+      normalBalance: NormalBalanceEnum.CREDIT,
+      currency: eurCurrency.code,
+      externalId: uuidV7(),
+    });
+
+    // Create a debit account
+    await ledgerAccountService.createLedgerAccount({
+      ledgerId: ledger.id,
+      name: 'Debit Test Account',
+      description: 'Account for debit balance testing',
+      normalBalance: NormalBalanceEnum.DEBIT,
+      currency: 'USD',
+      externalId: uuidV7(),
+    });
+
+    // Create an account with metadata
+    await ledgerAccountService.createLedgerAccount({
+      ledgerId: secondLedger.id,
+      name: 'Metadata Test Account',
+      description: 'Account for metadata testing',
+      normalBalance: NormalBalanceEnum.CREDIT,
+      currency: 'USD',
+      externalId: uuidV7(),
+      metadata: {
+        department: 'finance',
+        region: 'US',
+        type: 'operational',
+      },
+    });
   });
 
   afterAll(async () => {
@@ -263,6 +317,318 @@ describe('LedgerAccountController', () => {
         .expect((response) => {
           expect(response.body.data.length).toBe(1);
         });
+    });
+  });
+
+  describe('GET /v1/ledger_accounts - Filtering', () => {
+    describe('Filter by ledger_id', () => {
+      it('should filter accounts by ledger_id', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ ledger_id: ledger.id })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBeGreaterThan(0);
+            response.body.data.forEach((account: any) => {
+              expect(account.ledgerId).toBe(ledger.id);
+            });
+          });
+      });
+
+      it('should filter accounts by second ledger_id', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ ledger_id: secondLedger.id })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBe(1);
+            expect(response.body.data[0].ledgerId).toBe(secondLedger.id);
+            expect(response.body.data[0].name).toBe('Metadata Test Account');
+          });
+      });
+
+      it('should return empty array for non-existent ledger_id', async () => {
+        const nonExistentId = uuidV7();
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ ledger_id: nonExistentId })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data).toEqual([]);
+          });
+      });
+    });
+
+    describe('Filter by currency', () => {
+      it('should filter accounts by USD currency', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ currency: 'USD' })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBeGreaterThan(0);
+            response.body.data.forEach((account: any) => {
+              expect(account.balances.pendingBalance.currency).toBe('USD');
+            });
+          });
+      });
+
+      it('should filter accounts by EUR currency', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ currency: 'EUR' })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBe(1);
+            expect(response.body.data[0].balances.pendingBalance.currency).toBe('EUR');
+            expect(response.body.data[0].name).toBe('EUR Test Account');
+          });
+      });
+
+      it('should return empty array for non-existent currency', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ currency: 'JPY' })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data).toEqual([]);
+          });
+      });
+    });
+
+    describe('Filter by normal_balance', () => {
+      it('should filter accounts by credit normal_balance', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ normal_balance: 'credit' })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBeGreaterThan(0);
+            response.body.data.forEach((account: any) => {
+              expect(account.normalBalance).toBe('credit');
+            });
+          });
+      });
+
+      it('should filter accounts by debit normal_balance', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ normal_balance: 'debit' })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBe(1);
+            expect(response.body.data[0].normalBalance).toBe('debit');
+            expect(response.body.data[0].name).toBe('Debit Test Account');
+          });
+      });
+    });
+
+    describe('Search functionality', () => {
+      it('should search by account name (case insensitive)', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ search: 'eur test' })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBe(1);
+            expect(response.body.data[0].name.toLowerCase()).toContain('eur test');
+          });
+      });
+
+      it('should search by account description', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ search: 'metadata testing' })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBe(1);
+            expect(response.body.data[0].description.toLowerCase()).toContain('metadata testing');
+          });
+      });
+
+      it('should search by partial name match', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ search: 'credit' })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBeGreaterThan(0);
+            const found = response.body.data.some((account: any) =>
+              account.name.toLowerCase().includes('credit')
+            );
+            expect(found).toBe(true);
+          });
+      });
+
+      it('should search by external ID', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ search: eurAccount.externalId })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBe(1);
+            expect(response.body.data[0].externalId).toBe(eurAccount.externalId);
+          });
+      });
+
+      it('should return empty array for non-matching search term', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ search: 'nonexistentaccountname' })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data).toEqual([]);
+          });
+      });
+    });
+
+    describe('Metadata filtering', () => {
+      it('should filter by single metadata key-value pair', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ 'metadata[department]': 'finance' })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBe(1);
+            expect(response.body.data[0].metadata.department).toBe('finance');
+            expect(response.body.data[0].name).toBe('Metadata Test Account');
+          });
+      });
+
+      it('should filter by multiple metadata key-value pairs', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({
+            'metadata[department]': 'finance',
+            'metadata[region]': 'US'
+          })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBe(1);
+            expect(response.body.data[0].metadata.department).toBe('finance');
+            expect(response.body.data[0].metadata.region).toBe('US');
+          });
+      });
+
+      it('should return empty array when metadata does not match', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({ 'metadata[department]': 'marketing' })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data).toEqual([]);
+          });
+      });
+
+      it('should return empty array when partial metadata match fails', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({
+            'metadata[department]': 'finance',
+            'metadata[region]': 'EU'
+          })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data).toEqual([]);
+          });
+      });
+    });
+
+    describe('Combined filters', () => {
+      it('should combine ledger_id and currency filters', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({
+            ledger_id: ledger.id,
+            currency: 'EUR'
+          })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBe(1);
+            expect(response.body.data[0].ledgerId).toBe(ledger.id);
+            expect(response.body.data[0].balances.pendingBalance.currency).toBe('EUR');
+          });
+      });
+
+      it('should combine normal_balance and currency filters', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({
+            normal_balance: 'debit',
+            currency: 'USD'
+          })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBe(1);
+            expect(response.body.data[0].normalBalance).toBe('debit');
+            expect(response.body.data[0].balances.pendingBalance.currency).toBe('USD');
+          });
+      });
+
+      it('should combine search with ledger_id filter', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({
+            ledger_id: secondLedger.id,
+            search: 'metadata'
+          })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBe(1);
+            expect(response.body.data[0].ledgerId).toBe(secondLedger.id);
+            expect(response.body.data[0].name.toLowerCase()).toContain('metadata');
+          });
+      });
+
+      it('should combine metadata filter with ledger_id', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({
+            ledger_id: secondLedger.id,
+            'metadata[type]': 'operational'
+          })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data.length).toBe(1);
+            expect(response.body.data[0].ledgerId).toBe(secondLedger.id);
+            expect(response.body.data[0].metadata.type).toBe('operational');
+          });
+      });
+
+      it('should return empty array when combined filters do not match', async () => {
+        return request(app.getHttpServer())
+          .get('/v1/ledger_accounts')
+          .query({
+            ledger_id: ledger.id,
+            'metadata[department]': 'finance'
+          })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect((response) => {
+            expect(response.body.data).toEqual([]);
+          });
+      });
     });
   });
 

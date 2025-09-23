@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEnum, IsObject, IsOptional, IsString, IsUUID } from 'class-validator';
 
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -38,4 +38,14 @@ export class ListLedgerAccountRequestDto extends PaginatedRequestDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by metadata key/value pairs using Stripe convention: metadata[key]=value',
+    type: 'object',
+    additionalProperties: { type: 'string' },
+    example: { department: 'finance', region: 'US' },
+  })
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, string>;
 }
