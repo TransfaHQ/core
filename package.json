@@ -1,0 +1,20 @@
+{
+  "name": "core-monorepo",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:backend": "pnpm --filter backend start:dev",
+    "build:frontend": "pnpm --filter frontend build",
+    "build:backend": "pnpm --filter backend build",
+    "lint": "pnpm --recursive lint",
+    "lint:frontend": "pnpm --filter frontend lint",
+    "lint:backend": "pnpm --filter backend lint",
+    "test": "pnpm --recursive test",
+    "test:frontend": "pnpm --filter frontend test",
+    "test:backend": "pnpm --filter backend test"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

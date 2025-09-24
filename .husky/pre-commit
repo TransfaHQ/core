@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Run linting for all workspaces
+echo "Running lint for all workspaces..."
+pnpm lint
+
+if [ $? -ne 0 ]; then
+  echo "Linting failed! Please fix the errors and try again."
+  exit 1
+fi
+
+echo "All linting passed!"

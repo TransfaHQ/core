@@ -1,2 +1,4 @@
 apidocs/*
 node_modules/
+pnpm-lock.yaml
+.pnpm-debug.log*
