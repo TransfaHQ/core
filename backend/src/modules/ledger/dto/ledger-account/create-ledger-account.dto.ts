@@ -1,15 +1,12 @@
 import {
   IsEnum,
   IsNotEmpty,
-  IsNumber,
   IsObject,
   IsOptional,
   IsString,
   IsUUID,
-  Max,
   MaxLength,
-  Min,
-  MinLength,
+  MinLength
 } from 'class-validator';
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -73,18 +70,6 @@ export class CreateLedgerAccountDto {
   @MinLength(3)
   @MaxLength(4)
   currency: string;
-
-  @ApiPropertyOptional({
-    description:
-      'Exponent for the currency (e.g., 2 for USD cents). Required if the currency is not recognized.',
-    minimum: 0,
-    maximum: 30,
-    example: 2,
-  })
-  @IsNumber()
-  @Min(0)
-  @Max(30)
-  currencyExponent?: number;
 
   @ApiProperty({
     description: 'Normal balance type for the ledger account',
