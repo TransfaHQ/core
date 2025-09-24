@@ -15,12 +15,9 @@ module.exports = {
     '^@libs/(.*)$': '<rootDir>/src/libs/$1',
     '^@modules/(.*)$': '<rootDir>/src/modules/$1',
     '^@src/(.*)$': '<rootDir>/src/$1',
-    '^uuid$': '<rootDir>/../node_modules/uuid/dist-node',
   },
   testTimeout: 30000,
   setupFilesAfterEnv: [],
   globalTeardown: '<rootDir>/src/jest-e2e-global-teardown.ts',
-  transformIgnorePatterns: [
-    '/node_modules/(?!uuid)/', // transform uuid even though it's in node_modules
-  ],
+  transformIgnorePatterns: ['/node_modules/(?!uuid)/'],
 };
