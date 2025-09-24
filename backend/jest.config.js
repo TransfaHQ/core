@@ -18,7 +18,5 @@ module.exports = {
     '^@modules/(.*)$': '<rootDir>/modules/$1',
     '^@src/(.*)$': '<rootDir>/$1',
   },
-  transformIgnorePatterns: [
-    '/node_modules/(?!uuid)/', // transform uuid even though it's in node_modules
-  ],
+  transformIgnorePatterns: ['/node_modules/(?!uuid)/'],
 };

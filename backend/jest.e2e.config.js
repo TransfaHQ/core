@@ -19,7 +19,5 @@ module.exports = {
   testTimeout: 30000,
   setupFilesAfterEnv: [],
   globalTeardown: '<rootDir>/src/jest-e2e-global-teardown.ts',
-  transformIgnorePatterns: [
-    '/node_modules/(?!uuid)/', // transform uuid even though it's in node_modules
-  ],
+  transformIgnorePatterns: ['/node_modules/(?!uuid)/'],
 };
