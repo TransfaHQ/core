@@ -1,5 +1,4 @@
 import request from 'supertest';
-import { App } from 'supertest/types';
 import { Repository } from 'typeorm';
 
 import { HttpStatus, INestApplication } from '@nestjs/common';
@@ -17,7 +16,7 @@ import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
 import { LedgerService } from '../services/ledger.service';
 
 describe('LedgerController', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication;
   let ledgerRepository: Repository<LedgerEntity>;
   let ledgerMetadataRepository: Repository<LedgerMetadataEntity>;
   let authKey: KeyResponseDto;
@@ -197,7 +196,7 @@ describe('LedgerController', () => {
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send({ description, metadata })
         .expect(HttpStatus.OK)
-        .expect(async (response) => {
+        .expect((response) => {
           expect(response.body.description).toBe(description);
           expect(response.body.metadata).toMatchObject(metadata);
         });

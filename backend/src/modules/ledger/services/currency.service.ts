@@ -79,7 +79,7 @@ export class CurrencyService {
 
     if (codeFilter) {
       queryBuilder.where('currency.code ILIKE :code', {
-        code: `%${codeFilter.toUpperCase()}%`
+        code: `%${codeFilter.toUpperCase()}%`,
       });
     }
 
@@ -110,7 +110,7 @@ export class CurrencyService {
 
     if (accountCount > 0) {
       throw new BadRequestException(
-        `Cannot delete currency '${code}' as it is being used by ${accountCount} ledger account(s)`
+        `Cannot delete currency '${code}' as it is being used by ${accountCount} ledger account(s)`,
       );
     }
 

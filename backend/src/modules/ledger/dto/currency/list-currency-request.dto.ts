@@ -1,6 +1,7 @@
-import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+
+import { ApiProperty } from '@nestjs/swagger';
 
 export class ListCurrencyRequestDto {
   @ApiProperty({
@@ -10,7 +11,7 @@ export class ListCurrencyRequestDto {
     minimum: 1,
   })
   @IsOptional()
-  @Transform(({ value }) => parseInt(value))
+  @Transform(({ value }) => parseInt(value as string, 10))
   @IsNumber()
   @Min(1)
   page?: number = 1;
@@ -23,7 +24,7 @@ export class ListCurrencyRequestDto {
     maximum: 100,
   })
   @IsOptional()
-  @Transform(({ value }) => parseInt(value))
+  @Transform(({ value }) => parseInt(value as string, 10))
   @IsNumber()
   @Min(1)
   @Max(100)

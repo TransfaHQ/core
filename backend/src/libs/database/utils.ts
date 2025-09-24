@@ -81,12 +81,12 @@ const getDataSource = (): DataSource => {
 
 export function Transactional() {
   return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-    const originalMethod = descriptor.value;
+    const originalMethod = descriptor.value as (...args: any[]) => any;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (this: any, ...args: any[]): Promise<any> {
       const dataSource = getDataSource();
-      return dataSource.transaction(async (manager) => {
-        return originalMethod.apply(this, [...args, manager]);
+      return await dataSource.transaction(async (manager) => {
+        return await originalMethod.apply(this, [...args, manager]);
       });
     };
 

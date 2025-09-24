@@ -3,13 +3,13 @@ import { Logger } from 'nestjs-pino';
 import { DataSource } from 'typeorm';
 
 import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { checkPostgresVersion } from '@src/database/utils';
 
 import { TypeormQueryErrorFilter } from '@libs/api/filters';
 import { setDataSource } from '@libs/database';
-import { NestExpressApplication } from '@nestjs/platform-express';
 
 export async function setupApp(app: INestApplication<NestExpressApplication>) {
   app.use(cookieParser());

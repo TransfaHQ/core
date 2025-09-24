@@ -8,18 +8,11 @@ export class TypeormQueryErrorFilter implements ExceptionFilter {
   catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    let status = 500;
-    let message = "Internal server error. Please contact Transfa's Engineering team.";
-    let error = 'Internal server';
+    const status = 500;
+    const message = "Internal server error. Please contact Transfa's Engineering team.";
+    const error = 'Internal server';
 
     Logger.error(`db error: ${exception}`);
-
-    try {
-      const messageStart = `${exception.table.split('_').join(' ')} with`;
-      message = exception.detail.replace('Key', messageStart);
-      error = 'Bad Request Exception';
-      status = 409;
-    } catch (error) {}
 
     response.status(status).json({
       statusCode: status,

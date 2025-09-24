@@ -9,7 +9,7 @@ export default async function globalTeardown() {
   const schemaName = process.env.CORE_POSTGRES_SCHEMA || 'e2e_test';
 
   const client = new DataSource({
-    type: "postgres",
+    type: 'postgres',
     host: process.env.DB_HOST || 'localhost',
     port: +(process.env.DB_PORT || '5432'),
     username: process.env.DB_USERNAME || 'localhost',

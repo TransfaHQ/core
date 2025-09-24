@@ -33,7 +33,7 @@ describe('LedgerAccountController', () => {
   let eurAccount: LedgerAccountEntity;
 
   beforeAll(async () => {
-    app = await setupTestApp()!;
+    app = await setupTestApp();
     const authService = app.get(AuthService);
     authKey = await authService.createKey({});
     const legerService = app.get(LedgerService);
@@ -60,7 +60,7 @@ describe('LedgerAccountController', () => {
     });
 
     it('should create credit ledger account', async () => {
-      const currency = await app.get(CurrencyService).findByCode('USD')!;
+      const currency = await app.get(CurrencyService).findByCode('USD');
       let accountId: string = '';
       await request(app.getHttpServer())
         .post('/v1/ledger_accounts')
@@ -127,7 +127,7 @@ describe('LedgerAccountController', () => {
     });
 
     it('should create debit ledger account', async () => {
-      const currency = await app.get(CurrencyService).findByCode('USD')!;
+      const currency = await app.get(CurrencyService).findByCode('USD');
       const externalId = uuidV7();
 
       let accountId: string = '';

@@ -137,7 +137,7 @@ export class LedgerAccountService {
         if (search) {
           qb = qb.andWhere(
             '(LOWER(entity.name) LIKE LOWER(:search) OR LOWER(entity.description) LIKE LOWER(:search) OR LOWER(entity.externalId) LIKE LOWER(:search))',
-            { search: `%${search}%` }
+            { search: `%${search}%` },
           );
         }
         if (metadata && Object.keys(metadata).length > 0) {
@@ -146,7 +146,7 @@ export class LedgerAccountService {
               'ledger_account_metadata',
               `metadata${index}`,
               `metadata${index}.ledger_account_id = entity.id AND metadata${index}.key = :metaKey${index} AND metadata${index}.value = :metaValue${index}`,
-              { [`metaKey${index}`]: key, [`metaValue${index}`]: value }
+              { [`metaKey${index}`]: key, [`metaValue${index}`]: value },
             );
           });
         }

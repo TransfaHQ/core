@@ -8,7 +8,7 @@ export function IsMetadata(validationOptions?: ValidationOptions) {
       propertyName,
       options: validationOptions,
       validator: {
-        validate(value: any, args: ValidationArguments) {
+        validate(value: Record<string, unknown>, _: ValidationArguments) {
           if (typeof value !== 'object' || value === null) return false;
           return Object.entries(value).every(
             ([key, val]) =>

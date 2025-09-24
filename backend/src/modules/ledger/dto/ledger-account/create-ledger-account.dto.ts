@@ -10,14 +10,12 @@ import {
   MaxLength,
   Min,
   MinLength,
-  ValidateIf,
 } from 'class-validator';
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { IsMetadata } from '@libs/api/validators/is-metadata.validator';
 import { NormalBalanceEnum } from '@libs/enums';
-import { getCurrency } from '@libs/utils/currency';
 
 export class CreateLedgerAccountDto {
   @ApiProperty({
@@ -83,7 +81,6 @@ export class CreateLedgerAccountDto {
     maximum: 30,
     example: 2,
   })
-  @ValidateIf((o) => !getCurrency(o.currency))
   @IsNumber()
   @Min(0)
   @Max(30)
