@@ -34,7 +34,7 @@ export function AccountList() {
 
   // Build query parameters from filters and pagination
   const queryParams = useMemo(() => {
-    const params: any = {
+    const params: Record<string, string | number> = {
       limit: pageSize,
     };
 

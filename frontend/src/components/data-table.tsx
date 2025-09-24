@@ -19,7 +19,7 @@ interface DataTableProps<T> {
   columns: TableColumn<T>[];
   data: T[] | undefined;
   isLoading?: boolean;
-  error?: any;
+  error?: unknown;
   emptyState?: ReactNode;
   getRowKey: (item: T) => string;
   onRowClick?: (item: T) => void;

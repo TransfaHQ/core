@@ -29,6 +29,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Create a new user */
         post: operations["AuthController_createUser_v1"];
         delete?: never;
         options?: never;
@@ -45,6 +46,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** User login */
         post: operations["AuthController_login_v1"];
         delete?: never;
         options?: never;
@@ -61,7 +63,9 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Create API key */
         post: operations["AuthController_createKey_v1"];
+        /** Delete API key */
         delete: operations["AuthController_deleteKey_v1"];
         options?: never;
         head?: never;
@@ -237,8 +241,25 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         CreateUserDto: Record<string, never>;
-        LoginDto: Record<string, never>;
+        UserResponseDto: Record<string, never>;
+        LoginDto: {
+            /**
+             * @description User email address
+             * @example user@example.com
+             */
+            email: string;
+            /**
+             * @description User password
+             * @example password123
+             */
+            password: string;
+        };
+        LoginResponseDto: {
+            /** @description JWT access token */
+            token: string;
+        };
         CreateKeyDto: Record<string, never>;
+        KeyResponseDto: Record<string, never>;
         DeleteKeyDto: Record<string, never>;
         CreateLedgerDto: {
             /**
@@ -452,13 +473,13 @@ export interface components {
             /**
              * Format: date-time
              * @description Creation timestamp
-             * @example 2025-09-23T21:48:11.869Z
+             * @example 2025-09-24T20:02:59.584Z
              */
             createdAt: string;
             /**
              * Format: date-time
              * @description Last update timestamp
-             * @example 2025-09-23T21:48:11.869Z
+             * @example 2025-09-24T20:02:59.584Z
              */
             updatedAt: string;
         };
@@ -574,7 +595,17 @@ export interface operations {
             };
         };
         responses: {
+            /** @description User created successfully */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponseDto"];
+                };
+            };
+            /** @description Email already exists */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -595,7 +626,17 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Login successful */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponseDto"];
+                };
+            };
+            /** @description Invalid credentials */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -616,11 +657,14 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Key created successfully */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["KeyResponseDto"];
+                };
             };
         };
     };
@@ -637,6 +681,7 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Key deleted successfully */
             204: {
                 headers: {
                     [name: string]: unknown;

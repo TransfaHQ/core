@@ -18,6 +18,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { ConfigService } from '@libs/config/config.service';
@@ -36,6 +37,7 @@ import { UserEntity } from './entities/user.entity';
 import { AdminGuard } from './guards/admin.guard';
 import { JwtPayload } from './types';
 
+@ApiTags('Auth')
 @Controller({
   version: '1',
   path: 'auth',
@@ -53,6 +55,10 @@ export class AuthController {
   @Post('users')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a new user' })
+  @ApiBody({ type: CreateUserDto })
+  @ApiResponse({ status: 201, description: 'User created successfully', type: UserResponseDto })
+  @ApiResponse({ status: 409, description: 'Email already exists' })
   async createUser(
     @Body()
     createUserDto: CreateUserDto,
@@ -87,6 +93,10 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'User login' })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({ status: 200, description: 'Login successful', type: LoginResponseDto })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) response: Response,
@@ -132,6 +142,9 @@ export class AuthController {
   @Post('keys')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create API key' })
+  @ApiBody({ type: CreateKeyDto })
+  @ApiResponse({ status: 201, description: 'Key created successfully', type: KeyResponseDto })
   async createKey(
     @Body()
     createKeyDto: CreateKeyDto,
@@ -142,6 +155,9 @@ export class AuthController {
   @Delete('keys')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete API key' })
+  @ApiBody({ type: DeleteKeyDto })
+  @ApiResponse({ status: 204, description: 'Key deleted successfully' })
   async deleteKey(
     @Body()
     deleteKeyDto: DeleteKeyDto,

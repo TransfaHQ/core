@@ -22,7 +22,7 @@ export const formatBalance = (
       minimumFractionDigits: exponent,
       maximumFractionDigits: exponent,
     }).format(amount);
-  } catch (error) {
+  } catch {
     // Fallback for custom/unsupported currencies
     const formattedAmount = new Intl.NumberFormat(locale, {
       minimumFractionDigits: exponent,

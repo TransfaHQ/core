@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authApi } from "@/lib/api/auth";
+import { $api } from "@/lib/api/client";
 import logo from "@/assets/logo.svg";
 
 export function LoginForm({
@@ -20,27 +20,33 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
-    try {
-      await authApi.login({ email, password });
+  const loginMutation = $api.useMutation("post", "/v1/auth/login", {
+    onSuccess: () => {
       navigate("/");
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        setError("Invalid credentials");
+    },
+    onError: (err) => {
+      if (err && typeof err === "object" && "response" in err) {
+        const error = err as { response?: { status?: number } };
+        if (error.response?.status === 401) {
+          setError("Invalid credentials");
+        } else {
+          setError("An error occurred. Please try again.");
+        }
       } else {
         setError("An error occurred. Please try again.");
       }
-    } finally {
-      setIsLoading(false);
-    }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    loginMutation.mutate({
+      body: { email, password },
+    });
   };
 
   return (
@@ -87,8 +93,12 @@ export function LoginForm({
                 />
               </div>
               <div className="flex flex-col gap-3">
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Logging in..." : "Login"}
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loginMutation.isPending}
+                >
+                  {loginMutation.isPending ? "Logging in..." : "Login"}
                 </Button>
               </div>
             </div>
