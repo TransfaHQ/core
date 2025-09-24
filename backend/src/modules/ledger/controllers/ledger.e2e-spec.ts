@@ -9,24 +9,24 @@ import { setupTestApp } from '@src/setup-test';
 
 import { setTestBasicAuthHeader } from '@libs/utils/tests';
 
+import { AuthService } from '@modules/auth/auth.service';
 import { KeyResponseDto } from '@modules/auth/dto';
 import { LedgerMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
 import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
-import { loadLedgerModuleFixtures } from '@modules/ledger/tests';
+
+import { LedgerService } from '../services/ledger.service';
 
 describe('LedgerController', () => {
   let app: INestApplication<App>;
   let ledgerRepository: Repository<LedgerEntity>;
   let ledgerMetadataRepository: Repository<LedgerMetadataEntity>;
   let authKey: KeyResponseDto;
-  let ledger: LedgerEntity;
 
   beforeAll(async () => {
     app = await setupTestApp()!;
-    const response = await loadLedgerModuleFixtures(app);
 
-    authKey = response.authKey;
-    ledger = response.ledger;
+    const authService = app.get(AuthService);
+    authKey = await authService.createKey({});
 
     ledgerRepository = app.get(getRepositoryToken(LedgerEntity));
     ledgerMetadataRepository = app.get(getRepositoryToken(LedgerMetadataEntity));
@@ -137,6 +137,15 @@ describe('LedgerController', () => {
   });
 
   describe('GET /v1/ledgers/:id', () => {
+    let ledger: LedgerEntity;
+    beforeAll(async () => {
+      const ledgerService = app.get(LedgerService);
+      ledger = await ledgerService.createLedger({
+        name: 'Test Ledger',
+        description: 'Test',
+        metadata: {},
+      });
+    });
     it('should return 202', async () => {
       return request(app.getHttpServer())
         .get(`/v1/ledgers/${ledger.id}`)
@@ -151,6 +160,15 @@ describe('LedgerController', () => {
   });
 
   describe('PATCH /v1/ledgers/:id', () => {
+    let ledger: LedgerEntity;
+    beforeAll(async () => {
+      const ledgerService = app.get(LedgerService);
+      ledger = await ledgerService.createLedger({
+        name: 'Test Ledger',
+        description: 'Test',
+        metadata: {},
+      });
+    });
     it('should return 200', async () => {
       const ledgerBeforeUpdate = await ledgerRepository.findOneBy({ id: ledger.id });
       const name = 'Transfa Ledger';
@@ -188,7 +206,6 @@ describe('LedgerController', () => {
       expect(ledgerAfterUpdate!.description).not.toBe(ledgerBeforeUpdate!.description);
       expect(ledgerAfterUpdate!.description).toBe(description);
 
-      // Make sure metadata are saved in DB
       expect(
         await ledgerMetadataRepository.findOneBy({
           ledger: { id: ledger.id },
@@ -200,7 +217,6 @@ describe('LedgerController', () => {
 
     it('should remove metadata', async () => {
       const metadata = { test: '' };
-      // Make sure metadata are saved in DB
       expect(
         await ledgerMetadataRepository.findOneBy({
           ledger: { id: ledger.id },
@@ -217,7 +233,6 @@ describe('LedgerController', () => {
           expect(response.body.metadata.test).toBeUndefined();
         });
 
-      // Make sure metadata are saved in DB
       expect(
         await ledgerMetadataRepository.findOneBy({
           ledger: { id: ledger.id },

@@ -9,9 +9,11 @@ import { checkPostgresVersion } from '@src/database/utils';
 
 import { TypeormQueryErrorFilter } from '@libs/api/filters';
 import { setDataSource } from '@libs/database';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
-export async function setupApp(app: INestApplication) {
+export async function setupApp(app: INestApplication<NestExpressApplication>) {
   app.use(cookieParser());
+  (app as any).set('query parser', 'extended');
 
   app.enableVersioning({
     type: VersioningType.URI,

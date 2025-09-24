@@ -137,6 +137,16 @@ export class LedgerAccountController {
     description: 'Search by account name, description, or external ID',
     example: 'Cash Account',
   })
+  @ApiQuery({
+    name: 'metadata',
+    required: false,
+    description: 'Filter by metadata key/value pairs using Stripe convention: ?metadata[key]=value',
+    example: 'metadata[department]=finance&metadata[region]=US',
+    schema: {
+      type: 'object',
+      additionalProperties: { type: 'string' },
+    },
+  })
   @ApiOkResponse({
     description: 'The ledger accounts have been successfully retrieved',
     schema: {
@@ -180,6 +190,7 @@ export class LedgerAccountController {
       queryParams.currency,
       queryParams.normal_balance,
       queryParams.search,
+      queryParams.metadata,
     );
     return { ...response, data: response.data.map(ledgerAccountEntityToApiV1Response) };
   }

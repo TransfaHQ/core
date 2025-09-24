@@ -452,13 +452,13 @@ export interface components {
             /**
              * Format: date-time
              * @description Creation timestamp
-             * @example 2025-09-23T21:35:25.829Z
+             * @example 2025-09-23T21:48:11.869Z
              */
             createdAt: string;
             /**
              * Format: date-time
              * @description Last update timestamp
-             * @example 2025-09-23T21:35:25.829Z
+             * @example 2025-09-23T21:48:11.869Z
              */
             updatedAt: string;
         };
@@ -856,6 +856,10 @@ export interface operations {
                 normal_balance?: "credit" | "debit";
                 /** @description Search by account name, description, or external ID */
                 search?: string;
+                /** @description Filter by metadata key/value pairs using Stripe convention: ?metadata[key]=value */
+                metadata?: {
+                    [key: string]: string;
+                };
             };
             header?: never;
             path?: never;

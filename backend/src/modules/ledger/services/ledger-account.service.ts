@@ -116,6 +116,7 @@ export class LedgerAccountService {
     currency?: string,
     normalBalance?: string,
     search?: string,
+    metadata?: Record<string, string>,
   ): Promise<CursorPaginatedResult<LedgerAccountEntity>> {
     const response = await cursorPaginate<LedgerAccountEntity>({
       repo: this.ledgerAccountRepository,
@@ -138,6 +139,16 @@ export class LedgerAccountService {
             '(LOWER(entity.name) LIKE LOWER(:search) OR LOWER(entity.description) LIKE LOWER(:search) OR LOWER(entity.externalId) LIKE LOWER(:search))',
             { search: `%${search}%` }
           );
+        }
+        if (metadata && Object.keys(metadata).length > 0) {
+          Object.entries(metadata).forEach(([key, value], index) => {
+            qb = qb.innerJoin(
+              'ledger_account_metadata',
+              `metadata${index}`,
+              `metadata${index}.ledger_account_id = entity.id AND metadata${index}.key = :metaKey${index} AND metadata${index}.value = :metaValue${index}`,
+              { [`metaKey${index}`]: key, [`metaValue${index}`]: value }
+            );
+          });
         }
         return qb;
       },
