@@ -131,15 +131,6 @@ jobs:
         working-directory: backend
         run: NODE_ENV=test pnpm test:e2e
 
-      - name: Stop TigerBeetle
-        if: always()
-        working-directory: backend
-        run: |
-          if [ -f data/tigerbeetle_ci_test.log ]; then
-            echo "TigerBeetle log:"
-            cat data/tigerbeetle_ci_test.log
-          fi
-          pkill -f "tigerbeetle.*ci_test" || true
 
   build:
     runs-on: ubuntu-latest
