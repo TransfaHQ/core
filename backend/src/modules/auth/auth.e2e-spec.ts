@@ -9,6 +9,7 @@ import { setupTestApp } from '@src/setup-test';
 
 import { ConfigService } from '@libs/config/config.service';
 
+import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { KeysEntity } from './entities/keys.entity';
 import { UserEntity } from './entities/user.entity';
@@ -19,6 +20,7 @@ describe('AuthController', () => {
   let keysRepository: Repository<KeysEntity>;
   let configService: ConfigService;
   let adminSecret: string;
+  let passwordHash: string;
 
   const generateTestUser = (): CreateUserDto => ({
     email: `test-${Date.now()}-${Math.random().toString(36).substring(7)}@example.com`,
@@ -32,9 +34,11 @@ describe('AuthController', () => {
   beforeAll(async () => {
     app = await setupTestApp();
 
-    userRepository = app.get<Repository<UserEntity>>(getRepositoryToken(UserEntity));
-    keysRepository = app.get<Repository<KeysEntity>>(getRepositoryToken(KeysEntity));
-    configService = app.get<ConfigService>(ConfigService);
+    userRepository = app.get(getRepositoryToken(UserEntity));
+    keysRepository = app.get(getRepositoryToken(KeysEntity));
+    configService = app.get(ConfigService);
+    const authService = app.get(AuthService);
+    passwordHash = await authService.hashPassword('password123');
     adminSecret = configService.adminSecret;
   });
 
@@ -131,12 +135,12 @@ describe('AuthController', () => {
       it('should reject duplicate email addresses', async () => {
         const testUser = generateTestUser();
 
-        // Create first user
-        await request(app.getHttpServer())
-          .post('/v1/auth/users')
-          .set(setAdminHeaders())
-          .send(testUser)
-          .expect(201);
+        const user = userRepository.create({
+          email: testUser.email,
+          isActive: true,
+          password: passwordHash,
+        });
+        await userRepository.save(user);
 
         // Attempt to create second user with same email
         const response = await request(app.getHttpServer())
@@ -207,11 +211,12 @@ describe('AuthController', () => {
       testUser = generateTestUser();
 
       // Create a test user for login tests
-      await request(app.getHttpServer())
-        .post('/v1/auth/users')
-        .set(setAdminHeaders())
-        .send(testUser)
-        .expect(201);
+      const user = userRepository.create({
+        email: testUser.email,
+        isActive: true,
+        password: passwordHash,
+      });
+      await userRepository.save(user);
     });
 
     describe('Successful Login', () => {

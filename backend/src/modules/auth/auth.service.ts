@@ -1,16 +1,24 @@
+import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { Request } from 'express';
+import ms, { StringValue } from 'ms';
 import { PinoLogger } from 'nestjs-pino';
 import { Repository } from 'typeorm';
 
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { ConfigService } from '@libs/config/config.service';
 
-import { CreateKeyDto, KeyResponseDto } from './dto';
+import { CreateKeyDto, CreateUserDto, KeyResponseDto, LoginDto, UserResponseDto } from './dto';
 import { KeysEntity } from './entities/keys.entity';
+import { UserEntity } from './entities/user.entity';
 import { JwtPayload } from './types';
 
 @Injectable()
@@ -18,10 +26,85 @@ export class AuthService {
   constructor(
     @InjectRepository(KeysEntity)
     private readonly keysRepository: Repository<KeysEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
     private readonly config: ConfigService,
     private readonly jwtService: JwtService,
     private readonly logger: PinoLogger,
   ) {}
+
+  async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
+    const { email, password } = createUserDto;
+
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('email_already_exists');
+    }
+
+    const hashedPassword = await this.hashPassword(password);
+
+    const user = this.userRepository.create({
+      email,
+      password: hashedPassword,
+      isActive: true,
+    });
+
+    const savedUser = await this.userRepository.save(user);
+
+    return {
+      id: savedUser.id,
+      email: savedUser.email,
+      createdAt: savedUser.createdAt,
+      updatedAt: savedUser.updatedAt,
+    };
+  }
+
+  async hashPassword(password: string): Promise<string> {
+    return await bcrypt.hash(password, this.config.authSaltRounds);
+  }
+
+  async login(loginDto: LoginDto): Promise<{ token: string; cookieOptions: any }> {
+    const { email, password } = loginDto;
+
+    const user = await this.userRepository.findOne({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Account is inactive');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const payload: JwtPayload = {
+      sub: user.id.toString(),
+      email: user.email,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload);
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict' as const,
+      maxAge: ms(this.config.jwtExpiresIn as StringValue),
+    };
+
+    return {
+      token: accessToken,
+      cookieOptions,
+    };
+  }
 
   async createKey(_: CreateKeyDto): Promise<KeyResponseDto> {
     const generatedSecret = crypto.randomBytes(32).toString('base64url');
