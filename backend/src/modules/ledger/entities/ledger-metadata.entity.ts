@@ -1,9 +1,9 @@
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, type Relation } from 'typeorm';
 
 import { BaseTypeormEntity } from '@libs/database';
 
-import { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
-import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
+import type { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
+import type { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
 
 @Entity('ledger_metadata')
 export class LedgerMetadataEntity extends BaseTypeormEntity {
@@ -13,11 +13,11 @@ export class LedgerMetadataEntity extends BaseTypeormEntity {
   @Column({ type: 'varchar', length: 255 })
   value: string;
 
-  @ManyToOne(() => LedgerEntity, (ledger) => ledger.metadata, {
+  @ManyToOne('LedgerEntity', 'metadata', {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'ledger_id' })
-  ledger: LedgerEntity;
+  ledger: Relation<LedgerEntity>;
 }
 
 @Entity('ledger_account_metadata')
@@ -28,9 +28,9 @@ export class LedgerAccountMetadataEntity extends BaseTypeormEntity {
   @Column({ type: 'varchar', length: 255 })
   value: string;
 
-  @ManyToOne(() => LedgerAccountEntity, (ledgerAccount) => ledgerAccount.metadata, {
+  @ManyToOne('LedgerAccountEntity', 'metadata', {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'ledger_account_id' })
-  ledgerAccount: LedgerAccountEntity;
+  ledgerAccount: Relation<LedgerAccountEntity>;
 }

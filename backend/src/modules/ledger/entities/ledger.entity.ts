@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Column, Entity, OneToMany, type Relation } from 'typeorm';
 
 import { BaseTypeormEntity } from '@libs/database';
 
@@ -15,13 +15,13 @@ export class LedgerEntity extends BaseTypeormEntity {
   @Column({ type: 'int', name: 'tiger_beetle_id', update: false })
   tigerBeetleId: number;
 
-  @OneToMany(() => LedgerMetadataEntity, (metadata) => metadata.ledger, {
+  @OneToMany('LedgerMetadataEntity', 'ledger', {
     cascade: true,
   })
-  metadata: LedgerMetadataEntity[];
+  metadata: Relation<LedgerMetadataEntity[]>;
 
-  @OneToMany(() => LedgerAccountEntity, (account) => account.ledger, {
+  @OneToMany('LedgerAccountEntity', 'ledger', {
     cascade: true,
   })
-  ledgerAccounts: LedgerAccountEntity[];
+  ledgerAccounts: Relation<LedgerAccountEntity[]>;
 }

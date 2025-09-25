@@ -63,6 +63,8 @@
     "@nestjs/cli": "^11.0.10",
     "@nestjs/schematics": "^11.0.7",
     "@nestjs/testing": "^11.1.6",
+    "@swc/core": "^1.13.19",
+    "@swc/jest": "^0.2.39",
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",

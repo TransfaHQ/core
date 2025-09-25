@@ -4,10 +4,11 @@ import {
   Entity,
   OneToMany,
   PrimaryGeneratedColumn,
+  type Relation,
   UpdateDateColumn,
 } from 'typeorm';
 
-import { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
+import type { LedgerAccountEntity } from './ledger-account.entity';
 
 @Entity('currencies')
 export class CurrencyEntity {
@@ -29,6 +30,6 @@ export class CurrencyEntity {
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
 
-  @OneToMany(() => LedgerAccountEntity, (ledgerAccount) => ledgerAccount.currency)
-  ledgerAccounts: LedgerAccountEntity[];
+  @OneToMany('LedgerAccountEntity', 'currency')
+  ledgerAccounts: Relation<LedgerAccountEntity[]>;
 }

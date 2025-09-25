@@ -275,7 +275,7 @@ describe('LedgerAccountController', () => {
     beforeAll(async () => {
       // Set up additional test data for filtering tests
       const dataSource = app.get(DataSource);
-      await dataSource.query('delete from ledger_accounts;');
+      await dataSource.query('delete from test.ledger_accounts;');
       const ledgerService = app.get(LedgerService);
       const ledgerAccountService = app.get(LedgerAccountService);
       const currencyService = app.get(CurrencyService);
@@ -324,8 +324,8 @@ describe('LedgerAccountController', () => {
 
     afterAll(async () => {
       const dataSource = app.get(DataSource);
-      await dataSource.query('delete from ledger_account_metadata;');
-      await dataSource.query('delete from ledger_accounts;');
+      await dataSource.query('delete from test.ledger_account_metadata;');
+      await dataSource.query('delete from test.ledger_accounts;');
     });
 
     describe('Filter by ledger_id', () => {

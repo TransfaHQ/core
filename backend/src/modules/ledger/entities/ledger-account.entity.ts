@@ -1,12 +1,12 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, type Relation } from 'typeorm';
 
 import { BaseTypeormEntity } from '@libs/database';
 import { TigerBeetleIdTransformer } from '@libs/database/column-transformer';
 import { NormalBalanceEnum } from '@libs/enums';
 
 import { CurrencyEntity } from '@modules/ledger/entities/currency.entity';
-import { LedgerAccountMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
-import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
+import type { LedgerAccountMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
+import type { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
 import { LedgerAccountBalances } from '@modules/ledger/types';
 
 @Entity('ledger_accounts')
@@ -32,22 +32,22 @@ export class LedgerAccountEntity extends BaseTypeormEntity {
   @Column({ type: 'smallint', name: 'currency_exponent' })
   currencyExponent: number;
 
-  @OneToMany(() => LedgerAccountMetadataEntity, (metadata) => metadata.ledgerAccount, {
+  @OneToMany('LedgerAccountMetadataEntity', 'ledgerAccount', {
     cascade: true,
   })
-  metadata: LedgerAccountMetadataEntity[];
+  metadata: Relation<LedgerAccountMetadataEntity[]>;
 
-  @ManyToOne(() => LedgerEntity, (ledger) => ledger.ledgerAccounts, {
+  @ManyToOne('LedgerEntity', 'ledgerAccounts', {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'ledger_id' })
-  ledger: LedgerEntity;
+  ledger: Relation<LedgerEntity>;
 
-  @ManyToOne(() => CurrencyEntity, (currency) => currency.ledgerAccounts, {
+  @ManyToOne('CurrencyEntity', 'ledgerAccounts', {
     onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'currency_code', referencedColumnName: 'code' })
-  currency: CurrencyEntity;
+  currency: Relation<CurrencyEntity>;
 
   @Column({ name: 'normal_balance', type: 'varchar', length: 6 })
   normalBalance: NormalBalanceEnum;

@@ -4,12 +4,7 @@ module.exports = {
   testEnvironment: 'node',
   testRegex: '.e2e-spec.ts$',
   transform: {
-    '^.+\\.(t|j)s$': [
-      'ts-jest',
-      {
-        transpilation: true,
-      },
-    ],
+    "^.+\\.(t|j)s?$": ["@swc/jest"]
   },
   moduleNameMapper: {
     '^@libs/(.*)$': '<rootDir>/src/libs/$1',
