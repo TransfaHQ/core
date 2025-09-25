@@ -15,6 +15,7 @@ export async function setupTestApp(): Promise<INestApplication> {
   const schemaName = process.env.CORE_POSTGRES_SCHEMA || 'e2e_test';
 
   await app.init();
+  app.enableShutdownHooks();
 
   if (schemaName) {
     const ds = app.get(DataSource);

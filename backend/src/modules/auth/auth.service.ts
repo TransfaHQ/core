@@ -1,4 +1,3 @@
-import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { Request } from 'express';
 import { PinoLogger } from 'nestjs-pino';
@@ -27,7 +26,7 @@ export class AuthService {
   async createKey(_: CreateKeyDto): Promise<KeyResponseDto> {
     const generatedSecret = crypto.randomBytes(32).toString('base64url');
 
-    const hashedSecret = await bcrypt.hash(generatedSecret, this.config.authSaltRounds);
+    const hashedSecret = crypto.createHash('sha256').update(generatedSecret).digest('hex');
 
     const key = this.keysRepository.create({
       secret: hashedSecret,
@@ -63,8 +62,11 @@ export class AuthService {
     if (!key) {
       return null;
     }
-
-    const isSecretValid = await bcrypt.compare(secret, key.secret);
+    const providedHash = crypto.createHash('sha256').update(secret).digest('hex');
+    const isSecretValid = crypto.timingSafeEqual(
+      Buffer.from(providedHash),
+      Buffer.from(key.secret),
+    );
     if (!isSecretValid) {
       return null;
     }

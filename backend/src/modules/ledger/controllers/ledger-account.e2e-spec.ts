@@ -649,7 +649,6 @@ describe('LedgerAccountController', () => {
         description: 'test',
         normalBalance: NormalBalanceEnum.CREDIT,
         currency: 'USD',
-        currencyExponent: 2,
         externalId: uuidV7(),
       });
     });
@@ -689,7 +688,6 @@ describe('LedgerAccountController', () => {
         description: 'test',
         normalBalance: NormalBalanceEnum.CREDIT,
         currency: 'USD',
-        currencyExponent: 2,
         externalId: uuidV7(),
       });
     });

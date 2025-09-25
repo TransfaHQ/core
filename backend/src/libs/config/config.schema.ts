@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import { DBConfigSchema } from '@src/database/config';
+import { DBConfigSchema } from '@src/database/config.schema';
 
 export enum Environment {
   DEVELOPMENT = 'development',

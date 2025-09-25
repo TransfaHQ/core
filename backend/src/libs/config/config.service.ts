@@ -73,6 +73,7 @@ export class ConfigService {
       migrationsTableName: this.envConfig.DB_MIGRATIONS_TABLE,
       schema: this.envConfig.CORE_POSTGRES_SCHEMA ?? undefined,
       logging: this.envConfig.DB_LOGGING_LEVEL as LoggerOptions,
+      maxQueryExecutionTime: 50,
     };
   }
 }
