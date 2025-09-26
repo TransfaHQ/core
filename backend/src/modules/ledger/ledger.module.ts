@@ -1,5 +1,6 @@
+import { MikroOrmModule } from '@mikro-orm/nestjs';
+
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { CurrencyController } from '@modules/ledger/controllers/currency.controller';
 import { LedgerAccountController } from '@modules/ledger/controllers/ledger-account.controller';
@@ -17,7 +18,7 @@ import { LedgerService } from '@modules/ledger/services/ledger.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
+    MikroOrmModule.forFeature([
       LedgerEntity,
       LedgerAccountEntity,
       LedgerAccountMetadataEntity,

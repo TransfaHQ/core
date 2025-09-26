@@ -1,5 +1,6 @@
+import { MikroOrmModule } from '@mikro-orm/nestjs';
+
 import { Global, Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ConfigModule } from '@libs/config/config.module';
 import { ConfigService } from '@libs/config/config.service';
@@ -28,16 +29,21 @@ const ormEntities = [
   imports: [
     ConfigModule,
     TigerBeetleModule,
-    TypeOrmModule.forRootAsync({
+    MikroOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        return configService.typeOrmConfig;
+        return configService.mikroOrmConfig;
       },
       inject: [ConfigService],
     }),
-    TypeOrmModule.forFeature(ormEntities),
+    MikroOrmModule.forFeature(ormEntities),
   ],
   providers: [],
-  exports: [ConfigModule, TigerBeetleModule, TypeOrmModule, TypeOrmModule.forFeature(ormEntities)],
+  exports: [
+    ConfigModule,
+    TigerBeetleModule,
+    MikroOrmModule,
+    MikroOrmModule.forFeature(ormEntities),
+  ],
 })
 export class BootstrapModule {}

@@ -1,3 +1,5 @@
+import { EntityProperty, Platform, Type } from '@mikro-orm/core';
+
 export function tbIdToBuffer(tbId: bigint): Buffer {
   const buf = Buffer.alloc(16);
   buf.writeBigUInt64BE(tbId >> 64n, 0); // high 64 bits
@@ -19,5 +21,19 @@ export class TigerBeetleIdTransformer {
 
   from(data: Buffer): bigint {
     return bufferToTbId(data);
+  }
+}
+
+export class TigerBeetleIdType extends Type<bigint, Buffer> {
+  convertToDatabaseValue(data: bigint, _: Platform): Buffer {
+    return tbIdToBuffer(data);
+  }
+
+  convertToJSValue(data: Buffer, _: Platform): bigint {
+    return bufferToTbId(data);
+  }
+
+  getColumnType(_: EntityProperty, __: Platform) {
+    return `bytea`;
   }
 }

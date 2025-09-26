@@ -1,9 +1,10 @@
+import { MikroOrmModuleOptions } from '@mikro-orm/nestjs';
+import { PostgreSqlDriver } from '@mikro-orm/postgresql';
+
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
-import { LoggerOptions } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
-import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 import { ConfigSchema, EnvConfig, Environment } from './config.schema';
 
@@ -60,20 +61,25 @@ export class ConfigService {
     return this.envConfig.LOG_LEVEL;
   }
 
-  get typeOrmConfig(): TypeOrmModuleOptions {
+  get mikroOrmConfig(): MikroOrmModuleOptions {
     return {
-      type: 'postgres',
+      driver: PostgreSqlDriver,
       host: this.envConfig.DB_HOST,
       port: this.envConfig.DB_PORT,
-      username: this.envConfig.DB_USERNAME,
+      user: this.envConfig.DB_USERNAME,
       password: this.envConfig.DB_PASSWORD,
-      database: this.envConfig.DB_NAME,
-      entities: [__dirname + '/../../modules/**/*.entity{.ts,.js}'],
-      migrations: [__dirname + '/../../database/migrations/*{.ts,.js}'],
-      migrationsTableName: this.envConfig.DB_MIGRATIONS_TABLE,
+      dbName: this.envConfig.DB_NAME,
       schema: this.envConfig.CORE_POSTGRES_SCHEMA ?? undefined,
-      logging: this.envConfig.DB_LOGGING_LEVEL as LoggerOptions,
-      maxQueryExecutionTime: 50,
+      entities: [__dirname + '/../../modules/**/*.entity{.ts,.js}'],
+      entitiesTs: [__dirname + '/../../modules/**/*.entity.ts'],
+      migrations: {
+        path: __dirname + '/../../database/migrations',
+        tableName: this.envConfig.DB_MIGRATIONS_TABLE,
+        transactional: true,
+      },
+      debug: true,
+      allowGlobalContext: this.appEnv === 'test',
+      registerRequestContext: this.appEnv !== 'test',
     };
   }
 }

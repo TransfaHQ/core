@@ -1,55 +1,53 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, type Relation } from 'typeorm';
+import { Cascade, Collection, Entity, ManyToOne, OneToMany, Property } from '@mikro-orm/core';
 
-import { BaseTypeormEntity } from '@libs/database';
-import { TigerBeetleIdTransformer } from '@libs/database/column-transformer';
+import { BaseMikroOrmEntity } from '@libs/database';
+import { TigerBeetleIdType } from '@libs/database/column-transformer';
 import { NormalBalanceEnum } from '@libs/enums';
 
-import { CurrencyEntity } from '@modules/ledger/entities/currency.entity';
 import type { LedgerAccountMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
 import type { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
 import { LedgerAccountBalances } from '@modules/ledger/types';
 
-@Entity('ledger_accounts')
-export class LedgerAccountEntity extends BaseTypeormEntity {
-  @Column({ type: 'varchar', length: 255 })
+@Entity({ tableName: 'ledger_accounts' })
+export class LedgerAccountEntity extends BaseMikroOrmEntity {
+  @Property({ type: 'varchar', length: 255 })
   name: string;
 
-  @Column({ type: 'uuid', name: 'ledger_id' })
-  ledgerId: string;
+  @Property({ type: 'varchar', length: 255 })
+  description?: string;
 
-  @Column({ type: 'varchar', length: 255 })
-  description: string;
-
-  @Column({ type: 'bytea', name: 'tiger_beetle_id', transformer: new TigerBeetleIdTransformer() })
+  @Property({
+    type: TigerBeetleIdType,
+    fieldName: 'tiger_beetle_id',
+  })
   tigerBeetleId: bigint;
 
-  @Column({ type: 'varchar', name: 'external_id', length: 180, unique: true })
-  externalId: string;
+  @Property({
+    type: 'varchar',
+    fieldName: 'external_id',
+    length: 180,
+    unique: true,
+    nullable: true,
+  })
+  externalId?: string;
 
-  @Column({ type: 'varchar', name: 'currency_code', length: 10 })
+  @Property({ type: 'varchar', fieldName: 'currency_code', length: 10 })
   currencyCode: string;
 
-  @Column({ type: 'smallint', name: 'currency_exponent' })
+  @Property({ type: 'smallint', fieldName: 'currency_exponent' })
   currencyExponent: number;
 
   @OneToMany('LedgerAccountMetadataEntity', 'ledgerAccount', {
-    cascade: true,
+    cascade: [Cascade.PERSIST],
   })
-  metadata: Relation<LedgerAccountMetadataEntity[]>;
+  metadata = new Collection<LedgerAccountMetadataEntity>(this);
 
-  @ManyToOne('LedgerEntity', 'ledgerAccounts', {
-    onDelete: 'CASCADE',
+  @ManyToOne('LedgerEntity', {
+    deleteRule: 'cascade',
   })
-  @JoinColumn({ name: 'ledger_id' })
-  ledger: Relation<LedgerEntity>;
+  ledger: LedgerEntity;
 
-  @ManyToOne('CurrencyEntity', 'ledgerAccounts', {
-    onDelete: 'RESTRICT',
-  })
-  @JoinColumn({ name: 'currency_code', referencedColumnName: 'code' })
-  currency: Relation<CurrencyEntity>;
-
-  @Column({ name: 'normal_balance', type: 'varchar', length: 6 })
+  @Property({ fieldName: 'normal_balance', type: 'varchar', length: 6 })
   normalBalance: NormalBalanceEnum;
 
   balances: LedgerAccountBalances;

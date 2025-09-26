@@ -1,9 +1,9 @@
-import { Column, Entity } from 'typeorm';
+import { Entity, Property } from '@mikro-orm/core';
 
-import { BaseTypeormEntity } from '@libs/database';
+import { BaseMikroOrmEntity } from '@libs/database';
 
-@Entity('keys')
-export class KeysEntity extends BaseTypeormEntity {
-  @Column({ type: 'varchar', length: 255 })
+@Entity({ tableName: 'keys' })
+export class KeysEntity extends BaseMikroOrmEntity {
+  @Property({ type: 'varchar', length: 255 })
   secret: string;
 }

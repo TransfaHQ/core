@@ -1,9 +1,11 @@
+import { EntityManager, EntityRepository } from '@mikro-orm/core';
+import { InjectRepository } from '@mikro-orm/nestjs';
+
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { Request } from 'express';
 import ms, { StringValue } from 'ms';
 import { PinoLogger } from 'nestjs-pino';
-import { Repository } from 'typeorm';
 
 import {
   ConflictException,
@@ -12,7 +14,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
 
 import { ConfigService } from '@libs/config/config.service';
 
@@ -25,9 +26,10 @@ import { JwtPayload } from './types';
 export class AuthService {
   constructor(
     @InjectRepository(KeysEntity)
-    private readonly keysRepository: Repository<KeysEntity>,
+    private readonly keysRepository: EntityRepository<KeysEntity>,
     @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>,
+    private readonly userRepository: EntityRepository<UserEntity>,
+    private readonly em: EntityManager,
     private readonly config: ConfigService,
     private readonly jwtService: JwtService,
     private readonly logger: PinoLogger,
@@ -36,9 +38,7 @@ export class AuthService {
   async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     const { email, password } = createUserDto;
 
-    const existingUser = await this.userRepository.findOne({
-      where: { email },
-    });
+    const existingUser = await this.userRepository.findOne({ email });
 
     if (existingUser) {
       throw new ConflictException('email_already_exists');
@@ -46,19 +46,18 @@ export class AuthService {
 
     const hashedPassword = await this.hashPassword(password);
 
-    const user = this.userRepository.create({
-      email,
-      password: hashedPassword,
-      isActive: true,
-    });
+    const user = new UserEntity();
+    user.email = email;
+    user.password = hashedPassword;
+    user.isActive = true;
 
-    const savedUser = await this.userRepository.save(user);
+    await this.em.persistAndFlush(user);
 
     return {
-      id: savedUser.id,
-      email: savedUser.email,
-      createdAt: savedUser.createdAt,
-      updatedAt: savedUser.updatedAt,
+      id: user.id,
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     };
   }
 
@@ -69,9 +68,7 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<{ token: string; cookieOptions: any }> {
     const { email, password } = loginDto;
 
-    const user = await this.userRepository.findOne({
-      where: { email },
-    });
+    const user = await this.userRepository.findOne({ email });
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -111,36 +108,32 @@ export class AuthService {
 
     const hashedSecret = crypto.createHash('sha256').update(generatedSecret).digest('hex');
 
-    const key = this.keysRepository.create({
-      secret: hashedSecret,
-    });
+    const key = new KeysEntity();
+    key.secret = hashedSecret;
 
-    const savedKey = await this.keysRepository.save(key);
+    await this.em.persistAndFlush(key);
 
     return {
-      id: savedKey.id,
+      id: key.id,
       secret: generatedSecret,
-      createdAt: savedKey.createdAt,
-      updatedAt: savedKey.updatedAt,
+      createdAt: key.createdAt,
+      updatedAt: key.updatedAt,
     };
   }
 
   async deleteKey(id: string): Promise<void> {
-    const key = await this.keysRepository.findOne({
-      where: { id },
-    });
+    const key = await this.keysRepository.findOne({ id, deletedAt: null });
 
     if (!key) {
       throw new NotFoundException('Key not found');
     }
 
-    await this.keysRepository.softDelete(id);
+    key.deletedAt = new Date();
+    await this.em.persistAndFlush(key);
   }
 
   async validateApiKey(id: string, secret: string): Promise<KeysEntity | null> {
-    const key = await this.keysRepository.findOne({
-      where: { id },
-    });
+    const key = await this.keysRepository.findOne({ id, deletedAt: null });
 
     if (!key) {
       return null;

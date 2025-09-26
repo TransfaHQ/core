@@ -59,7 +59,7 @@ export class LedgerAccountResponseDto {
     example: 'Main accounting ledger account',
   })
   @IsString()
-  description: string;
+  description?: string;
 
   @ApiProperty({ description: 'Normal balance type', example: 'DEBIT' })
   @IsString()
@@ -74,7 +74,7 @@ export class LedgerAccountResponseDto {
 
   @ApiProperty({ description: 'External identifier for the ledger account', example: 'EXT-12345' })
   @IsString()
-  externalId: string;
+  externalId?: string;
 
   @ApiProperty({ type: LedgerAccountBalancesDto, description: 'Balances of the ledger account' })
   balances: LedgerAccountBalancesDto;
