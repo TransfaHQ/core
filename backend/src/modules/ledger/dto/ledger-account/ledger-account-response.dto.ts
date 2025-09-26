@@ -59,7 +59,7 @@ export class LedgerAccountResponseDto {
     example: 'Main accounting ledger account',
   })
   @IsString()
-  description?: string;
+  description: string | null;
 
   @ApiProperty({ description: 'Normal balance type', example: 'DEBIT' })
   @IsString()

@@ -1,4 +1,5 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
+import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 
 import { Global, Module } from '@nestjs/common';
 
@@ -35,6 +36,7 @@ const ormEntities = [
         return configService.mikroOrmConfig;
       },
       inject: [ConfigService],
+      driver: PostgreSqlDriver,
     }),
     MikroOrmModule.forFeature(ormEntities),
   ],

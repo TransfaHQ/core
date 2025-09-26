@@ -13,5 +13,5 @@ export const DBConfigSchema = z.object({
     })
     .optional(),
   DB_MIGRATIONS_TABLE: z.string().default('migrations'),
-  DB_LOGGING_LEVEL: z.string().default('query'),
+  DB_ENABLE_LOGGING: z.string().transform(Boolean).default(false),
 });

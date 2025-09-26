@@ -23,7 +23,7 @@
     "db:migrate": "ts-node --files -r tsconfig-paths/register scripts/db/migrate.ts",
     "db:revert": "ts-node --files -r tsconfig-paths/register scripts/db/revert.ts",
     "db:show": "pnpm run mikro-orm migration:list",
-    "db:create-migration": "pnpm run mikro-orm migration:create",
+    "db:create-migration": "pnpm run mikro-orm migration:create -b",
     "tb:start:dev": "scripts/tigerbeetle/start.sh 0_0_transfa_dev",
     "tb:configure:dev": "scripts/tigerbeetle/configure.sh 0_0_transfa_dev",
     "tb:download": "scripts/tigerbeetle/download.sh"

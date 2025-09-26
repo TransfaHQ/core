@@ -133,7 +133,6 @@ describe('LedgerAccountController', () => {
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send({
           name: 'test',
-          description: 'test',
           ledgerId: ledger.id,
           currency: currency.code,
           normalBalance: NormalBalanceEnum.DEBIT,
@@ -142,7 +141,7 @@ describe('LedgerAccountController', () => {
         .expect(HttpStatus.CREATED)
         .expect((response) => {
           expect(response.body.name).toBe('test');
-          expect(response.body.description).toBe('test');
+          expect(response.body.description).toBe(null);
           expect(response.body.ledgerId).toBe(ledger.id);
           expect(response.body.createdAt).toBeDefined();
           expect(response.body.updatedAt).toBeDefined();

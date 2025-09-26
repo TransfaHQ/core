@@ -4,7 +4,12 @@ module.exports = {
   testEnvironment: 'node',
   testRegex: '.e2e-spec.ts$',
   transform: {
-    "^.+\\.(t|j)s?$": ["@swc/jest"]
+    '^.+\\.(t|j)s$': [
+      'ts-jest',
+      {
+        transpilation: true,
+      },
+    ],
   },
   moduleNameMapper: {
     '^@libs/(.*)$': '<rootDir>/src/libs/$1',
@@ -15,4 +20,5 @@ module.exports = {
   setupFilesAfterEnv: [],
   globalTeardown: '<rootDir>/src/jest-e2e-global-teardown.ts',
   transformIgnorePatterns: ['/node_modules/(?!uuid)/'],
+  verbose: true
 };

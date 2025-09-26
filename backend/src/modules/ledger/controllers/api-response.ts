@@ -9,7 +9,7 @@ export const ledgerAccountEntityToApiV1Response = (
   return {
     id: entity.id,
     name: entity.name,
-    description: entity.description,
+    description: entity.description ?? null,
     normalBalance: entity.normalBalance,
     ledgerId: entity.ledger.id,
     externalId: entity.externalId,

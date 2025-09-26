@@ -10,8 +10,8 @@ export class LedgerEntity extends BaseMikroOrmEntity {
   @Property({ type: 'varchar', length: 255 })
   name: string;
 
-  @Property({ type: 'varchar', length: 255 })
-  description: string;
+  @Property({ type: 'varchar', length: 255, nullable: true })
+  description?: string;
 
   @Property({ type: 'integer', fieldName: 'tiger_beetle_id', persist: false })
   tigerBeetleId: number;
