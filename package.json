@@ -12,7 +12,7 @@
     "lint:backend": "pnpm --filter backend lint",
     "test": "pnpm --recursive test",
     "test:frontend": "pnpm --filter frontend test",
-    "test:backend": "pnpm --filter backend test:e2e"
+    "test:backend": "pnpm --filter backend test"
   },
   "devDependencies": {
     "husky": "^9.1.7"

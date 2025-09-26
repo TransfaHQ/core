@@ -1,7 +1,8 @@
 module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
-  rootDir: 'src',
-  testRegex: '.*\\.spec\\.ts$',
+  rootDir: '.',
+  testEnvironment: 'node',
+  testRegex: '.spec.ts$',
   transform: {
     '^.+\\.(t|j)s$': [
       'ts-jest',
@@ -10,13 +11,14 @@ module.exports = {
       },
     ],
   },
-  collectCoverageFrom: ['**/*.(t|j)s'],
-  coverageDirectory: '../coverage',
-  testEnvironment: 'node',
   moduleNameMapper: {
-    '^@libs/(.*)$': '<rootDir>/libs/$1',
-    '^@modules/(.*)$': '<rootDir>/modules/$1',
-    '^@src/(.*)$': '<rootDir>/$1',
+    '^@libs/(.*)$': '<rootDir>/src/libs/$1',
+    '^@modules/(.*)$': '<rootDir>/src/modules/$1',
+    '^@src/(.*)$': '<rootDir>/src/$1',
   },
+  testTimeout: 30000,
+  setupFilesAfterEnv: [],
+  globalTeardown: '<rootDir>/src/test/jest-e2e-global-teardown.ts',
   transformIgnorePatterns: ['/node_modules/(?!uuid)/'],
+  verbose: true
 };

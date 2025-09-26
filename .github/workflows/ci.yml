@@ -145,7 +145,7 @@ jobs:
 
       - name: Run backend e2e tests
         working-directory: backend
-        run: NODE_ENV=test pnpm test:e2e
+        run: pnpm test
 
 
   build:
