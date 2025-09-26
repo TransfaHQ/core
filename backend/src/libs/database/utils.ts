@@ -1,15 +1,15 @@
-import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import { EntityRepository, QueryOrder } from '@mikro-orm/core';
 
 import { API_PAGE_SIZE } from '@libs/constants';
-import { BaseTypeormEntity } from '@libs/database/base-typeorm.entity';
+import { BaseMikroOrmEntity } from '@libs/database/base-mikro-orm.entity';
 
-export interface CursorPaginationOptions<T extends BaseTypeormEntity> {
-  repo: Repository<T>;
+export interface CursorPaginationOptions<T extends BaseMikroOrmEntity> {
+  repo: EntityRepository<T>;
   limit?: number;
   cursor?: string;
   order?: 'ASC' | 'DESC';
-  where?: (qb: SelectQueryBuilder<T>) => SelectQueryBuilder<T>;
-  relations?: string[];
+  where?: object;
+  populate?: string[];
 }
 
 export interface CursorPaginatedResult<T> {
@@ -23,34 +23,27 @@ export interface CursorPaginatedResult<T> {
 /**
  * Generic cursor pagination using UUIDv7
  */
-export async function cursorPaginate<T extends BaseTypeormEntity>(
+export async function cursorPaginate<T extends BaseMikroOrmEntity>(
   options: CursorPaginationOptions<T>,
 ): Promise<CursorPaginatedResult<T>> {
-  const { repo, cursor, order = 'ASC', where, relations = [] } = options;
+  const { repo, cursor, order = 'ASC', where = {}, populate = [] } = options;
   const limit = options.limit ?? API_PAGE_SIZE;
-  let qb = repo
-    .createQueryBuilder('entity')
-    .orderBy('entity.id', order)
-    .take(limit + 1);
 
-  // Apply relations
-  for (const relation of relations) {
-    qb = qb.leftJoinAndSelect(`entity.${relation}`, relation.replace('.', '_'));
-  }
+  const conditions: any = { ...where };
 
   if (cursor) {
     if (order === 'ASC') {
-      qb = qb.where('entity.id > :cursor', { cursor });
+      conditions.id = { $gt: cursor };
     } else {
-      qb = qb.where('entity.id < :cursor', { cursor });
+      conditions.id = { $lt: cursor };
     }
   }
 
-  if (where) {
-    qb = where(qb);
-  }
-
-  const rows = await qb.getMany();
+  const rows = await repo.find(conditions, {
+    orderBy: { id: order === 'ASC' ? QueryOrder.ASC : QueryOrder.DESC } as any,
+    limit: limit + 1,
+    populate: populate as any,
+  });
 
   const hasExtra = rows.length > limit;
   const data = hasExtra ? rows.slice(0, limit) : rows;
@@ -65,31 +58,5 @@ export async function cursorPaginate<T extends BaseTypeormEntity>(
     prevCursor,
     hasNext: order === 'ASC' ? !!nextCursor : false,
     hasPrev: order === 'DESC' ? !!prevCursor : false,
-  };
-}
-
-let appDataSource: DataSource;
-
-export const setDataSource = (ds: DataSource) => {
-  appDataSource = ds;
-};
-
-const getDataSource = (): DataSource => {
-  if (!appDataSource) throw new Error('DataSource has not been set yet');
-  return appDataSource;
-};
-
-export function Transactional() {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-    const originalMethod = descriptor.value as (...args: any[]) => any;
-
-    descriptor.value = async function (this: any, ...args: any[]): Promise<any> {
-      const dataSource = getDataSource();
-      return await dataSource.transaction(async (manager) => {
-        return await originalMethod.apply(this, [...args, manager]);
-      });
-    };
-
-    return descriptor;
   };
 }

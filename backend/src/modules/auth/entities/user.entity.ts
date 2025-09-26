@@ -1,15 +1,15 @@
-import { Column, Entity } from 'typeorm';
+import { Entity, Property } from '@mikro-orm/core';
 
-import { BaseTypeormEntity } from '@libs/database';
+import { BaseMikroOrmEntity } from '@libs/database';
 
-@Entity('users')
-export class UserEntity extends BaseTypeormEntity {
-  @Column({ type: 'varchar', length: 255, unique: true })
+@Entity({ tableName: 'users' })
+export class UserEntity extends BaseMikroOrmEntity {
+  @Property({ type: 'varchar', length: 255, unique: true })
   email: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Property({ type: 'varchar', length: 255 })
   password: string;
 
-  @Column({ type: 'boolean', default: true, name: 'is_active' })
+  @Property({ type: 'boolean', default: true, fieldName: 'is_active' })
   isActive: boolean;
 }

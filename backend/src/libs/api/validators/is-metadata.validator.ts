@@ -14,8 +14,7 @@ export function IsMetadata(validationOptions?: ValidationOptions) {
             ([key, val]) =>
               typeof key === 'string' &&
               key.length <= 255 &&
-              typeof val === 'string' &&
-              val.length <= 255,
+              ((typeof val === 'string' && val.length <= 255) || val === null),
           );
         },
         defaultMessage(args: ValidationArguments) {

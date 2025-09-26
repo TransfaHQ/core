@@ -1,27 +1,28 @@
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Cascade, Collection, Entity, OneToMany, Property } from '@mikro-orm/core';
 
-import { BaseTypeormEntity } from '@libs/database';
+import { BaseMikroOrmEntity } from '@libs/database';
 
-import { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
-import { LedgerMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
+import type { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
+import type { LedgerMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
 
-@Entity('ledgers')
-export class LedgerEntity extends BaseTypeormEntity {
-  @Column({ type: 'varchar', length: 255 })
+@Entity({ tableName: 'ledgers' })
+export class LedgerEntity extends BaseMikroOrmEntity {
+  @Property({ type: 'varchar', length: 255 })
   name: string;
-  @Column({ type: 'varchar', length: 255 })
+
+  @Property({ type: 'varchar', length: 255 })
   description: string;
 
-  @Column({ type: 'int', name: 'tiger_beetle_id', update: false })
+  @Property({ type: 'integer', fieldName: 'tiger_beetle_id', persist: false })
   tigerBeetleId: number;
 
-  @OneToMany(() => LedgerMetadataEntity, (metadata) => metadata.ledger, {
-    cascade: true,
+  @OneToMany('LedgerMetadataEntity', 'ledger', {
+    cascade: [Cascade.PERSIST],
   })
-  metadata: LedgerMetadataEntity[];
+  metadata = new Collection<LedgerMetadataEntity>(this);
 
-  @OneToMany(() => LedgerAccountEntity, (account) => account.ledger, {
-    cascade: true,
+  @OneToMany('LedgerAccountEntity', 'ledger', {
+    cascade: [Cascade.PERSIST],
   })
-  ledgerAccounts: LedgerAccountEntity[];
+  ledgerAccounts = new Collection<LedgerAccountEntity>(this);
 }

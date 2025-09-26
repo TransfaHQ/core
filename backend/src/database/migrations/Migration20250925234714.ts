@@ -1,11 +1,13 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { Migration } from '@mikro-orm/migrations';
 
-export class Initial1676125806802 implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
-    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto";`);
+import currencyCodes from 'currency-codes';
 
-    await queryRunner.query(`
+export class Migration20250925234714 extends Migration {
+  override async up(): Promise<void> {
+    this.addSql(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
+    this.addSql(`CREATE EXTENSION IF NOT EXISTS "pgcrypto";`);
+
+    this.addSql(`
         CREATE OR REPLACE FUNCTION uuid_generate_v7() RETURNS uuid AS $$
         DECLARE
             ts_millis BIGINT;
@@ -41,7 +43,7 @@ export class Initial1676125806802 implements MigrationInterface {
     `);
 
     // Create User table
-    await queryRunner.query(`
+    this.addSql(`
           CREATE TABLE "user" (
               "id" UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
               "email" VARCHAR(255) NOT NULL UNIQUE,
@@ -54,7 +56,7 @@ export class Initial1676125806802 implements MigrationInterface {
       `);
 
     // Create keys table
-    await queryRunner.query(`
+    this.addSql(`
             CREATE TABLE "keys" (
                 "id" UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
                 "secret" VARCHAR(255) NOT NULL,
@@ -65,7 +67,7 @@ export class Initial1676125806802 implements MigrationInterface {
         `);
 
     // create ledger & ledger_account table
-    await queryRunner.query(`
+    this.addSql(`
         CREATE TABLE ledger (
             id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
             name VARCHAR(255) NOT NULL,
@@ -105,7 +107,7 @@ export class Initial1676125806802 implements MigrationInterface {
     `);
 
     // Create ledger_metadata
-    await queryRunner.query(`
+    this.addSql(`
       CREATE TABLE ledger_metadata (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
         ledger_id UUID NOT NULL REFERENCES ledger(id),
@@ -135,18 +137,73 @@ export class Initial1676125806802 implements MigrationInterface {
       CREATE INDEX idx_ledger_account_metadata_value ON ledger_account_metadata(value);
     `);
 
-    //
+    this.addSql(`
+        ALTER TABLE ledger_metadata ADD CONSTRAINT ledger_metadata_ledger_id_key_unique UNIQUE (ledger_id, key);
+        ALTER TABLE ledger_account_metadata ADD CONSTRAINT ledger_account_metadata_ledger_account_id_key_unique UNIQUE (ledger_account_id, key);
+    `);
+
+    this.addSql(`
+            CREATE UNIQUE INDEX idx_ledger_metadata_ledger_key_unique
+            ON ledger_metadata(ledger_id, key);
+        `);
+
+    this.addSql(`
+            CREATE UNIQUE INDEX idx_ledger_account_metadata_account_key_unique
+            ON ledger_account_metadata(ledger_account_id, key);
+        `);
+
+    this.addSql(`
+            CREATE TABLE currencies (
+                id SERIAL PRIMARY KEY,
+                code VARCHAR(10) UNIQUE NOT NULL,
+                exponent SMALLINT NOT NULL,
+                name VARCHAR(100) NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            );
+        `);
+    const currencies = currencyCodes
+      .codes()
+      .map((code) => {
+        const currency = currencyCodes.code(code)!;
+        return `('${currency.code}', ${currency.digits}, '${currency.currency.replace("'", "''")}')`;
+      })
+      .join(',\n            ');
+
+    this.addSql(`
+            INSERT INTO currencies (code, exponent, name) VALUES
+            ${currencies}
+        `);
+    this.addSql(`ALTER TABLE ledger_account ADD COLUMN currency_code VARCHAR(10);`);
+    this.addSql(`
+				UPDATE ledger_account
+				SET currency_code = currency
+				WHERE currency IS NOT NULL;
+		`);
+
+    this.addSql(`ALTER TABLE ledger_account ALTER COLUMN currency_code SET NOT NULL;`);
+
+    this.addSql(`ALTER TABLE ledger_account DROP COLUMN currency`);
+
+    this.addSql(`
+				ALTER TABLE ledger_account
+				ADD CONSTRAINT fk_ledger_account_currency_code
+				FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT;
+		`);
+    this.addSql(`ALTER TABLE "user" RENAME TO "users";`);
+    this.addSql(`ALTER TABLE "ledger" RENAME TO "ledgers";`);
+    this.addSql(`ALTER TABLE "ledger_account" RENAME TO "ledger_accounts";`);
   }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`
+  override async down(): Promise<void> {
+    this.addSql(`
         DROP FUNCTION IF EXISTS uuid_generate_v7();
     `);
 
-    await queryRunner.query(`DROP TABLE "user"`);
-    await queryRunner.query(`DROP TABLE "keys"`);
+    this.addSql(`DROP TABLE "user"`);
+    this.addSql(`DROP TABLE "keys"`);
 
-    await queryRunner.query(`
+    this.addSql(`
       drop table ledger_account;
       drop table ledger;
       DROP INDEX IF EXISTS 
@@ -159,7 +216,7 @@ export class Initial1676125806802 implements MigrationInterface {
         idx_ledger_account_currency;
     `);
 
-    await queryRunner.query(`
+    this.addSql(`
       drop index if exists idx_ledger_metadata_ledger_id,
         idx_ledger_metadata_key,
         idx_ledger_metadata_value;
@@ -172,5 +229,45 @@ export class Initial1676125806802 implements MigrationInterface {
       drop table if exists ledger_account_metadata;
 
     `);
+
+    this.addSql(`
+        ALTER TABLE ledger_metadata DROP CONSTRAINT ledger_metadata_ledger_id_key_unique;
+        ALTER TABLE ledger_account_metadata DROP CONSTRAINT ledger_account_metadata_ledger_account_id_key_unique;
+    `);
+
+    this.addSql(`
+            DROP INDEX IF EXISTS idx_ledger_metadata_ledger_key_unique;
+        `);
+
+    this.addSql(`
+            DROP INDEX IF EXISTS idx_ledger_account_metadata_account_key_unique;
+        `);
+
+    this.addSql(`DROP TABLE currencies;`);
+    this.addSql(`
+				ALTER TABLE ledger_account
+				ADD COLUMN currency VARCHAR(5),
+		`);
+
+    // Migrate data back with currency codes
+    this.addSql(`
+				UPDATE ledger_account
+				SET currency = currency_code
+				WHERE currency_code IS NOT NULL;
+		`);
+
+    this.addSql(`
+				ALTER TABLE ledger_account
+				DROP CONSTRAINT IF EXISTS fk_ledger_account_currency_code;
+		`);
+
+    this.addSql(`
+				ALTER TABLE ledger_account
+				DROP COLUMN currency_code;
+		`);
+
+    this.addSql(`ALTER TABLE "users" RENAME TO "user"`);
+    this.addSql(`ALTER TABLE "ledgers" RENAME TO ledger`);
+    this.addSql(`ALTER TABLE "ledger_accounts" RENAME TO ledger_account`);
   }
 }

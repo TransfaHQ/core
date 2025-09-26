@@ -1,9 +1,9 @@
-import { In, Repository } from 'typeorm';
+import { EntityManager, EntityRepository, Transactional } from '@mikro-orm/core';
+import { InjectRepository } from '@mikro-orm/nestjs';
 
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 
-import { CursorPaginatedResult, Transactional, cursorPaginate } from '@libs/database';
+import { CursorPaginatedResult, cursorPaginate } from '@libs/database';
 import { uuidV7 } from '@libs/utils/uuid';
 
 import { CreateLedgerDto } from '@modules/ledger/dto/create-ledger.dto';
@@ -15,38 +15,43 @@ import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
 export class LedgerService {
   constructor(
     @InjectRepository(LedgerEntity)
-    private readonly ledgerRepository: Repository<LedgerEntity>,
+    private readonly ledgerRepository: EntityRepository<LedgerEntity>,
     @InjectRepository(LedgerMetadataEntity)
-    private readonly ledgerMetadataRepository: Repository<LedgerMetadataEntity>,
+    private readonly ledgerMetadataRepository: EntityRepository<LedgerMetadataEntity>,
+    private readonly em: EntityManager,
   ) {}
 
   @Transactional()
   async createLedger(data: CreateLedgerDto): Promise<LedgerEntity> {
-    const ledger = this.ledgerRepository.create({
-      id: uuidV7(),
-      name: data.name,
-      description: data.description,
-    });
+    const ledger = new LedgerEntity();
+    ledger.id = uuidV7();
+    ledger.name = data.name;
+    ledger.description = data.description;
 
-    await this.ledgerRepository.insert(ledger);
+    await this.em.persistAndFlush(ledger);
+
     const metadata: LedgerMetadataEntity[] = Object.entries(data.metadata ?? {}).map(
       ([key, value]) => {
-        return this.ledgerMetadataRepository.create({ ledger, key, value, id: uuidV7() });
+        const meta = new LedgerMetadataEntity();
+        meta.id = uuidV7();
+        meta.key = key;
+        meta.value = value;
+        meta.ledger = ledger;
+        return meta;
       },
     );
 
-    if (metadata.length > 0) await this.ledgerMetadataRepository.insert(metadata);
+    if (metadata.length > 0) {
+      metadata.forEach((m) => this.em.persist(m));
+      await this.em.flush();
+    }
 
-    ledger.metadata = metadata;
+    await this.em.refresh(ledger);
     return ledger;
   }
 
   async retrieveLedger(id: string): Promise<LedgerEntity> {
-    return this.ledgerRepository
-      .createQueryBuilder('l')
-      .leftJoinAndSelect('l.metadata', 'metadata')
-      .where('l.id = :id', { id })
-      .getOneOrFail();
+    return this.ledgerRepository.findOneOrFail({ id }, { populate: ['metadata'] });
   }
 
   async paginate(limit?: number, cursor?: string): Promise<CursorPaginatedResult<LedgerEntity>> {
@@ -55,20 +60,17 @@ export class LedgerService {
       limit,
       cursor,
       order: 'ASC',
-      relations: ['metadata'],
+      populate: ['metadata'],
     });
   }
 
   @Transactional()
   async update(id: string, data: UpdateLedgerDto): Promise<LedgerEntity> {
-    const ledger = await this.ledgerRepository
-      .createQueryBuilder('l')
-      .where('l.id = :id', { id })
-      .getOneOrFail();
+    const ledger = await this.ledgerRepository.findOneOrFail({ id });
 
     ledger.name = data.name ?? ledger.name;
     ledger.description = data.description ?? ledger.description;
-    await this.ledgerRepository.update({ id }, ledger);
+
     const metadataKeyToDelete: string[] = [];
     const metadataToUpdate: LedgerMetadataEntity[] = [];
 
@@ -76,32 +78,30 @@ export class LedgerService {
       if (value === null || value === undefined || !value) {
         metadataKeyToDelete.push(key);
       } else {
-        metadataToUpdate.push(
-          this.ledgerMetadataRepository.create({
-            ledger: { id },
-            key: key,
-            value: value,
-          }),
-        );
+        const meta = new LedgerMetadataEntity();
+        meta.key = key;
+        meta.value = value;
+        meta.ledger = ledger;
+        metadataToUpdate.push(meta);
       }
     }
 
     if (metadataKeyToDelete.length) {
-      await this.ledgerMetadataRepository.delete({
+      await this.ledgerMetadataRepository.nativeDelete({
         ledger: { id },
-        key: In(metadataKeyToDelete),
+        key: { $in: metadataKeyToDelete },
       });
     }
 
     // Upsert metadata (update if exists, create if not)
     if (metadataToUpdate.length > 0) {
-      await this.ledgerMetadataRepository.upsert(metadataToUpdate, ['ledger', 'key']);
+      await this.em.upsertMany(LedgerMetadataEntity, metadataToUpdate, {
+        onConflictFields: ['ledger', 'key'],
+      });
     }
 
-    return this.ledgerRepository
-      .createQueryBuilder('l')
-      .leftJoinAndSelect('l.metadata', 'metadata')
-      .where('l.id = :id', { id })
-      .getOneOrFail();
+    await this.em.flush();
+
+    return this.ledgerRepository.findOneOrFail({ id }, { populate: ['metadata'] });
   }
 }

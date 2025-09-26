@@ -1,34 +1,22 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryKey, Property } from '@mikro-orm/core';
 
-import { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
-
-@Entity('currencies')
+@Entity({ tableName: 'currencies' })
 export class CurrencyEntity {
-  @PrimaryGeneratedColumn()
+  @PrimaryKey({ autoincrement: true })
   id: number;
 
-  @Column({ type: 'varchar', length: 10, unique: true })
+  @Property({ type: 'varchar', length: 10, unique: true })
   code: string;
 
-  @Column({ type: 'smallint' })
+  @Property({ type: 'smallint' })
   exponent: number;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Property({ type: 'varchar', length: 100 })
   name: string;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
-  createdAt: Date;
+  @Property({ fieldName: 'created_at', onCreate: () => new Date() })
+  createdAt: Date = new Date();
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
-  updatedAt: Date;
-
-  @OneToMany(() => LedgerAccountEntity, (ledgerAccount) => ledgerAccount.currency)
-  ledgerAccounts: LedgerAccountEntity[];
+  @Property({ fieldName: 'updated_at', onUpdate: () => new Date() })
+  updatedAt: Date = new Date();
 }

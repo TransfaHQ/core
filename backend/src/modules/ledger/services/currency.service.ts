@@ -1,9 +1,7 @@
-import { Repository } from 'typeorm';
+import { EntityManager, EntityRepository, Transactional } from '@mikro-orm/core';
+import { InjectRepository } from '@mikro-orm/nestjs';
 
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-
-import { Transactional } from '@libs/database';
 
 import { CreateCurrencyDto } from '@modules/ledger/dto/currency/create-currency.dto';
 import { CurrencyEntity } from '@modules/ledger/entities/currency.entity';
@@ -21,35 +19,34 @@ export interface PaginatedResult<T> {
 export class CurrencyService {
   constructor(
     @InjectRepository(CurrencyEntity)
-    private readonly currencyRepository: Repository<CurrencyEntity>,
+    private readonly currencyRepository: EntityRepository<CurrencyEntity>,
     @InjectRepository(LedgerAccountEntity)
-    private readonly ledgerAccountRepository: Repository<LedgerAccountEntity>,
+    private readonly ledgerAccountRepository: EntityRepository<LedgerAccountEntity>,
+    private readonly em: EntityManager,
   ) {}
 
   @Transactional()
   async createCurrency(data: CreateCurrencyDto): Promise<CurrencyEntity> {
     // Check if currency code already exists
     const existingCurrency = await this.currencyRepository.findOne({
-      where: { code: data.code.toUpperCase() },
+      code: data.code.toUpperCase(),
     });
 
     if (existingCurrency) {
       throw new BadRequestException(`Currency with code '${data.code}' already exists`);
     }
 
-    const currency = this.currencyRepository.create({
-      code: data.code.toUpperCase(),
-      exponent: data.exponent,
-      name: data.name,
-    });
+    const currency = new CurrencyEntity();
+    currency.code = data.code.toUpperCase();
+    currency.exponent = data.exponent;
+    currency.name = data.name;
 
-    return await this.currencyRepository.save(currency);
+    await this.em.persistAndFlush(currency);
+    return currency;
   }
 
   async findByCode(code: string): Promise<CurrencyEntity> {
-    const currency = await this.currencyRepository.findOne({
-      where: { code: code.toUpperCase() },
-    });
+    const currency = await this.currencyRepository.findOne({ code: code.toUpperCase() });
 
     if (!currency) {
       throw new NotFoundException(`Currency with code '${code}' not found`);
@@ -59,9 +56,7 @@ export class CurrencyService {
   }
 
   async findById(id: number): Promise<CurrencyEntity> {
-    const currency = await this.currencyRepository.findOne({
-      where: { id },
-    });
+    const currency = await this.currencyRepository.findOne({ id });
 
     if (!currency) {
       throw new NotFoundException(`Currency with id '${id}' not found`);
@@ -75,20 +70,17 @@ export class CurrencyService {
     limit: number = 10,
     codeFilter?: string,
   ): Promise<PaginatedResult<CurrencyEntity>> {
-    const queryBuilder = this.currencyRepository.createQueryBuilder('currency');
+    const where: any = {};
 
     if (codeFilter) {
-      queryBuilder.where('currency.code ILIKE :code', {
-        code: `%${codeFilter.toUpperCase()}%`,
-      });
+      where.code = { $ilike: `%${codeFilter.toUpperCase()}%` };
     }
 
-    queryBuilder
-      .orderBy('currency.code', 'ASC')
-      .skip((page - 1) * limit)
-      .take(limit);
-
-    const [data, total] = await queryBuilder.getManyAndCount();
+    const [data, total] = await this.currencyRepository.findAndCount(where, {
+      orderBy: { code: 'asc' },
+      offset: (page - 1) * limit,
+      limit,
+    });
 
     return {
       data,
@@ -104,9 +96,7 @@ export class CurrencyService {
     const currency = await this.findByCode(code);
 
     // Check if any ledger accounts are using this currency
-    const accountCount = await this.ledgerAccountRepository.count({
-      where: { currencyCode: currency.code },
-    });
+    const accountCount = await this.ledgerAccountRepository.count({ currencyCode: currency.code });
 
     if (accountCount > 0) {
       throw new BadRequestException(
@@ -114,6 +104,6 @@ export class CurrencyService {
       );
     }
 
-    await this.currencyRepository.remove(currency);
+    await this.em.removeAndFlush(currency);
   }
 }

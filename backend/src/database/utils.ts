@@ -1,10 +1,9 @@
-import { DataSource } from 'typeorm';
+import { EntityManager } from '@mikro-orm/core';
 
 const PG_MINIMUM_VERSION = 170004;
 
-export async function checkPostgresVersion(dataSource: DataSource) {
-  const result =
-    await dataSource.query<{ server_version_num: string }[]>('SHOW server_version_num');
+export async function checkPostgresVersion(em: EntityManager) {
+  const result = await em.getConnection().execute('SHOW server_version_num');
   const versionNum = parseInt(result[0].server_version_num, 10);
 
   if (versionNum < PG_MINIMUM_VERSION) {

@@ -1,24 +1,24 @@
+import { EntityRepository } from '@mikro-orm/core';
+import { getRepositoryToken } from '@mikro-orm/nestjs';
+
 import request from 'supertest';
-import { App } from 'supertest/types';
-import { Repository } from 'typeorm';
 
-import { INestApplication } from '@nestjs/common';
-import { getRepositoryToken } from '@nestjs/typeorm';
-
-import { setupTestApp } from '@src/setup-test';
+import { setupTestContext } from '@src/test/helpers';
 
 import { ConfigService } from '@libs/config/config.service';
 
+import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { KeysEntity } from './entities/keys.entity';
 import { UserEntity } from './entities/user.entity';
 
 describe('AuthController', () => {
-  let app: INestApplication<App>;
-  let userRepository: Repository<UserEntity>;
-  let keysRepository: Repository<KeysEntity>;
+  const ctx = setupTestContext();
+  let userRepository: EntityRepository<UserEntity>;
+  let keysRepository: EntityRepository<KeysEntity>;
   let configService: ConfigService;
   let adminSecret: string;
+  let passwordHash: string;
 
   const generateTestUser = (): CreateUserDto => ({
     email: `test-${Date.now()}-${Math.random().toString(36).substring(7)}@example.com`,
@@ -30,21 +30,12 @@ describe('AuthController', () => {
   });
 
   beforeAll(async () => {
-    app = await setupTestApp();
-
-    userRepository = app.get<Repository<UserEntity>>(getRepositoryToken(UserEntity));
-    keysRepository = app.get<Repository<KeysEntity>>(getRepositoryToken(KeysEntity));
-    configService = app.get<ConfigService>(ConfigService);
+    userRepository = ctx.app.get(getRepositoryToken(UserEntity));
+    keysRepository = ctx.app.get(getRepositoryToken(KeysEntity));
+    configService = ctx.app.get(ConfigService);
+    const authService = ctx.app.get(AuthService);
+    passwordHash = await authService.hashPassword('password123');
     adminSecret = configService.adminSecret;
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
-
-  beforeEach(async () => {
-    await userRepository.deleteAll();
-    await keysRepository.deleteAll();
   });
 
   describe('POST /v1/auth/users', () => {
@@ -52,7 +43,7 @@ describe('AuthController', () => {
       const testUser = generateTestUser();
 
       it('should reject request without x-admin-key header', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/users')
           .send(testUser)
           .expect(401)
@@ -62,7 +53,7 @@ describe('AuthController', () => {
       });
 
       it('should reject request with incorrect x-admin-key header', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/users')
           .set('x-admin-key', 'wrong-key')
           .send(testUser)
@@ -73,7 +64,7 @@ describe('AuthController', () => {
       });
 
       it('should accept request with correct x-admin-key header', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send(testUser)
@@ -85,7 +76,7 @@ describe('AuthController', () => {
       it('should create user with valid data', async () => {
         const testUser = generateTestUser();
 
-        const response = await request(app.getHttpServer())
+        const response = await request(ctx.app.getHttpServer())
           .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send(testUser)
@@ -99,9 +90,7 @@ describe('AuthController', () => {
 
         expect(response.body.password).toBeUndefined();
 
-        const createdUser = await userRepository.findOne({
-          where: { email: testUser.email },
-        });
+        const createdUser = await userRepository.findOne({ email: testUser.email });
 
         expect(createdUser).toBeDefined();
         expect(createdUser!.email).toBe(testUser.email);
@@ -113,15 +102,13 @@ describe('AuthController', () => {
       it('should set isActive to true by default', async () => {
         const testUser = generateTestUser();
 
-        await request(app.getHttpServer())
+        await request(ctx.app.getHttpServer())
           .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send(testUser)
           .expect(201);
 
-        const createdUser = await userRepository.findOne({
-          where: { email: testUser.email },
-        });
+        const createdUser = await userRepository.findOne({ email: testUser.email });
 
         expect(createdUser!.isActive).toBe(true);
       });
@@ -131,15 +118,15 @@ describe('AuthController', () => {
       it('should reject duplicate email addresses', async () => {
         const testUser = generateTestUser();
 
-        // Create first user
-        await request(app.getHttpServer())
-          .post('/v1/auth/users')
-          .set(setAdminHeaders())
-          .send(testUser)
-          .expect(201);
+        const user = new UserEntity({
+          email: testUser.email,
+          isActive: true,
+          password: passwordHash,
+        });
+        await ctx.em.persist(user);
 
         // Attempt to create second user with same email
-        const response = await request(app.getHttpServer())
+        const response = await request(ctx.app.getHttpServer())
           .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send(testUser)
@@ -148,16 +135,14 @@ describe('AuthController', () => {
         expect(response.body.message).toBe('email_already_exists');
 
         // Verify only one user exists in database
-        const userCount = await userRepository.count({
-          where: { email: testUser.email },
-        });
+        const userCount = await userRepository.count({ email: testUser.email });
         expect(userCount).toBe(1);
       });
     });
 
     describe('Input Validation', () => {
       it('should reject invalid email format', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send({
@@ -171,7 +156,7 @@ describe('AuthController', () => {
         const testUser = generateTestUser();
         testUser.password = '12345'; // Only 5 characters
 
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send(testUser)
@@ -179,7 +164,7 @@ describe('AuthController', () => {
       });
 
       it('should reject missing email', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send({
@@ -189,7 +174,7 @@ describe('AuthController', () => {
       });
 
       it('should reject missing password', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/users')
           .set(setAdminHeaders())
           .send({
@@ -207,16 +192,17 @@ describe('AuthController', () => {
       testUser = generateTestUser();
 
       // Create a test user for login tests
-      await request(app.getHttpServer())
-        .post('/v1/auth/users')
-        .set(setAdminHeaders())
-        .send(testUser)
-        .expect(201);
+      const user = new UserEntity({
+        email: testUser.email,
+        isActive: true,
+        password: passwordHash,
+      });
+      await ctx.em.persist(user);
     });
 
     describe('Successful Login', () => {
       it('should login with valid credentials', async () => {
-        const response = await request(app.getHttpServer())
+        const response = await request(ctx.app.getHttpServer())
           .post('/v1/auth/login')
           .send({
             email: testUser.email,
@@ -237,7 +223,7 @@ describe('AuthController', () => {
       });
 
       it('should set secure HTTP-only cookie', async () => {
-        const response = await request(app.getHttpServer())
+        const response = await request(ctx.app.getHttpServer())
           .post('/v1/auth/login')
           .send({
             email: testUser.email,
@@ -256,7 +242,7 @@ describe('AuthController', () => {
 
     describe('Invalid Credentials', () => {
       it('should reject login with wrong password', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/login')
           .send({
             email: testUser.email,
@@ -269,7 +255,7 @@ describe('AuthController', () => {
       });
 
       it('should reject login with non-existent email', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/login')
           .send({
             email: 'nonexistent@example.com',
@@ -283,9 +269,11 @@ describe('AuthController', () => {
 
       it('should reject login for inactive user', async () => {
         // Deactivate the user
-        await userRepository.update({ email: testUser.email }, { isActive: false });
+        const user = await ctx.em.findOneOrFail(UserEntity, { email: testUser.email });
+        user.isActive = false;
+        await ctx.em.persist(user);
 
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/login')
           .send({
             email: testUser.email,
@@ -300,7 +288,7 @@ describe('AuthController', () => {
 
     describe('Input Validation', () => {
       it('should reject invalid email format', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/login')
           .send({
             email: 'invalid-email',
@@ -310,7 +298,7 @@ describe('AuthController', () => {
       });
 
       it('should reject missing email', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/login')
           .send({
             password: 'password123',
@@ -319,7 +307,7 @@ describe('AuthController', () => {
       });
 
       it('should reject missing password', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/login')
           .send({
             email: testUser.email,
@@ -328,7 +316,7 @@ describe('AuthController', () => {
       });
 
       it('should reject empty request body', () => {
-        return request(app.getHttpServer()).post('/v1/auth/login').send({}).expect(400);
+        return request(ctx.app.getHttpServer()).post('/v1/auth/login').send({}).expect(400);
       });
     });
   });
@@ -336,7 +324,7 @@ describe('AuthController', () => {
   describe('POST /v1/auth/keys', () => {
     describe('Admin Guard Authentication', () => {
       it('should reject request without x-admin-key header', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/keys')
           .send({})
           .expect(401)
@@ -346,7 +334,7 @@ describe('AuthController', () => {
       });
 
       it('should reject request with incorrect x-admin-key header', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/keys')
           .set('x-admin-key', 'wrong-key')
           .send({})
@@ -357,7 +345,7 @@ describe('AuthController', () => {
       });
 
       it('should accept request with correct x-admin-key header', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .post('/v1/auth/keys')
           .set(setAdminHeaders())
           .send({})
@@ -367,7 +355,7 @@ describe('AuthController', () => {
 
     describe('Key Creation Success', () => {
       it('should create key with generated secret', async () => {
-        const response = await request(app.getHttpServer())
+        const response = await request(ctx.app.getHttpServer())
           .post('/v1/auth/keys')
           .set(setAdminHeaders())
           .send({})
@@ -385,9 +373,7 @@ describe('AuthController', () => {
         expect(response.body.secret.length).toBeGreaterThan(40);
 
         // Verify key was created in database
-        const createdKey = await keysRepository.findOne({
-          where: { id: response.body.id },
-        });
+        const createdKey = await keysRepository.findOne({ id: response.body.id });
 
         expect(createdKey).toBeDefined();
         expect(createdKey!.id).toBe(response.body.id);
@@ -396,13 +382,13 @@ describe('AuthController', () => {
       });
 
       it('should generate unique secrets for multiple keys', async () => {
-        const response1 = await request(app.getHttpServer())
+        const response1 = await request(ctx.app.getHttpServer())
           .post('/v1/auth/keys')
           .set(setAdminHeaders())
           .send({})
           .expect(201);
 
-        const response2 = await request(app.getHttpServer())
+        const response2 = await request(ctx.app.getHttpServer())
           .post('/v1/auth/keys')
           .set(setAdminHeaders())
           .send({})
@@ -419,7 +405,7 @@ describe('AuthController', () => {
 
     beforeEach(async () => {
       // Create a key to delete in tests
-      const response = await request(app.getHttpServer())
+      const response = await request(ctx.app.getHttpServer())
         .post('/v1/auth/keys')
         .set(setAdminHeaders())
         .send({})
@@ -430,7 +416,7 @@ describe('AuthController', () => {
 
     describe('Admin Guard Authentication', () => {
       it('should reject request without x-admin-key header', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .delete('/v1/auth/keys')
           .send({ id: createdKeyId })
           .expect(401)
@@ -440,7 +426,7 @@ describe('AuthController', () => {
       });
 
       it('should reject request with incorrect x-admin-key header', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .delete('/v1/auth/keys')
           .set('x-admin-key', 'wrong-key')
           .send({ id: createdKeyId })
@@ -451,7 +437,7 @@ describe('AuthController', () => {
       });
 
       it('should accept request with correct x-admin-key header', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .delete('/v1/auth/keys')
           .set(setAdminHeaders())
           .send({ id: createdKeyId })
@@ -461,26 +447,21 @@ describe('AuthController', () => {
 
     describe('Key Deletion Success', () => {
       it('should soft delete existing key', async () => {
-        await request(app.getHttpServer())
+        await request(ctx.app.getHttpServer())
           .delete('/v1/auth/keys')
           .set(setAdminHeaders())
           .send({ id: createdKeyId })
           .expect(204);
 
         // Key should be soft deleted (deletedAt should be set)
-        const deletedKey = await keysRepository.findOne({
-          where: { id: createdKeyId },
-          withDeleted: true, // Include soft deleted entities
-        });
+        const deletedKey = await keysRepository.findOne({ id: createdKeyId });
 
         expect(deletedKey).toBeDefined();
         expect(deletedKey!.deletedAt).toBeDefined();
         expect(deletedKey!.deletedAt).toBeInstanceOf(Date);
 
         // Key should not be found in normal queries
-        const activeKey = await keysRepository.findOne({
-          where: { id: createdKeyId },
-        });
+        const activeKey = await keysRepository.findOne({ id: createdKeyId, deletedAt: null });
 
         expect(activeKey).toBeNull();
       });
@@ -488,7 +469,7 @@ describe('AuthController', () => {
       it('should return 404 for non-existent key', async () => {
         const fakeId = '00000000-0000-0000-0000-000000000000';
 
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .delete('/v1/auth/keys')
           .set(setAdminHeaders())
           .send({ id: fakeId })
@@ -500,14 +481,14 @@ describe('AuthController', () => {
 
       it('should return 404 when trying to delete already deleted key', async () => {
         // First deletion
-        await request(app.getHttpServer())
+        await request(ctx.app.getHttpServer())
           .delete('/v1/auth/keys')
           .set(setAdminHeaders())
           .send({ id: createdKeyId })
           .expect(204);
 
         // Second deletion should fail
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .delete('/v1/auth/keys')
           .set(setAdminHeaders())
           .send({ id: createdKeyId })
@@ -520,7 +501,7 @@ describe('AuthController', () => {
 
     describe('Input Validation', () => {
       it('should reject invalid UUID format', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .delete('/v1/auth/keys')
           .set(setAdminHeaders())
           .send({ id: 'invalid-uuid' })
@@ -528,7 +509,7 @@ describe('AuthController', () => {
       });
 
       it('should reject missing id', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .delete('/v1/auth/keys')
           .set(setAdminHeaders())
           .send({})
@@ -536,7 +517,7 @@ describe('AuthController', () => {
       });
 
       it('should reject empty request body', () => {
-        return request(app.getHttpServer())
+        return request(ctx.app.getHttpServer())
           .delete('/v1/auth/keys')
           .set(setAdminHeaders())
           .expect(400);

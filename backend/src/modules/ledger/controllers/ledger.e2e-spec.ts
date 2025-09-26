@@ -1,10 +1,11 @@
+import { EntityRepository } from '@mikro-orm/core';
+import { getRepositoryToken } from '@mikro-orm/nestjs';
+
 import request from 'supertest';
-import { Repository } from 'typeorm';
 
-import { HttpStatus, INestApplication } from '@nestjs/common';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { HttpStatus } from '@nestjs/common';
 
-import { setupTestApp } from '@src/setup-test';
+import { setupTestContext } from '@src/test/helpers';
 
 import { setTestBasicAuthHeader } from '@libs/utils/tests';
 
@@ -16,35 +17,29 @@ import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
 import { LedgerService } from '../services/ledger.service';
 
 describe('LedgerController', () => {
-  let app: INestApplication;
-  let ledgerRepository: Repository<LedgerEntity>;
-  let ledgerMetadataRepository: Repository<LedgerMetadataEntity>;
+  const ctx = setupTestContext();
+  let ledgerRepository: EntityRepository<LedgerEntity>;
+  let ledgerMetadataRepository: EntityRepository<LedgerMetadataEntity>;
   let authKey: KeyResponseDto;
 
   beforeAll(async () => {
-    app = await setupTestApp()!;
-
-    const authService = app.get(AuthService);
+    const authService = ctx.app.get(AuthService);
     authKey = await authService.createKey({});
 
-    ledgerRepository = app.get(getRepositoryToken(LedgerEntity));
-    ledgerMetadataRepository = app.get(getRepositoryToken(LedgerMetadataEntity));
-  });
-
-  afterAll(async () => {
-    await app.close();
+    ledgerRepository = ctx.app.get(getRepositoryToken(LedgerEntity));
+    ledgerMetadataRepository = ctx.app.get(getRepositoryToken(LedgerMetadataEntity));
   });
 
   describe('POST /v1/ledgers', () => {
     it('should return 401 when auth is not provided', async () => {
-      return request(app.getHttpServer())
+      return request(ctx.app.getHttpServer())
         .post('/v1/ledgers')
         .send({})
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
     it('should return 400 when ledger name is not provided', async () => {
-      return request(app.getHttpServer())
+      return request(ctx.app.getHttpServer())
         .post('/v1/ledgers')
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send({ description: 'test' })
@@ -52,7 +47,7 @@ describe('LedgerController', () => {
     });
 
     it('should return 200 when ledger name provided', async () => {
-      return request(app.getHttpServer())
+      return request(ctx.app.getHttpServer())
         .post('/v1/ledgers')
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send({ description: 'test', name: 'test' })
@@ -65,14 +60,14 @@ describe('LedgerController', () => {
           expect(response.body.createdAt).toBeDefined();
           expect(response.body.updatedAt).toBeDefined();
 
-          const ledger = await ledgerRepository.findOne({ where: { id: response.body.id } });
+          const ledger = await ledgerRepository.findOne({ id: response.body.id });
           expect(ledger!.name).toBe('test');
           expect(ledger!.description).toBe('test');
         });
     });
 
     it('should save metadata', async () => {
-      return request(app.getHttpServer())
+      return request(ctx.app.getHttpServer())
         .post('/v1/ledgers')
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send({ description: 'test', name: 'test', metadata: { key: 'value' } })
@@ -86,25 +81,25 @@ describe('LedgerController', () => {
     });
 
     it('should not accept invalid data', async () => {
-      await request(app.getHttpServer())
+      await request(ctx.app.getHttpServer())
         .post('/v1/ledgers')
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send({ name: 1 })
         .expect(HttpStatus.BAD_REQUEST);
 
-      await request(app.getHttpServer())
+      await request(ctx.app.getHttpServer())
         .post('/v1/ledgers')
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send({ name: 'na' })
         .expect(HttpStatus.BAD_REQUEST);
 
-      await request(app.getHttpServer())
+      await request(ctx.app.getHttpServer())
         .post('/v1/ledgers')
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send({ name: 'nan', description: '1' })
         .expect(HttpStatus.BAD_REQUEST);
 
-      await request(app.getHttpServer())
+      await request(ctx.app.getHttpServer())
         .post('/v1/ledgers')
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send({ name: 'nan', description: '123', metadata: { test: 1 } })
@@ -113,8 +108,14 @@ describe('LedgerController', () => {
   });
 
   describe('GET /v1/ledgers', () => {
+    beforeEach(async () => {
+      await request(ctx.app.getHttpServer())
+        .post('/v1/ledgers')
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send({ description: 'test', name: 'test' });
+    });
     it('should list ledgers', async () => {
-      return request(app.getHttpServer())
+      return request(ctx.app.getHttpServer())
         .get('/v1/ledgers')
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .expect(HttpStatus.OK)
@@ -124,7 +125,7 @@ describe('LedgerController', () => {
     });
 
     it('should return only 1 ledger when limit = 1', async () => {
-      return request(app.getHttpServer())
+      return request(ctx.app.getHttpServer())
         .get('/v1/ledgers')
         .query({ limit: 1 })
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -137,8 +138,8 @@ describe('LedgerController', () => {
 
   describe('GET /v1/ledgers/:id', () => {
     let ledger: LedgerEntity;
-    beforeAll(async () => {
-      const ledgerService = app.get(LedgerService);
+    beforeEach(async () => {
+      const ledgerService = ctx.app.get(LedgerService);
       ledger = await ledgerService.createLedger({
         name: 'Test Ledger',
         description: 'Test',
@@ -146,7 +147,7 @@ describe('LedgerController', () => {
       });
     });
     it('should return 202', async () => {
-      return request(app.getHttpServer())
+      return request(ctx.app.getHttpServer())
         .get(`/v1/ledgers/${ledger.id}`)
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .expect(HttpStatus.OK)
@@ -160,19 +161,22 @@ describe('LedgerController', () => {
 
   describe('PATCH /v1/ledgers/:id', () => {
     let ledger: LedgerEntity;
-    beforeAll(async () => {
-      const ledgerService = app.get(LedgerService);
+    beforeEach(async () => {
+      const ledgerService = ctx.app.get(LedgerService);
       ledger = await ledgerService.createLedger({
         name: 'Test Ledger',
         description: 'Test',
-        metadata: {},
+        metadata: {
+          test: 'value',
+        },
       });
     });
     it('should return 200', async () => {
-      const ledgerBeforeUpdate = await ledgerRepository.findOneBy({ id: ledger.id });
+      const ledgerBeforeUpdate = await ledgerRepository.findOneOrFail({ id: ledger.id });
+      const previousName = ledgerBeforeUpdate.name;
       const name = 'Transfa Ledger';
 
-      await request(app.getHttpServer())
+      await request(ctx.app.getHttpServer())
         .patch(`/v1/ledgers/${ledger.id}`)
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send({ name })
@@ -181,17 +185,18 @@ describe('LedgerController', () => {
           expect(response.body.name).toBe(name);
         });
 
-      const ledgerAfterUpdate = await ledgerRepository.findOneBy({ id: ledger.id });
-      expect(ledgerAfterUpdate!.name).not.toBe(ledgerBeforeUpdate!.name);
+      const ledgerAfterUpdate = await ledgerRepository.findOneOrFail({ id: ledger.id });
+      expect(ledgerAfterUpdate!.name).not.toBe(previousName);
       expect(ledgerAfterUpdate!.name).toBe(name);
     });
 
     it('should update description & metadata', async () => {
-      const ledgerBeforeUpdate = await ledgerRepository.findOneBy({ id: ledger.id });
+      const ledgerBeforeUpdate = await ledgerRepository.findOneOrFail({ id: ledger.id });
+      const previousDescription = ledgerBeforeUpdate.description;
       const description = 'Transfa Ledger';
-      const metadata = { test: 'value' };
+      const metadata = { test: 'updated value' };
 
-      await request(app.getHttpServer())
+      await request(ctx.app.getHttpServer())
         .patch(`/v1/ledgers/${ledger.id}`)
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send({ description, metadata })
@@ -201,29 +206,29 @@ describe('LedgerController', () => {
           expect(response.body.metadata).toMatchObject(metadata);
         });
 
-      const ledgerAfterUpdate = await ledgerRepository.findOneBy({ id: ledger.id });
-      expect(ledgerAfterUpdate!.description).not.toBe(ledgerBeforeUpdate!.description);
+      const ledgerAfterUpdate = await ledgerRepository.findOneOrFail({ id: ledger.id });
+      expect(ledgerAfterUpdate!.description).not.toBe(previousDescription);
       expect(ledgerAfterUpdate!.description).toBe(description);
 
       expect(
-        await ledgerMetadataRepository.findOneBy({
+        await ledgerMetadataRepository.findOneOrFail({
           ledger: { id: ledger.id },
           key: 'test',
-          value: 'value',
+          value: 'updated value',
         }),
       ).toBeDefined();
     });
 
     it('should remove metadata', async () => {
-      const metadata = { test: '' };
+      const metadata = { test: null };
       expect(
-        await ledgerMetadataRepository.findOneBy({
+        await ledgerMetadataRepository.findOneOrFail({
           ledger: { id: ledger.id },
           key: 'test',
         }),
       ).not.toBeNull();
 
-      await request(app.getHttpServer())
+      await request(ctx.app.getHttpServer())
         .patch(`/v1/ledgers/${ledger.id}`)
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send({ metadata })
@@ -233,7 +238,7 @@ describe('LedgerController', () => {
         });
 
       expect(
-        await ledgerMetadataRepository.findOneBy({
+        await ledgerMetadataRepository.findOne({
           ledger: { id: ledger.id },
           key: 'test',
         }),

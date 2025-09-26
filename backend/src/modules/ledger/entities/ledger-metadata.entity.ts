@@ -1,36 +1,36 @@
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { Entity, ManyToOne, Property } from '@mikro-orm/core';
 
-import { BaseTypeormEntity } from '@libs/database';
+import { BaseMikroOrmEntity } from '@libs/database';
 
-import { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
-import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
+import type { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
+import type { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
 
-@Entity('ledger_metadata')
-export class LedgerMetadataEntity extends BaseTypeormEntity {
-  @Column({ type: 'varchar', length: 255 })
+@Entity({ tableName: 'ledger_metadata' })
+export class LedgerMetadataEntity extends BaseMikroOrmEntity {
+  @Property({ type: 'varchar', length: 255 })
   key: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Property({ type: 'varchar', length: 255 })
   value: string;
 
-  @ManyToOne(() => LedgerEntity, (ledger) => ledger.metadata, {
-    onDelete: 'CASCADE',
+  @ManyToOne('LedgerEntity', {
+    deleteRule: 'cascade',
+    fieldName: 'ledger_id',
   })
-  @JoinColumn({ name: 'ledger_id' })
   ledger: LedgerEntity;
 }
 
-@Entity('ledger_account_metadata')
-export class LedgerAccountMetadataEntity extends BaseTypeormEntity {
-  @Column({ type: 'varchar', length: 255 })
+@Entity({ tableName: 'ledger_account_metadata' })
+export class LedgerAccountMetadataEntity extends BaseMikroOrmEntity {
+  @Property({ type: 'varchar', length: 255 })
   key: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Property({ type: 'varchar', length: 255 })
   value: string;
 
-  @ManyToOne(() => LedgerAccountEntity, (ledgerAccount) => ledgerAccount.metadata, {
-    onDelete: 'CASCADE',
+  @ManyToOne('LedgerAccountEntity', {
+    deleteRule: 'cascade',
+    fieldName: 'ledger_account_id',
   })
-  @JoinColumn({ name: 'ledger_account_id' })
   ledgerAccount: LedgerAccountEntity;
 }
