@@ -77,7 +77,6 @@ export class ConfigService {
         tableName: this.envConfig.DB_MIGRATIONS_TABLE,
         transactional: true,
       },
-      debug: true,
       allowGlobalContext: this.appEnv === 'test',
       registerRequestContext: this.appEnv !== 'test',
     };
