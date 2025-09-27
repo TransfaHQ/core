@@ -79,6 +79,22 @@ jobs:
 
   test-backend:
     runs-on: ubuntu-latest
+    env:
+      TIGER_BEETLE_CLUSTER_ID: 0
+      TIGER_BEETLE_REPLICAS_ADDRESSES: 127.0.0.1:6064
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: transfa
+      CORE_POSTGRES_SCHEMA: test
+      DB_MIGRATIONS_TABLE: migrations
+      ADMIN_SECRET: random_admin_secret
+      JWT_SECRET: random_jwt_secret_key
+      JWT_EXPIRES_IN: 24h
+      LOG_LEVEL: error
+      DROP_TABLES: true
+      NODE_ENV: test
     services:
       postgres:
         image: postgres:17
@@ -129,7 +145,7 @@ jobs:
 
       - name: Run backend e2e tests
         working-directory: backend
-        run: NODE_ENV=test pnpm test:e2e
+        run: pnpm test
 
 
   build:

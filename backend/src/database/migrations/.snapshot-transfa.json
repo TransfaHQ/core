@@ -325,7 +325,7 @@
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
-          "nullable": false,
+          "nullable": true,
           "length": 180,
           "mappedType": "string"
         },
@@ -356,15 +356,6 @@
           "primary": false,
           "nullable": false,
           "mappedType": "uuid"
-        },
-        "currency_id": {
-          "name": "currency_id",
-          "type": "int",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "mappedType": "integer"
         },
         "normal_balance": {
           "name": "normal_balance",
@@ -415,20 +406,6 @@
           "referencedTableName": "core.ledgers",
           "createForeignKeyConstraint": true,
           "deleteRule": "cascade",
-          "updateRule": "cascade"
-        },
-        "ledger_accounts_currency_id_foreign": {
-          "constraintName": "ledger_accounts_currency_id_foreign",
-          "columnNames": [
-            "currency_id"
-          ],
-          "localTableName": "core.ledger_accounts",
-          "referencedColumnNames": [
-            "code"
-          ],
-          "referencedTableName": "core.currencies",
-          "createForeignKeyConstraint": true,
-          "deleteRule": "no action",
           "updateRule": "cascade"
         }
       },

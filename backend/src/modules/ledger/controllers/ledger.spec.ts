@@ -66,6 +66,26 @@ describe('LedgerController', () => {
         });
     });
 
+    it('should return 200 when ledger description is not provided', async () => {
+      return request(ctx.app.getHttpServer())
+        .post('/v1/ledgers')
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send({ name: 'test without description' })
+        .expect(HttpStatus.CREATED)
+        .expect(async (response) => {
+          expect(response.body.id).toBeDefined();
+          expect(response.body.name).toBe('test without description');
+          expect(response.body.description).toBe(null);
+          expect(response.body.metadata).toMatchObject({});
+          expect(response.body.createdAt).toBeDefined();
+          expect(response.body.updatedAt).toBeDefined();
+
+          const ledger = await ledgerRepository.findOne({ id: response.body.id });
+          expect(ledger!.name).toBe('test without description');
+          expect(ledger!.description).toBe(null);
+        });
+    });
+
     it('should save metadata', async () => {
       return request(ctx.app.getHttpServer())
         .post('/v1/ledgers')

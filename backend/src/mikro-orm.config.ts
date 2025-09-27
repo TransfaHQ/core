@@ -31,6 +31,6 @@ export default defineConfig({
     dropTables: process.env.DROP_TABLES === 'true',
   },
   extensions: [Migrator],
-  debug: dbConfig.DB_LOGGING_LEVEL === 'query',
+  debug: dbConfig.DB_ENABLE_LOGGING,
   allowGlobalContext: process.env.NODE_ENV === 'test',
 });

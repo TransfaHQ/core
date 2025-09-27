@@ -13,7 +13,7 @@ export class LedgerAccountEntity extends BaseMikroOrmEntity {
   @Property({ type: 'varchar', length: 255 })
   name: string;
 
-  @Property({ type: 'varchar', length: 255 })
+  @Property({ type: 'varchar', length: 255, nullable: true })
   description?: string;
 
   @Property({
