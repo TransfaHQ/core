@@ -18,7 +18,7 @@ import { AppService } from './app.service';
   imports: [
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'client'),
-      exclude: ['/api/*', '/v1/*'],
+      exclude: ['/api/*api', '/v1/*v1'],
     }),
     LoggerModule.forRootAsync({
       inject: [ConfigService],

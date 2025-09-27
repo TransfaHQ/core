@@ -499,7 +499,7 @@ describe('LedgerAccountController', () => {
       });
     });
 
-    describe.skip('Metadata filtering', () => {
+    describe('Metadata filtering', () => {
       it('should filter by single metadata key-value pair', async () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
@@ -514,6 +514,8 @@ describe('LedgerAccountController', () => {
       });
 
       it('should filter by multiple metadata key-value pairs', async () => {
+        const rows = await ctx.em.findAll(LedgerAccountMetadataEntity);
+        console.log(rows);
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
@@ -555,7 +557,7 @@ describe('LedgerAccountController', () => {
       });
     });
 
-    describe.skip('Combined filters', () => {
+    describe('Combined filters', () => {
       it('should combine ledger_id and currency filters', async () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')

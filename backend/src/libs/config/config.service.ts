@@ -1,5 +1,5 @@
 import { MikroOrmModuleOptions } from '@mikro-orm/nestjs';
-import { PostgreSqlDriver } from '@mikro-orm/postgresql';
+import { LoadStrategy, PostgreSqlDriver } from '@mikro-orm/postgresql';
 
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
@@ -78,7 +78,9 @@ export class ConfigService {
         transactional: true,
       },
       allowGlobalContext: this.appEnv === 'test',
+      debug: this.envConfig.DB_ENABLE_LOGGING,
       registerRequestContext: this.appEnv !== 'test',
+      loadStrategy: LoadStrategy.JOINED,
     };
   }
 }

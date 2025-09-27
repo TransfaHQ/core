@@ -1,4 +1,4 @@
-import { defineConfig } from '@mikro-orm/core';
+import { LoadStrategy, defineConfig } from '@mikro-orm/core';
 import { Migrator } from '@mikro-orm/migrations';
 import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 
@@ -33,4 +33,5 @@ export default defineConfig({
   extensions: [Migrator],
   debug: dbConfig.DB_ENABLE_LOGGING,
   allowGlobalContext: process.env.NODE_ENV === 'test',
+  loadStrategy: LoadStrategy.JOINED,
 });

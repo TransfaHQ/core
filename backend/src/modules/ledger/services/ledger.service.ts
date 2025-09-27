@@ -1,5 +1,6 @@
-import { EntityManager, EntityRepository, Transactional } from '@mikro-orm/core';
+import { EntityRepository, Transactional } from '@mikro-orm/core';
 import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityManager } from '@mikro-orm/postgresql';
 
 import { Injectable } from '@nestjs/common';
 
@@ -55,12 +56,12 @@ export class LedgerService {
   }
 
   async paginate(limit?: number, cursor?: string): Promise<CursorPaginatedResult<LedgerEntity>> {
+    const qb = this.em.qb(LedgerEntity, 'l').leftJoinAndSelect('l.metadata', 'm');
     return cursorPaginate<LedgerEntity>({
-      repo: this.ledgerRepository,
+      qb,
       limit,
       cursor,
       order: 'ASC',
-      populate: ['metadata'],
     });
   }
 

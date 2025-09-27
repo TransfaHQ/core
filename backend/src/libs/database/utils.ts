@@ -1,15 +1,14 @@
-import { EntityRepository, QueryOrder } from '@mikro-orm/core';
+import { QueryOrder } from '@mikro-orm/core';
+import { QueryBuilder } from '@mikro-orm/postgresql';
 
 import { API_PAGE_SIZE } from '@libs/constants';
 import { BaseMikroOrmEntity } from '@libs/database/base-mikro-orm.entity';
 
 export interface CursorPaginationOptions<T extends BaseMikroOrmEntity> {
-  repo: EntityRepository<T>;
+  qb: QueryBuilder<T>;
   limit?: number;
   cursor?: string;
   order?: 'ASC' | 'DESC';
-  where?: object;
-  populate?: string[];
 }
 
 export interface CursorPaginatedResult<T> {
@@ -26,24 +25,21 @@ export interface CursorPaginatedResult<T> {
 export async function cursorPaginate<T extends BaseMikroOrmEntity>(
   options: CursorPaginationOptions<T>,
 ): Promise<CursorPaginatedResult<T>> {
-  const { repo, cursor, order = 'ASC', where = {}, populate = [] } = options;
+  const { qb, cursor, order = 'ASC' } = options;
   const limit = options.limit ?? API_PAGE_SIZE;
-
-  const conditions: any = { ...where };
 
   if (cursor) {
     if (order === 'ASC') {
-      conditions.id = { $gt: cursor };
+      qb.andWhere({ id: { $gt: cursor } });
     } else {
-      conditions.id = { $lt: cursor };
+      qb.andWhere({ id: { $lt: cursor } });
     }
   }
+  // console.log(qb.limit(1).getQuery());
+  qb.orderBy({ id: order === 'ASC' ? QueryOrder.ASC : QueryOrder.DESC });
+  // qb.limit(limit + 1);
 
-  const rows = await repo.find(conditions, {
-    orderBy: { id: order === 'ASC' ? QueryOrder.ASC : QueryOrder.DESC } as any,
-    limit: limit + 1,
-    populate: populate as any,
-  });
+  const rows = await qb.getResultList(limit + 1);
 
   const hasExtra = rows.length > limit;
   const data = hasExtra ? rows.slice(0, limit) : rows;

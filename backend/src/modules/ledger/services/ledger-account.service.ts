@@ -1,5 +1,6 @@
-import { EntityManager, EntityRepository, Transactional, ref } from '@mikro-orm/core';
+import { EntityRepository, Transactional, ref } from '@mikro-orm/core';
 import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityManager } from '@mikro-orm/postgresql';
 
 import BigNumber from 'bignumber.js';
 import { AccountFlags, Account as TigerBeetleAccount, id } from 'tigerbeetle-node';
@@ -117,40 +118,39 @@ export class LedgerAccountService {
     search?: string,
     metadata?: Record<string, string>,
   ): Promise<CursorPaginatedResult<LedgerAccountEntity>> {
-    const whereConditions: any = {};
+    const qb = this.em
+      .qb(LedgerAccountEntity, 'la')
+      .leftJoinAndSelect('la.metadata', 'lam')
+      .getKnex()
+      .distinctOn('la.id');
 
     if (ledgerId) {
-      whereConditions.ledger = ledgerId;
+      qb.andWhere({ ledger: ledgerId });
     }
     if (currency) {
-      whereConditions.currencyCode = currency;
+      qb.andWhere({ currencyCode: currency });
     }
     if (normalBalance) {
-      whereConditions.normalBalance = normalBalance;
+      qb.andWhere({ normalBalance });
     }
     if (search) {
-      whereConditions.$or = [
+      qb.orWhere([
         { name: { $ilike: `%${search}%` } },
         { description: { $ilike: `%${search}%` } },
         { externalId: { $ilike: `%${search}%` } },
-      ];
+      ]);
     }
     if (metadata && Object.keys(metadata).length > 0) {
-      whereConditions.metadata = {
-        $every: Object.entries(metadata).map(([key, value]) => ({
-          key,
-          value,
-        })),
-      };
+      Object.entries(metadata).forEach(([key, value]) =>
+        qb.andWhere({ $and: [{ 'lam.key': key }, { 'lam.value': value }] }),
+      );
     }
 
     const response = await cursorPaginate<LedgerAccountEntity>({
-      repo: this.ledgerAccountRepository,
+      qb,
       limit,
       cursor,
       order: 'ASC',
-      populate: ['metadata'],
-      where: whereConditions,
     });
     const tbAccounts = await this.tigerBeetleService.retrieveAccounts(
       response.data.map((v) => v.tigerBeetleId),
