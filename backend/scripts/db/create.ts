@@ -8,7 +8,7 @@ async function createMigrationFile() {
     const configPath = path.join(__dirname, 'typeorm.config.ts');
 
     // Use TypeORM CLI to generate migration
-    const command = `npx typeorm-ts-node-commonjs migration:generate ../../src/database/typeorm-migrations/${Date.now()}-${name} -d ${configPath}`;
+    const command = `npx typeorm-ts-node-commonjs migration:generate ../../src/database/migrations/${Date.now()}-${name} -d ${configPath}`;
 
     console.log('Creating migration with TypeORM CLI...');
     execSync(command, {

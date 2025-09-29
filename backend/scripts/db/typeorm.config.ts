@@ -10,7 +10,7 @@ export const AppDataSource = new DataSource({
   password: dbConfig.DB_PASSWORD,
   database: dbConfig.DB_NAME,
   schema: dbConfig.CORE_POSTGRES_SCHEMA,
-  migrations: ['src/database/typeorm-migrations/*{.ts,.js}'],
+  migrations: ['src/database/migrations/*{.ts,.js}'],
   migrationsTableName: dbConfig.DB_MIGRATIONS_TABLE,
   logging: dbConfig.DB_ENABLE_LOGGING,
   synchronize: false,
