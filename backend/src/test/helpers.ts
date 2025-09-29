@@ -8,6 +8,7 @@ import { setupApp } from '@src/setup';
 
 import { DatabaseService } from '@libs/database/database.service';
 import { DB } from '@libs/database/types';
+import { uuidV7 } from '@libs/utils/uuid';
 
 export async function setupTestApp(): Promise<INestApplication> {
   const moduleFixture = await Test.createTestingModule({
@@ -26,6 +27,8 @@ export interface TestContext {
   app: INestApplication;
   db: DatabaseService;
   trx: ControlledTransaction<DB, []>;
+  currentSavepoint: string;
+  trxSavepoint: ControlledTransaction<DB, [string]>;
 }
 
 export function setupTestContext(): TestContext {
@@ -34,19 +37,22 @@ export function setupTestContext(): TestContext {
   beforeAll(async () => {
     context.app = await setupTestApp();
     context.db = context.app.get(DatabaseService);
-  });
-
-  afterAll(async () => {
-    await context.app.close();
-  });
-
-  beforeEach(async () => {
     context.trx = await context.db.kysely.startTransaction().execute();
     context.db.setTransaction(context.trx);
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await context.trx.rollback().execute();
+    await context.app.close();
+  });
+
+  beforeEach(async () => {
+    context.currentSavepoint = `test_sp_${uuidV7().replace(/-/g, '_')}`;
+    context.trxSavepoint = await context.trx.savepoint(context.currentSavepoint).execute();
+  });
+
+  afterEach(async () => {
+    await context.trxSavepoint.rollbackToSavepoint(context.currentSavepoint).execute();
   });
 
   return context;

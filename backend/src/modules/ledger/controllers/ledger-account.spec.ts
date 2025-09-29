@@ -269,7 +269,6 @@ describe('LedgerAccountController', () => {
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .expect(HttpStatus.OK)
         .expect((response) => {
-          console.log(response.body);
           expect(response.body.data.length > 0).toBeTruthy();
         });
     });
@@ -681,7 +680,7 @@ describe('LedgerAccountController', () => {
       return accounts;
     };
 
-    beforeEach(async () => {
+    beforeAll(async () => {
       // Create second ledger for pagination tests
       const ledgerService = ctx.app.get(LedgerService);
       secondLedgerForPagination = await ledgerService.createLedger({
@@ -895,7 +894,7 @@ describe('LedgerAccountController', () => {
       it('should handle empty result set', async () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
-          .query({ 'filters[search]': 'nonexistent-account-name-12345' })
+          .query({ search: 'nonexistent-account-name-12345' })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
           .expect(HttpStatus.OK)
           .expect((response) => {
@@ -939,7 +938,7 @@ describe('LedgerAccountController', () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            'filters[ledgerId]': secondLedgerForPagination.id,
+            ledger_id: secondLedgerForPagination.id,
             limit: 100,
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -957,7 +956,7 @@ describe('LedgerAccountController', () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            'filters[ledgerId]': ledger.id,
+            ledger_id: ledger.id,
             limit: 5,
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -974,7 +973,7 @@ describe('LedgerAccountController', () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            'filters[currency]': 'EUR',
+            currency: 'EUR',
             limit: 5,
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -991,7 +990,7 @@ describe('LedgerAccountController', () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            'filters[search]': 'Test Account 001',
+            search: 'Test Account 001',
             limit: 5,
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -1009,7 +1008,7 @@ describe('LedgerAccountController', () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            'filters[metadata][department]': 'finance',
+            'metadata[department]': 'finance',
             limit: 5,
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -1025,7 +1024,7 @@ describe('LedgerAccountController', () => {
         const firstPage = await request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            'filters[currency]': 'USD',
+            currency: 'USD',
             limit: 3,
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -1037,7 +1036,7 @@ describe('LedgerAccountController', () => {
         const secondPage = await request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            'filters[currency]': 'USD',
+            currency: 'USD',
             cursor: firstPage.body.nextCursor,
             direction: 'next',
             limit: 3,

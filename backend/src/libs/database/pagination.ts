@@ -1,4 +1,5 @@
 import { ReferenceExpression, SelectQueryBuilder } from 'kysely';
+import { validate as isUUID } from 'uuid';
 
 import { API_PAGE_SIZE } from '@libs/constants';
 
@@ -62,25 +63,28 @@ export async function cursorPaginate<T extends keyof DB, O extends Record<string
   // Create a new query to avoid mutating the original
   let query = qb;
 
+  // Validate cursor if provided - if invalid, treat as if no cursor was provided
+  const validCursor = cursor && isUUID(cursor) ? cursor : undefined;
+
   // Determine sort order based on direction and initial order
   const isForward = direction === 'next';
   const sortOrder = isForward ? initialOrder : initialOrder === 'desc' ? 'asc' : 'desc';
 
-  // Apply cursor filtering if provided
-  if (cursor) {
+  // Apply cursor filtering if provided and valid
+  if (validCursor) {
     if (isForward) {
       // For forward pagination
       if (initialOrder === 'desc') {
-        query = query.where(cursorField as ReferenceExpression<DB, T>, '<', cursor);
+        query = query.where(cursorField as ReferenceExpression<DB, T>, '<', validCursor);
       } else {
-        query = query.where(cursorField as ReferenceExpression<DB, T>, '>', cursor);
+        query = query.where(cursorField as ReferenceExpression<DB, T>, '>', validCursor);
       }
     } else {
       // For backward pagination
       if (initialOrder === 'desc') {
-        query = query.where(cursorField as ReferenceExpression<DB, T>, '>', cursor);
+        query = query.where(cursorField as ReferenceExpression<DB, T>, '>', validCursor);
       } else {
-        query = query.where(cursorField as ReferenceExpression<DB, T>, '<', cursor);
+        query = query.where(cursorField as ReferenceExpression<DB, T>, '<', validCursor);
       }
     }
   }
@@ -113,8 +117,8 @@ export async function cursorPaginate<T extends keyof DB, O extends Record<string
       hasNext = hasMore;
       nextCursor = hasNext ? String(lastItem[cursorField]) : undefined;
 
-      // Check if there are previous items (only if we have a cursor)
-      if (cursor) {
+      // Check if there are previous items (only if we have a valid cursor)
+      if (validCursor) {
         hasPrev = true;
         prevCursor = String(items[0][cursorField]);
       }
@@ -123,16 +127,16 @@ export async function cursorPaginate<T extends keyof DB, O extends Record<string
       hasPrev = hasMore;
       prevCursor = hasPrev ? String(items[0][cursorField]) : undefined;
 
-      // Check if there are next items (only if we have a cursor)
-      if (cursor) {
+      // Check if there are next items (only if we have a valid cursor)
+      if (validCursor) {
         hasNext = true;
         nextCursor = String(lastItem[cursorField]);
       }
     }
   }
 
-  // If no cursor was provided, this is initial load
-  if (!cursor && items.length > 0) {
+  // If no valid cursor was provided, this is initial load
+  if (!validCursor && items.length > 0) {
     const lastItem = items[items.length - 1];
     nextCursor = hasMore ? String(lastItem[cursorField]) : undefined;
     hasNext = hasMore;

@@ -188,6 +188,7 @@ export class LedgerAccountController {
     const response = await this.ledgerAccountService.paginate({
       limit: queryParams.limit,
       cursor: queryParams.cursor,
+      direction: queryParams.direction,
       filters: {
         ledgerId: queryParams.ledger_id,
         currency: queryParams.currency,

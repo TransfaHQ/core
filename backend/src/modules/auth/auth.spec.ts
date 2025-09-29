@@ -140,11 +140,11 @@ describe('AuthController', () => {
         // Verify only one user exists in database
         const userCount = await ctx.trx
           .selectFrom('users')
-          .select(({ fn }) => [fn.count<number>('id').as('count')])
+          .select(({ fn }) => [fn.count('id').as('count')])
           .where('email', '=', testUser.email)
           .where('deletedAt', 'is', null)
           .executeTakeFirstOrThrow();
-        expect(userCount.count).toBe(1);
+        expect(userCount.count).toBe('1');
       });
     });
 

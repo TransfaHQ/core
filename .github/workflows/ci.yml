@@ -145,7 +145,7 @@ jobs:
 
       - name: Run backend e2e tests
         working-directory: backend
-        run: pnpm test
+        run: pnpm test --silent
 
 
   build:

@@ -123,13 +123,12 @@ export class LedgerService {
         ...(data.description !== undefined && { description: data.description }),
       };
       if (Object.keys(updatePayload).length > 0) {
-        const data = await trx
+        await trx
           .updateTable('ledgers')
           .set(updatePayload)
           .where('id', '=', id)
           .returningAll()
           .executeTakeFirstOrThrow();
-        console.log(data);
       }
 
       if (data.metadata) {
@@ -183,7 +182,6 @@ export class LedgerService {
         .selectAll()
         .where('id', '=', id)
         .executeTakeFirstOrThrow();
-      console.log('up', updatedLedger);
       return {
         ...updatedLedger,
         metadata,

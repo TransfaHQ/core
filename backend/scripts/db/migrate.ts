@@ -1,4 +1,5 @@
 #!/usr/bin/env ts-node
+import { execSync } from 'child_process';
 import { Kysely, PostgresDialect, sql } from 'kysely';
 import { ConnectionStringParser, Logger, generate, getDialect } from 'kysely-codegen';
 import { Pool } from 'pg';
@@ -31,6 +32,14 @@ async function generateKyselyTypes() {
     outFile: './src/libs/database/types.ts',
     camelCase: true,
   });
+
+  console.log('Running lint --fix on generated types...');
+  try {
+    execSync('pnpm lint --fix', { stdio: 'inherit', cwd: process.cwd() });
+    console.log('✅ Lint --fix completed');
+  } catch {
+    console.warn('⚠️  Lint --fix encountered issues, but continuing...');
+  }
 }
 
 async function runTypeORMMigrations() {
@@ -91,8 +100,10 @@ async function runMigrations() {
     await sql.raw(`SET search_path TO ${dbConfig.CORE_POSTGRES_SCHEMA}`).execute(kyselyDb);
     await checkPostgresVersion(kyselyDb);
 
-    console.log('Generating Kysely types...');
-    await generateKyselyTypes();
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('Generating Kysely types...');
+      await generateKyselyTypes();
+    }
 
     console.log('✅ Migration process completed successfully');
     process.exit(0);

@@ -188,7 +188,6 @@ export class LedgerAccountService {
 
     // Get all fields for the accounts
     const queryWithSelect = baseQuery.selectAll();
-    console.log(queryWithSelect.compile());
 
     // Use cursor pagination utility
     const paginatedResult = await cursorPaginate({

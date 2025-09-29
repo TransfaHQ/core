@@ -13,6 +13,12 @@ export type Int8 = ColumnType<string, bigint | number | string, bigint | number 
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export interface CoreMigrations {
+  id: Generated<number>;
+  name: string;
+  timestamp: Int8;
+}
+
 export interface Currencies {
   code: string;
   createdAt: Generated<Timestamp | null>;
@@ -75,90 +81,6 @@ export interface Ledgers {
   updatedAt: Generated<Timestamp>;
 }
 
-export interface Migrations {
-  id: Generated<number>;
-  name: string;
-  timestamp: Int8;
-}
-
-export interface TempCoreMigrations {
-  id: Generated<number>;
-  name: string;
-  timestamp: Int8;
-}
-
-export interface TempCurrencies {
-  code: string;
-  createdAt: Generated<Timestamp | null>;
-  exponent: number;
-  id: Generated<number>;
-  name: string;
-  updatedAt: Generated<Timestamp | null>;
-}
-
-export interface TempKeys {
-  createdAt: Generated<Timestamp | null>;
-  deletedAt: Timestamp | null;
-  id: Generated<string>;
-  secret: string;
-  updatedAt: Generated<Timestamp | null>;
-}
-
-export interface TempLedgerAccountMetadata {
-  createdAt: Generated<Timestamp | null>;
-  deletedAt: Timestamp | null;
-  id: Generated<string>;
-  key: string;
-  ledgerAccountId: string;
-  updatedAt: Generated<Timestamp | null>;
-  value: string;
-}
-
-export interface TempLedgerAccounts {
-  createdAt: Generated<Timestamp>;
-  currencyCode: string;
-  currencyExponent: number;
-  deletedAt: Timestamp | null;
-  description: string | null;
-  externalId: string | null;
-  id: Generated<string>;
-  ledgerId: string;
-  name: string;
-  normalBalance: string;
-  tigerBeetleId: Buffer;
-  updatedAt: Generated<Timestamp>;
-}
-
-export interface TempLedgerMetadata {
-  createdAt: Generated<Timestamp | null>;
-  deletedAt: Timestamp | null;
-  id: Generated<string>;
-  key: string;
-  ledgerId: string;
-  updatedAt: Generated<Timestamp | null>;
-  value: string;
-}
-
-export interface TempLedgers {
-  createdAt: Generated<Timestamp>;
-  deletedAt: Timestamp | null;
-  description: string | null;
-  id: Generated<string>;
-  name: string;
-  tigerBeetleId: Generated<number>;
-  updatedAt: Generated<Timestamp>;
-}
-
-export interface TempUsers {
-  createdAt: Generated<Timestamp | null>;
-  deletedAt: Timestamp | null;
-  email: string;
-  id: Generated<string>;
-  isActive: Generated<boolean | null>;
-  password: string;
-  updatedAt: Generated<Timestamp | null>;
-}
-
 export interface Users {
   createdAt: Generated<Timestamp | null>;
   deletedAt: Timestamp | null;
@@ -170,20 +92,12 @@ export interface Users {
 }
 
 export interface DB {
+  coreMigrations: CoreMigrations;
   currencies: Currencies;
   keys: Keys;
   ledgerAccountMetadata: LedgerAccountMetadata;
   ledgerAccounts: LedgerAccounts;
   ledgerMetadata: LedgerMetadata;
   ledgers: Ledgers;
-  migrations: Migrations;
-  'temp.coreMigrations': TempCoreMigrations;
-  'temp.currencies': TempCurrencies;
-  'temp.keys': TempKeys;
-  'temp.ledgerAccountMetadata': TempLedgerAccountMetadata;
-  'temp.ledgerAccounts': TempLedgerAccounts;
-  'temp.ledgerMetadata': TempLedgerMetadata;
-  'temp.ledgers': TempLedgers;
-  'temp.users': TempUsers;
   users: Users;
 }
