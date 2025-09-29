@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
 
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -27,4 +27,15 @@ export class PaginatedRequestDto {
   @IsOptional()
   @Type(() => String)
   readonly cursor?: string;
+
+  @ApiPropertyOptional({
+    description: 'Direction to paginate: next for forward, prev for backward',
+    enum: ['next', 'prev'],
+    example: 'next',
+    default: 'next',
+  })
+  @IsOptional()
+  @IsEnum(['next', 'prev'])
+  @Type(() => String)
+  readonly direction?: 'next' | 'prev';
 }

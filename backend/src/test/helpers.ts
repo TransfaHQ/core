@@ -1,4 +1,4 @@
-import { EntityManager } from '@mikro-orm/postgresql';
+import { ControlledTransaction } from 'kysely';
 
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -6,28 +6,29 @@ import { Test } from '@nestjs/testing';
 import { AppModule } from '@src/app.module';
 import { setupApp } from '@src/setup';
 
+import { DatabaseService } from '@libs/database/database.service';
+import { DB } from '@libs/database/types';
+import { uuidV7 } from '@libs/utils/uuid';
+
 export async function setupTestApp(): Promise<INestApplication> {
   const moduleFixture = await Test.createTestingModule({
     imports: [AppModule],
   }).compile();
   const app = moduleFixture.createNestApplication();
   await setupApp(app);
-  const schemaName = process.env.CORE_POSTGRES_SCHEMA || 'e2e_test';
 
   await app.init();
   app.enableShutdownHooks();
-
-  if (schemaName) {
-    const em = app.get(EntityManager);
-    await em.getConnection().execute(`SET search_path TO ${schemaName};`);
-  }
 
   return app;
 }
 
 export interface TestContext {
   app: INestApplication;
-  em: EntityManager;
+  db: DatabaseService;
+  trx: ControlledTransaction<DB, []>;
+  currentSavepoint: string;
+  trxSavepoint: ControlledTransaction<DB, [string]>;
 }
 
 export function setupTestContext(): TestContext {
@@ -35,19 +36,23 @@ export function setupTestContext(): TestContext {
 
   beforeAll(async () => {
     context.app = await setupTestApp();
-    context.em = context.app.get(EntityManager);
+    context.db = context.app.get(DatabaseService);
+    context.trx = await context.db.kysely.startTransaction().execute();
+    context.db.setTransaction(context.trx);
   });
 
   afterAll(async () => {
+    await context.trx.rollback().execute();
     await context.app.close();
   });
 
   beforeEach(async () => {
-    await context.em.begin();
+    context.currentSavepoint = `test_sp_${uuidV7().replace(/-/g, '_')}`;
+    context.trxSavepoint = await context.trx.savepoint(context.currentSavepoint).execute();
   });
 
   afterEach(async () => {
-    await context.em.rollback();
+    await context.trxSavepoint.rollbackToSavepoint(context.currentSavepoint).execute();
   });
 
   return context;

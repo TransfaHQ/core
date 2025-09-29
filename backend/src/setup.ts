@@ -1,5 +1,3 @@
-import { EntityManager } from '@mikro-orm/postgresql';
-
 import cookieParser from 'cookie-parser';
 import { Logger } from 'nestjs-pino';
 
@@ -8,6 +6,8 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { checkPostgresVersion } from '@src/database/utils';
+
+import { DatabaseService } from '@libs/database/database.service';
 
 export async function setupApp(app: INestApplication<NestExpressApplication>) {
   app.use(cookieParser());
@@ -39,7 +39,7 @@ export async function setupApp(app: INestApplication<NestExpressApplication>) {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('apidocs', app, document);
 
-  const dataSource = app.get(EntityManager);
-  await checkPostgresVersion(dataSource);
+  const db = app.get(DatabaseService);
+  await checkPostgresVersion(db.kysely);
   return app;
 }

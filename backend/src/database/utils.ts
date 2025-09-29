@@ -1,10 +1,12 @@
-import { EntityManager } from '@mikro-orm/core';
+import { Kysely, sql } from 'kysely';
+
+import { DB } from '@libs/database/types';
 
 const PG_MINIMUM_VERSION = 170004;
 
-export async function checkPostgresVersion(em: EntityManager) {
-  const result = await em.getConnection().execute('SHOW server_version_num');
-  const versionNum = parseInt(result[0].server_version_num, 10);
+export async function checkPostgresVersion(db: Kysely<DB>) {
+  const result = await sql<Record<string, any>>`SHOW server_version_num`.execute(db);
+  const versionNum = parseInt(result.rows[0].serverVersionNum, 10);
 
   if (versionNum < PG_MINIMUM_VERSION) {
     throw new Error(

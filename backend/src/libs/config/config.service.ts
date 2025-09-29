@@ -1,6 +1,3 @@
-import { MikroOrmModuleOptions } from '@mikro-orm/nestjs';
-import { PostgreSqlDriver } from '@mikro-orm/postgresql';
-
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 
@@ -61,24 +58,14 @@ export class ConfigService {
     return this.envConfig.LOG_LEVEL;
   }
 
-  get mikroOrmConfig(): MikroOrmModuleOptions {
+  get dbConfig() {
     return {
-      driver: PostgreSqlDriver,
       host: this.envConfig.DB_HOST,
       port: this.envConfig.DB_PORT,
       user: this.envConfig.DB_USERNAME,
       password: this.envConfig.DB_PASSWORD,
-      dbName: this.envConfig.DB_NAME,
-      schema: this.envConfig.CORE_POSTGRES_SCHEMA ?? undefined,
-      entities: [__dirname + '/../../modules/**/*.entity{.ts,.js}'],
-      entitiesTs: [__dirname + '/../../modules/**/*.entity.ts'],
-      migrations: {
-        path: __dirname + '/../../database/migrations',
-        tableName: this.envConfig.DB_MIGRATIONS_TABLE,
-        transactional: true,
-      },
-      allowGlobalContext: this.appEnv === 'test',
-      registerRequestContext: this.appEnv !== 'test',
+      database: this.envConfig.DB_NAME,
+      schema: this.envConfig.CORE_POSTGRES_SCHEMA,
     };
   }
 }

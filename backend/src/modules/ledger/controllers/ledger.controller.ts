@@ -160,7 +160,7 @@ export class LedgerController {
   async listLedgers(
     @Query() queryParams: ListLedgerRequestDto,
   ): Promise<CursorPaginatedResult<LedgerResponseDto>> {
-    const response = await this.ledgerService.paginate(queryParams.limit, queryParams.cursor);
+    const response = await this.ledgerService.paginate(queryParams);
     return { ...response, data: response.data.map(ledgerEntityToApiV1Response) };
   }
 }
@@ -192,7 +192,7 @@ export class MTLedgerController {
   async listLegders(
     @Query() queryParams: ListLedgerRequestDto,
   ): Promise<CursorPaginatedResult<LedgerResponseDto>> {
-    const response = await this.ledgerService.paginate(queryParams.limit, queryParams.cursor);
+    const response = await this.ledgerService.paginate(queryParams);
     return { ...response, data: response.data.map(ledgerEntityToApiV1Response) };
   }
 }

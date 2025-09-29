@@ -74,7 +74,7 @@ export class LedgerAccountResponseDto {
 
   @ApiProperty({ description: 'External identifier for the ledger account', example: 'EXT-12345' })
   @IsString()
-  externalId?: string;
+  externalId: string | null;
 
   @ApiProperty({ type: LedgerAccountBalancesDto, description: 'Balances of the ledger account' })
   balances: LedgerAccountBalancesDto;

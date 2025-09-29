@@ -1,6 +1,3 @@
-import { EntityManager, EntityRepository } from '@mikro-orm/core';
-import { InjectRepository } from '@mikro-orm/nestjs';
-
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { Request } from 'express';
@@ -16,29 +13,29 @@ import {
 import { JwtService } from '@nestjs/jwt';
 
 import { ConfigService } from '@libs/config/config.service';
+import { DatabaseService } from '@libs/database/database.service';
 
 import { CreateKeyDto, CreateUserDto, KeyResponseDto, LoginDto, UserResponseDto } from './dto';
-import { KeysEntity } from './entities/keys.entity';
-import { UserEntity } from './entities/user.entity';
 import { JwtPayload } from './types';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(KeysEntity)
-    private readonly keysRepository: EntityRepository<KeysEntity>,
-    @InjectRepository(UserEntity)
-    private readonly userRepository: EntityRepository<UserEntity>,
-    private readonly em: EntityManager,
     private readonly config: ConfigService,
     private readonly jwtService: JwtService,
     private readonly logger: PinoLogger,
+    private readonly db: DatabaseService,
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     const { email, password } = createUserDto;
 
-    const existingUser = await this.userRepository.findOne({ email });
+    const existingUser = await this.db.kysely
+      .selectFrom('users')
+      .select(['id'])
+      .where('email', '=', email)
+      .where('deletedAt', 'is', null)
+      .executeTakeFirst();
 
     if (existingUser) {
       throw new ConflictException('email_already_exists');
@@ -46,12 +43,15 @@ export class AuthService {
 
     const hashedPassword = await this.hashPassword(password);
 
-    const user = new UserEntity();
-    user.email = email;
-    user.password = hashedPassword;
-    user.isActive = true;
-
-    await this.em.persistAndFlush(user);
+    const user = await this.db.kysely
+      .insertInto('users')
+      .values({
+        email,
+        password: hashedPassword,
+        isActive: true,
+      })
+      .returning(['id', 'email', 'createdAt', 'updatedAt'])
+      .executeTakeFirstOrThrow();
 
     return {
       id: user.id,
@@ -68,7 +68,12 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<{ token: string; cookieOptions: any }> {
     const { email, password } = loginDto;
 
-    const user = await this.userRepository.findOne({ email });
+    const user = await this.db.kysely
+      .selectFrom('users')
+      .select(['id', 'email', 'password', 'isActive'])
+      .where('email', '=', email)
+      .where('deletedAt', 'is', null)
+      .executeTakeFirst();
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -108,10 +113,13 @@ export class AuthService {
 
     const hashedSecret = crypto.createHash('sha256').update(generatedSecret).digest('hex');
 
-    const key = new KeysEntity();
-    key.secret = hashedSecret;
-
-    await this.em.persistAndFlush(key);
+    const key = await this.db.kysely
+      .insertInto('keys')
+      .values({
+        secret: hashedSecret,
+      })
+      .returning(['id', 'createdAt', 'updatedAt'])
+      .executeTakeFirstOrThrow();
 
     return {
       id: key.id,
@@ -122,18 +130,27 @@ export class AuthService {
   }
 
   async deleteKey(id: string): Promise<void> {
-    const key = await this.keysRepository.findOne({ id, deletedAt: null });
+    const result = await this.db.kysely
+      .updateTable('keys')
+      .set({
+        deletedAt: new Date(),
+      })
+      .where('id', '=', id)
+      .where('deletedAt', 'is', null)
+      .executeTakeFirst();
 
-    if (!key) {
+    if (result.numUpdatedRows === 0n) {
       throw new NotFoundException('Key not found');
     }
-
-    key.deletedAt = new Date();
-    await this.em.persistAndFlush(key);
   }
 
-  async validateApiKey(id: string, secret: string): Promise<KeysEntity | null> {
-    const key = await this.keysRepository.findOne({ id, deletedAt: null });
+  async validateApiKey(id: string, secret: string): Promise<any | null> {
+    const key = await this.db.kysely
+      .selectFrom('keys')
+      .select(['id', 'secret', 'createdAt', 'updatedAt'])
+      .where('id', '=', id)
+      .where('deletedAt', 'is', null)
+      .executeTakeFirst();
 
     if (!key) {
       return null;
