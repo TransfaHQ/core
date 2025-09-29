@@ -1,6 +1,3 @@
-import { EntityRepository } from '@mikro-orm/core';
-import { getRepositoryToken } from '@mikro-orm/nestjs';
-
 import request from 'supertest';
 
 import { setupTestContext } from '@src/test/helpers';
@@ -9,13 +6,9 @@ import { ConfigService } from '@libs/config/config.service';
 
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { KeysEntity } from './entities/keys.entity';
-import { UserEntity } from './entities/user.entity';
 
 describe('AuthController', () => {
   const ctx = setupTestContext();
-  let userRepository: EntityRepository<UserEntity>;
-  let keysRepository: EntityRepository<KeysEntity>;
   let configService: ConfigService;
   let adminSecret: string;
   let passwordHash: string;
@@ -30,8 +23,6 @@ describe('AuthController', () => {
   });
 
   beforeAll(async () => {
-    userRepository = ctx.app.get(getRepositoryToken(UserEntity));
-    keysRepository = ctx.app.get(getRepositoryToken(KeysEntity));
     configService = ctx.app.get(ConfigService);
     const authService = ctx.app.get(AuthService);
     passwordHash = await authService.hashPassword('password123');
@@ -90,7 +81,12 @@ describe('AuthController', () => {
 
         expect(response.body.password).toBeUndefined();
 
-        const createdUser = await userRepository.findOne({ email: testUser.email });
+        const createdUser = await ctx.trx
+          .selectFrom('users')
+          .select(['email', 'isActive', 'password'])
+          .where('email', '=', testUser.email)
+          .where('deletedAt', 'is', null)
+          .executeTakeFirst();
 
         expect(createdUser).toBeDefined();
         expect(createdUser!.email).toBe(testUser.email);
@@ -108,7 +104,12 @@ describe('AuthController', () => {
           .send(testUser)
           .expect(201);
 
-        const createdUser = await userRepository.findOne({ email: testUser.email });
+        const createdUser = await ctx.trx
+          .selectFrom('users')
+          .select(['isActive'])
+          .where('email', '=', testUser.email)
+          .where('deletedAt', 'is', null)
+          .executeTakeFirst();
 
         expect(createdUser!.isActive).toBe(true);
       });
@@ -118,12 +119,14 @@ describe('AuthController', () => {
       it('should reject duplicate email addresses', async () => {
         const testUser = generateTestUser();
 
-        const user = new UserEntity({
-          email: testUser.email,
-          isActive: true,
-          password: passwordHash,
-        });
-        await ctx.em.persist(user);
+        await ctx.trx
+          .insertInto('users')
+          .values({
+            email: testUser.email,
+            isActive: true,
+            password: passwordHash,
+          })
+          .execute();
 
         // Attempt to create second user with same email
         const response = await request(ctx.app.getHttpServer())
@@ -135,8 +138,13 @@ describe('AuthController', () => {
         expect(response.body.message).toBe('email_already_exists');
 
         // Verify only one user exists in database
-        const userCount = await userRepository.count({ email: testUser.email });
-        expect(userCount).toBe(1);
+        const userCount = await ctx.trx
+          .selectFrom('users')
+          .select(({ fn }) => [fn.count<number>('id').as('count')])
+          .where('email', '=', testUser.email)
+          .where('deletedAt', 'is', null)
+          .executeTakeFirstOrThrow();
+        expect(userCount.count).toBe(1);
       });
     });
 
@@ -192,12 +200,14 @@ describe('AuthController', () => {
       testUser = generateTestUser();
 
       // Create a test user for login tests
-      const user = new UserEntity({
-        email: testUser.email,
-        isActive: true,
-        password: passwordHash,
-      });
-      await ctx.em.persist(user);
+      await ctx.trx
+        .insertInto('users')
+        .values({
+          email: testUser.email,
+          isActive: true,
+          password: passwordHash,
+        })
+        .execute();
     });
 
     describe('Successful Login', () => {
@@ -269,9 +279,12 @@ describe('AuthController', () => {
 
       it('should reject login for inactive user', async () => {
         // Deactivate the user
-        const user = await ctx.em.findOneOrFail(UserEntity, { email: testUser.email });
-        user.isActive = false;
-        await ctx.em.persist(user);
+        await ctx.trx
+          .updateTable('users')
+          .set({ isActive: false })
+          .where('email', '=', testUser.email)
+          .where('deletedAt', 'is', null)
+          .execute();
 
         return request(ctx.app.getHttpServer())
           .post('/v1/auth/login')
@@ -373,7 +386,12 @@ describe('AuthController', () => {
         expect(response.body.secret.length).toBeGreaterThan(40);
 
         // Verify key was created in database
-        const createdKey = await keysRepository.findOne({ id: response.body.id });
+        const createdKey = await ctx.trx
+          .selectFrom('keys')
+          .select(['id', 'secret'])
+          .where('id', '=', response.body.id)
+          .where('deletedAt', 'is', null)
+          .executeTakeFirst();
 
         expect(createdKey).toBeDefined();
         expect(createdKey!.id).toBe(response.body.id);
@@ -454,16 +472,25 @@ describe('AuthController', () => {
           .expect(204);
 
         // Key should be soft deleted (deletedAt should be set)
-        const deletedKey = await keysRepository.findOne({ id: createdKeyId });
+        const deletedKey = await ctx.trx
+          .selectFrom('keys')
+          .select(['id', 'deletedAt'])
+          .where('id', '=', createdKeyId)
+          .executeTakeFirst();
 
         expect(deletedKey).toBeDefined();
         expect(deletedKey!.deletedAt).toBeDefined();
         expect(deletedKey!.deletedAt).toBeInstanceOf(Date);
 
         // Key should not be found in normal queries
-        const activeKey = await keysRepository.findOne({ id: createdKeyId, deletedAt: null });
+        const activeKey = await ctx.trx
+          .selectFrom('keys')
+          .select(['id'])
+          .where('id', '=', createdKeyId)
+          .where('deletedAt', 'is', null)
+          .executeTakeFirst();
 
-        expect(activeKey).toBeNull();
+        expect(activeKey).toBeUndefined();
       });
 
       it('should return 404 for non-existent key', async () => {

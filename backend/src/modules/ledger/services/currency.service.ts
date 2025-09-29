@@ -1,11 +1,8 @@
-import { EntityManager, EntityRepository, Transactional } from '@mikro-orm/core';
-import { InjectRepository } from '@mikro-orm/nestjs';
-
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
+import { DatabaseService } from '@libs/database/database.service';
+
 import { CreateCurrencyDto } from '@modules/ledger/dto/currency/create-currency.dto';
-import { CurrencyEntity } from '@modules/ledger/entities/currency.entity';
-import { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -17,36 +14,41 @@ export interface PaginatedResult<T> {
 
 @Injectable()
 export class CurrencyService {
-  constructor(
-    @InjectRepository(CurrencyEntity)
-    private readonly currencyRepository: EntityRepository<CurrencyEntity>,
-    @InjectRepository(LedgerAccountEntity)
-    private readonly ledgerAccountRepository: EntityRepository<LedgerAccountEntity>,
-    private readonly em: EntityManager,
-  ) {}
+  constructor(private readonly db: DatabaseService) {}
 
-  @Transactional()
-  async createCurrency(data: CreateCurrencyDto): Promise<CurrencyEntity> {
-    // Check if currency code already exists
-    const existingCurrency = await this.currencyRepository.findOne({
-      code: data.code.toUpperCase(),
+  async createCurrency(data: CreateCurrencyDto): Promise<any> {
+    return await this.db.transaction(async (trx) => {
+      // Check if currency code already exists
+      const existingCurrency = await trx
+        .selectFrom('currencies')
+        .select(['id'])
+        .where('code', '=', data.code.toUpperCase())
+        .executeTakeFirst();
+
+      if (existingCurrency) {
+        throw new BadRequestException(`Currency with code '${data.code}' already exists`);
+      }
+
+      const currency = await trx
+        .insertInto('currencies')
+        .values({
+          code: data.code.toUpperCase(),
+          exponent: data.exponent,
+          name: data.name,
+        })
+        .returning(['id', 'code', 'exponent', 'name', 'createdAt', 'updatedAt'])
+        .executeTakeFirstOrThrow();
+
+      return currency;
     });
-
-    if (existingCurrency) {
-      throw new BadRequestException(`Currency with code '${data.code}' already exists`);
-    }
-
-    const currency = new CurrencyEntity();
-    currency.code = data.code.toUpperCase();
-    currency.exponent = data.exponent;
-    currency.name = data.name;
-
-    await this.em.persistAndFlush(currency);
-    return currency;
   }
 
-  async findByCode(code: string): Promise<CurrencyEntity> {
-    const currency = await this.currencyRepository.findOne({ code: code.toUpperCase() });
+  async findByCode(code: string): Promise<any> {
+    const currency = await this.db.kysely
+      .selectFrom('currencies')
+      .select(['id', 'code', 'exponent', 'name', 'createdAt', 'updatedAt'])
+      .where('code', '=', code.toUpperCase())
+      .executeTakeFirst();
 
     if (!currency) {
       throw new NotFoundException(`Currency with code '${code}' not found`);
@@ -55,8 +57,12 @@ export class CurrencyService {
     return currency;
   }
 
-  async findById(id: number): Promise<CurrencyEntity> {
-    const currency = await this.currencyRepository.findOne({ id });
+  async findById(id: number): Promise<any> {
+    const currency = await this.db.kysely
+      .selectFrom('currencies')
+      .select(['id', 'code', 'exponent', 'name', 'createdAt', 'updatedAt'])
+      .where('id', '=', id)
+      .executeTakeFirst();
 
     if (!currency) {
       throw new NotFoundException(`Currency with id '${id}' not found`);
@@ -69,18 +75,29 @@ export class CurrencyService {
     page: number = 1,
     limit: number = 10,
     codeFilter?: string,
-  ): Promise<PaginatedResult<CurrencyEntity>> {
-    const where: any = {};
+  ): Promise<PaginatedResult<any>> {
+    let query = this.db.kysely
+      .selectFrom('currencies')
+      .select(['id', 'code', 'exponent', 'name', 'createdAt', 'updatedAt']);
 
     if (codeFilter) {
-      where.code = { $ilike: `%${codeFilter.toUpperCase()}%` };
+      query = query.where('code', 'ilike', `%${codeFilter.toUpperCase()}%`);
     }
 
-    const [data, total] = await this.currencyRepository.findAndCount(where, {
-      orderBy: { code: 'asc' },
-      offset: (page - 1) * limit,
-      limit,
-    });
+    const [data, totalResult] = await Promise.all([
+      query
+        .orderBy('code', 'asc')
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .execute(),
+      this.db.kysely
+        .selectFrom('currencies')
+        .select(({ fn }) => [fn.count<number>('id').as('count')])
+        .$if(!!codeFilter, (qb) => qb.where('code', 'ilike', `%${codeFilter!.toUpperCase()}%`))
+        .executeTakeFirstOrThrow(),
+    ]);
+
+    const total = totalResult.count;
 
     return {
       data,
@@ -91,19 +108,35 @@ export class CurrencyService {
     };
   }
 
-  @Transactional()
   async deleteCurrency(code: string): Promise<void> {
-    const currency = await this.findByCode(code);
+    return await this.db.transaction(async (trx) => {
+      const currency = await trx
+        .selectFrom('currencies')
+        .select(['id', 'code'])
+        .where('code', '=', code.toUpperCase())
+        .executeTakeFirst();
 
-    // Check if any ledger accounts are using this currency
-    const accountCount = await this.ledgerAccountRepository.count({ currencyCode: currency.code });
+      if (!currency) {
+        throw new NotFoundException(`Currency with code '${code}' not found`);
+      }
 
-    if (accountCount > 0) {
-      throw new BadRequestException(
-        `Cannot delete currency '${code}' as it is being used by ${accountCount} ledger account(s)`,
-      );
-    }
+      // Check if any ledger accounts are using this currency
+      const accountCountResult = await trx
+        .selectFrom('ledgerAccounts')
+        .select(({ fn }) => [fn.count<number>('id').as('count')])
+        .where('currencyCode', '=', currency.code)
+        .where('deletedAt', 'is', null)
+        .executeTakeFirstOrThrow();
 
-    await this.em.removeAndFlush(currency);
+      const accountCount = accountCountResult.count;
+
+      if (accountCount > 0) {
+        throw new BadRequestException(
+          `Cannot delete currency '${code}' as it is being used by ${accountCount} ledger account(s)`,
+        );
+      }
+
+      await trx.deleteFrom('currencies').where('id', '=', currency.id).execute();
+    });
   }
 }

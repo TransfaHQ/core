@@ -1,225 +1,364 @@
-import { EntityRepository, Transactional, ref } from '@mikro-orm/core';
-import { InjectRepository } from '@mikro-orm/nestjs';
-import { EntityManager } from '@mikro-orm/postgresql';
-
 import BigNumber from 'bignumber.js';
+import { Selectable } from 'kysely';
 import { AccountFlags, Account as TigerBeetleAccount, id } from 'tigerbeetle-node';
 import { validate } from 'uuid';
 
 import { Injectable } from '@nestjs/common';
 
 import { CursorPaginatedResult, cursorPaginate } from '@libs/database';
+import { DatabaseService } from '@libs/database/database.service';
+import { LedgerAccounts } from '@libs/database/types';
+import { bufferToTbId, tbIdToBuffer } from '@libs/database/utils';
 import { NormalBalanceEnum } from '@libs/enums';
 import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
-import { uuidV7 } from '@libs/utils/uuid';
 
 import { CreateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/create-ledger-account.dto';
 import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/update-ledger-account.dto';
-import { LedgerAccountEntity } from '@modules/ledger/entities/ledger-account.entity';
-import { LedgerAccountMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
-import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
-import { CurrencyService } from '@modules/ledger/services/currency.service';
+
+import { LedgerAccount, LedgerAccountBalances } from '../types';
 
 @Injectable()
 export class LedgerAccountService {
   constructor(
-    @InjectRepository(LedgerAccountEntity)
-    private readonly ledgerAccountRepository: EntityRepository<LedgerAccountEntity>,
     private readonly tigerBeetleService: TigerBeetleService,
-    @InjectRepository(LedgerEntity)
-    private readonly ledgerRepository: EntityRepository<LedgerEntity>,
-    @InjectRepository(LedgerAccountMetadataEntity)
-    private readonly ledgerAccountMetadataRepository: EntityRepository<LedgerAccountMetadataEntity>,
-    private readonly currencyService: CurrencyService,
-    private readonly em: EntityManager,
+    private readonly db: DatabaseService,
   ) {}
 
-  @Transactional()
-  async createLedgerAccount(data: CreateLedgerAccountDto): Promise<LedgerAccountEntity> {
-    const ledger = await this.ledgerRepository.findOneOrFail({ id: data.ledgerId });
+  async createLedgerAccount(data: CreateLedgerAccountDto): Promise<LedgerAccount> {
+    return await this.db.transaction(async (trx) => {
+      const ledger = await trx
+        .selectFrom('ledgers')
+        .where('id', '=', data.ledgerId)
+        .selectAll()
+        .executeTakeFirstOrThrow();
 
-    // Get currency from database
-    const currency = await this.currencyService.findByCode(data.currency);
+      const currency = await trx
+        .selectFrom('currencies')
+        .where('code', '=', data.currency)
+        .selectAll()
+        .executeTakeFirstOrThrow();
 
-    const account = new LedgerAccountEntity({
-      id: uuidV7(),
-      ledger: ref(LedgerEntity, data.ledgerId),
-      name: data.name,
-      currencyCode: data.currency,
-      description: data.description,
-      externalId: data.externalId,
-      normalBalance: data.normalBalance,
-      tigerBeetleId: id(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      currencyExponent: currency.exponent,
-    });
+      const account = await trx
+        .insertInto('ledgerAccounts')
+        .values({
+          ledgerId: data.ledgerId,
+          name: data.name,
+          currencyCode: data.currency,
+          description: data.description,
+          externalId: data.externalId,
+          normalBalance: data.normalBalance,
+          tigerBeetleId: tbIdToBuffer(id()),
+          currencyExponent: currency.exponent,
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
 
-    await this.em.persist(account);
-
-    const metadata: LedgerAccountMetadataEntity[] = Object.entries(data.metadata ?? {}).map(
-      ([key, value]) => {
-        return new LedgerAccountMetadataEntity({
-          ledgerAccount: ref(LedgerAccountEntity, account.id),
-          key,
-          value,
-        });
-      },
-    );
-
-    if (metadata.length > 0) await this.em.persist(metadata);
-
-    // Create account on tigerbeetle and save it
-    await this.tigerBeetleService.createAccount({
-      id: account.tigerBeetleId,
-      debits_pending: 0n,
-      credits_pending: 0n,
-      credits_posted: 0n,
-      debits_posted: 0n,
-      ledger: ledger.tigerBeetleId,
-      timestamp: 0n,
-      reserved: 0,
-      flags:
-        account.normalBalance === NormalBalanceEnum.CREDIT
-          ? AccountFlags.debits_must_not_exceed_credits
-          : AccountFlags.credits_must_not_exceed_debits,
-      // todo; might be good to use theses fields to link accounts together
-      user_data_128: 0n,
-      user_data_64: 0n,
-      user_data_32: account.normalBalance === NormalBalanceEnum.CREDIT ? 1 : 0, // account normal balance
-      code: currency.id,
-    });
-
-    const tbAccount = await this.tigerBeetleService.retrieveAccount(account.tigerBeetleId);
-    this.parseAccountBalanceFromTBAccount(account, tbAccount);
-    await this.em.flush();
-    return account;
-  }
-
-  async retrieveLedgerAccount(id: string): Promise<LedgerAccountEntity> {
-    const response = await this.ledgerAccountRepository.findOneOrFail(
-      { $or: validate(id) ? [{ externalId: id }, { id }] : [{ externalId: id }] },
-      {
-        populate: ['metadata'],
-      },
-    );
-
-    const tbAccount = await this.tigerBeetleService.retrieveAccount(response.tigerBeetleId);
-    this.parseAccountBalanceFromTBAccount(response, tbAccount);
-    return response;
-  }
-
-  async paginate(
-    limit?: number,
-    cursor?: string,
-    ledgerId?: string,
-    currency?: string,
-    normalBalance?: string,
-    search?: string,
-    metadata?: Record<string, string>,
-  ): Promise<CursorPaginatedResult<LedgerAccountEntity>> {
-    const qb = this.em
-      .qb(LedgerAccountEntity, 'la')
-      .leftJoinAndSelect('la.metadata', 'lam')
-      .getKnex()
-      .distinctOn('la.id');
-
-    if (ledgerId) {
-      qb.andWhere({ ledger: ledgerId });
-    }
-    if (currency) {
-      qb.andWhere({ currencyCode: currency });
-    }
-    if (normalBalance) {
-      qb.andWhere({ normalBalance });
-    }
-    if (search) {
-      qb.orWhere([
-        { name: { $ilike: `%${search}%` } },
-        { description: { $ilike: `%${search}%` } },
-        { externalId: { $ilike: `%${search}%` } },
-      ]);
-    }
-    if (metadata && Object.keys(metadata).length > 0) {
-      Object.entries(metadata).forEach(([key, value]) =>
-        qb.andWhere({ $and: [{ 'lam.key': key }, { 'lam.value': value }] }),
+      const metadata = await Promise.all(
+        Object.entries(data.metadata ?? {}).map(async ([key, value]) => {
+          const data = {
+            ledgerAccountId: account.id,
+            key,
+            value,
+          };
+          await trx.insertInto('ledgerAccountMetadata').values(data).executeTakeFirstOrThrow();
+          return {
+            key,
+            value,
+          };
+        }),
       );
-    }
 
-    const response = await cursorPaginate<LedgerAccountEntity>({
-      qb,
-      limit,
-      cursor,
-      order: 'ASC',
+      // Create account on tigerbeetle and save it
+      await this.tigerBeetleService.createAccount({
+        id: bufferToTbId(account.tigerBeetleId),
+        debits_pending: 0n,
+        credits_pending: 0n,
+        credits_posted: 0n,
+        debits_posted: 0n,
+        ledger: ledger.tigerBeetleId,
+        timestamp: 0n,
+        reserved: 0,
+        flags:
+          account.normalBalance === NormalBalanceEnum.CREDIT
+            ? AccountFlags.debits_must_not_exceed_credits
+            : AccountFlags.credits_must_not_exceed_debits,
+        // todo; might be good to use theses fields to link accounts together
+        user_data_128: 0n,
+        user_data_64: 0n,
+        user_data_32: account.normalBalance === NormalBalanceEnum.CREDIT ? 1 : 0, // account normal balance
+        code: currency.id,
+      });
+
+      const tbAccount = await this.tigerBeetleService.retrieveAccount(
+        bufferToTbId(account.tigerBeetleId),
+      );
+      const balances = this.parseAccountBalanceFromTBAccount(account, tbAccount);
+      return {
+        ...account,
+        metadata,
+        balances,
+      };
     });
-    const tbAccounts = await this.tigerBeetleService.retrieveAccounts(
-      response.data.map((v) => v.tigerBeetleId),
+  }
+
+  async retrieveLedgerAccount(id: string): Promise<LedgerAccount> {
+    const response = await this.db.kysely
+      .selectFrom('ledgerAccounts')
+      .selectAll()
+      .where((eb) => {
+        if (validate(id)) {
+          return eb('id', '=', id).or('externalId', '=', id);
+        }
+        return eb('externalId', '=', id);
+      })
+      .executeTakeFirstOrThrow();
+
+    const metadata = await this.db.kysely
+      .selectFrom('ledgerAccountMetadata')
+      .select(['key', 'value'])
+      .where('ledgerAccountId', '=', response.id)
+      .execute();
+    const tbAccount = await this.tigerBeetleService.retrieveAccount(
+      bufferToTbId(response.tigerBeetleId),
     );
+    const balances = this.parseAccountBalanceFromTBAccount(response, tbAccount);
 
     return {
       ...response,
-      data: response.data.map((entity) => {
-        const tbAccount = tbAccounts.filter((account) => account.id === entity.tigerBeetleId)[0];
-        this.parseAccountBalanceFromTBAccount(entity, tbAccount);
-        return entity;
-      }),
+      metadata,
+      balances,
     };
   }
 
-  @Transactional()
-  async update(id: string, data: UpdateLedgerAccountDto): Promise<LedgerAccountEntity> {
-    const account = await this.ledgerAccountRepository.findOneOrFail({ id });
+  async paginate(options: {
+    limit?: number;
+    cursor?: string;
+    direction?: 'next' | 'prev';
+    filters: {
+      ledgerId?: string;
+      currency?: string;
+      normalBalance?: string;
+      search?: string;
+      metadata?: Record<string, string>;
+    };
+    order?: 'asc' | 'desc';
+  }): Promise<CursorPaginatedResult<LedgerAccount>> {
+    const {
+      limit = 15,
+      cursor,
+      direction = 'next',
 
-    account.name = data.name ?? account.name;
-    account.description = data.description ?? account.description;
+      order = 'desc',
+    } = options;
+    const { ledgerId, currency, normalBalance, search, metadata } = options.filters;
 
-    const metadataKeyToDelete: string[] = [];
-    const metadataToUpdate: LedgerAccountMetadataEntity[] = [];
+    // Build base query with filters
+    let baseQuery = this.db.kysely.selectFrom('ledgerAccounts');
 
-    for (const [key, value] of Object.entries(data.metadata ?? {})) {
-      if (value === null || value === undefined || !value) {
-        metadataKeyToDelete.push(key);
-      } else {
-        const meta = new LedgerAccountMetadataEntity();
-        meta.key = key;
-        meta.value = value;
-        meta.ledgerAccount = account;
-        metadataToUpdate.push(meta);
+    // Apply filters
+    if (ledgerId) {
+      baseQuery = baseQuery.where('ledgerId', '=', ledgerId);
+    }
+    if (currency) {
+      baseQuery = baseQuery.where('currencyCode', '=', currency);
+    }
+    if (normalBalance) {
+      baseQuery = baseQuery.where('normalBalance', '=', normalBalance);
+    }
+    if (search) {
+      baseQuery = baseQuery.where((eb) =>
+        eb('name', 'ilike', `%${search}%`)
+          .or('description', 'ilike', `%${search}%`)
+          .or('externalId', 'ilike', `%${search}%`),
+      );
+    }
+
+    Object.entries(metadata ?? {}).forEach(([key, value]) => {
+      baseQuery = baseQuery.where((eb) =>
+        eb.exists(
+          eb
+            .selectFrom('ledgerAccountMetadata')
+            .select('id')
+            .where('ledgerAccountMetadata.ledgerAccountId', '=', eb.ref('ledgerAccounts.id'))
+            .where('ledgerAccountMetadata.key', '=', key)
+            .where('ledgerAccountMetadata.value', '=', value),
+        ),
+      );
+    });
+
+    // Get all fields for the accounts
+    const queryWithSelect = baseQuery.selectAll();
+    console.log(queryWithSelect.compile());
+
+    // Use cursor pagination utility
+    const paginatedResult = await cursorPaginate({
+      qb: queryWithSelect,
+      limit,
+      cursor,
+      direction,
+      initialOrder: order,
+    });
+
+    // If no data, return early
+    if (paginatedResult.data.length === 0) {
+      return {
+        ...paginatedResult,
+        data: [],
+      };
+    }
+
+    // Get TigerBeetle accounts for balance calculation
+    const tbAccounts = await this.tigerBeetleService.retrieveAccounts(
+      paginatedResult.data.map((v) => bufferToTbId(v.tigerBeetleId)),
+    );
+
+    // Fetch metadata for accounts (if needed in the future)
+    const accountIds = paginatedResult.data.map((account) => account.id);
+    const metadataResults = await this.db.kysely
+      .selectFrom('ledgerAccountMetadata')
+      .select(['ledgerAccountId', 'key', 'value'])
+      .where('ledgerAccountId', 'in', accountIds)
+      .execute();
+
+    // Group metadata by account ID
+    const metadataByAccountId = metadataResults.reduce(
+      (acc, meta) => {
+        if (!acc[meta.ledgerAccountId]) {
+          acc[meta.ledgerAccountId] = [];
+        }
+        acc[meta.ledgerAccountId].push({ key: meta.key, value: meta.value });
+        return acc;
+      },
+      {} as Record<string, Array<{ key: string; value: string }>>,
+    );
+
+    // Combine accounts with their balances and metadata
+    const data = paginatedResult.data.map((entity) => {
+      const tbAccount = tbAccounts.find(
+        (account) => account.id === bufferToTbId(entity.tigerBeetleId),
+      );
+      const balances = tbAccount
+        ? this.parseAccountBalanceFromTBAccount(entity, tbAccount)
+        : {
+            pendingBalance: {
+              credits: 0,
+              debits: 0,
+              amount: 0,
+              currency: entity.currencyCode,
+              currencyExponent: entity.currencyExponent,
+            },
+            postedBalance: {
+              credits: 0,
+              debits: 0,
+              amount: 0,
+              currency: entity.currencyCode,
+              currencyExponent: entity.currencyExponent,
+            },
+            avalaibleBalance: {
+              credits: 0,
+              debits: 0,
+              amount: 0,
+              currency: entity.currencyCode,
+              currencyExponent: entity.currencyExponent,
+            },
+          };
+
+      return {
+        ...entity,
+        balances,
+        metadata: metadataByAccountId[entity.id] || [],
+      };
+    });
+
+    return {
+      ...paginatedResult,
+      data,
+    };
+  }
+
+  async update(id: string, data: UpdateLedgerAccountDto): Promise<LedgerAccount> {
+    return await this.db.transaction(async (trx) => {
+      // Update ledger account basic information
+      const updatePayload = {
+        ...(data.name && { name: data.name }),
+        ...(data.description !== undefined && { description: data.description }),
+      };
+
+      if (Object.keys(updatePayload).length > 0) {
+        await trx.updateTable('ledgerAccounts').set(updatePayload).where('id', '=', id).execute();
       }
-    }
 
-    if (metadataKeyToDelete.length) {
-      await this.ledgerAccountMetadataRepository.nativeDelete({
-        ledgerAccount: { id },
-        key: { $in: metadataKeyToDelete },
-      });
-    }
+      // Handle metadata updates
+      if (data.metadata) {
+        const metadataKeyToDelete: string[] = [];
+        const metadataToUpsert: Array<{ key: string; value: string }> = [];
 
-    // Upsert metadata (update if exists, create if not)
-    if (metadataToUpdate.length > 0) {
-      await this.em.upsertMany(LedgerAccountMetadataEntity, metadataToUpdate, {
-        onConflictFields: ['ledgerAccount', 'key'],
-      });
-    }
+        for (const [key, value] of Object.entries(data.metadata)) {
+          if (value === null || value === undefined || !value) {
+            metadataKeyToDelete.push(key);
+          } else {
+            metadataToUpsert.push({ key, value });
+          }
+        }
 
-    await this.em.flush();
+        // Delete metadata entries with null/undefined/empty values
+        if (metadataKeyToDelete.length > 0) {
+          await trx
+            .deleteFrom('ledgerAccountMetadata')
+            .where('ledgerAccountId', '=', id)
+            .where('key', 'in', metadataKeyToDelete)
+            .execute();
+        }
 
-    const updateLedgerAccount = await this.ledgerAccountRepository.findOneOrFail(
-      { id },
-      { populate: ['metadata'] },
-    );
+        // Upsert metadata entries
+        for (const { key, value } of metadataToUpsert) {
+          await trx
+            .insertInto('ledgerAccountMetadata')
+            .values({
+              ledgerAccountId: id,
+              key,
+              value,
+            })
+            .onConflict((oc) =>
+              oc.columns(['ledgerAccountId', 'key']).doUpdateSet({
+                value,
+              }),
+            )
+            .execute();
+        }
+      }
 
-    const tbAccount = await this.tigerBeetleService.retrieveAccount(
-      updateLedgerAccount.tigerBeetleId,
-    );
-    this.parseAccountBalanceFromTBAccount(updateLedgerAccount, tbAccount);
-    return updateLedgerAccount;
+      // Fetch the updated ledger account with metadata
+      const updatedAccount = await trx
+        .selectFrom('ledgerAccounts')
+        .where('id', '=', id)
+        .selectAll()
+        .executeTakeFirstOrThrow();
+
+      const metadata = await trx
+        .selectFrom('ledgerAccountMetadata')
+        .select(['key', 'value'])
+        .where('ledgerAccountId', '=', id)
+        .execute();
+
+      // Get TigerBeetle account for balance calculation
+      const tbAccount = await this.tigerBeetleService.retrieveAccount(
+        bufferToTbId(updatedAccount.tigerBeetleId),
+      );
+      const balances = this.parseAccountBalanceFromTBAccount(updatedAccount, tbAccount);
+
+      return {
+        ...updatedAccount,
+        metadata,
+        balances,
+      };
+    });
   }
 
   private parseAccountBalanceFromTBAccount(
-    entity: LedgerAccountEntity,
+    entity: Selectable<LedgerAccounts>,
     tbAccount: TigerBeetleAccount,
-  ): void {
+  ): LedgerAccountBalances {
     /**
      * Summed amounts of all posted and pending ledger entries with debit direction.
      */
@@ -279,7 +418,7 @@ export class LedgerAccountService {
       availableAmount = BigNumber(postedDebit).minus(pendingCredit).toNumber();
     }
 
-    entity.balances = {
+    return {
       pendingBalance: {
         credits: pendingCredit,
         debits: pendingDebit,

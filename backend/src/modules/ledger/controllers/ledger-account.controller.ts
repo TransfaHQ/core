@@ -33,6 +33,8 @@ import { ListLedgerAccountRequestDto } from '@modules/ledger/dto/ledger-account/
 import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/update-ledger-account.dto';
 import { LedgerAccountService } from '@modules/ledger/services/ledger-account.service';
 
+import { LedgerAccount } from '../types';
+
 @ApiTags('ledger-accounts')
 @ApiSecurity('api-key')
 @UseGuards(ApiKeyOrJwtGuard)
@@ -183,15 +185,17 @@ export class LedgerAccountController {
   async listAccounts(
     @Query() queryParams: ListLedgerAccountRequestDto,
   ): Promise<CursorPaginatedResult<LedgerAccountResponseDto>> {
-    const response = await this.ledgerAccountService.paginate(
-      queryParams.limit,
-      queryParams.cursor,
-      queryParams.ledger_id,
-      queryParams.currency,
-      queryParams.normal_balance,
-      queryParams.search,
-      queryParams.metadata,
-    );
+    const response = await this.ledgerAccountService.paginate({
+      limit: queryParams.limit,
+      cursor: queryParams.cursor,
+      filters: {
+        ledgerId: queryParams.ledger_id,
+        currency: queryParams.currency,
+        normalBalance: queryParams.normal_balance,
+        search: queryParams.search,
+        metadata: queryParams.metadata,
+      },
+    });
     return { ...response, data: response.data.map(ledgerAccountEntityToApiV1Response) };
   }
 
@@ -220,7 +224,7 @@ export class LedgerAccountController {
     @Param('id') id: string,
     @Body() data: UpdateLedgerAccountDto,
   ): Promise<LedgerAccountResponseDto> {
-    const response = await this.ledgerAccountService.update(id, data);
+    const response = (await this.ledgerAccountService.update(id, data)) as unknown as LedgerAccount;
     return ledgerAccountEntityToApiV1Response(response);
   }
 }

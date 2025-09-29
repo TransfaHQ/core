@@ -1,3 +1,4 @@
+import { config as loadConfig } from 'dotenv';
 import z from 'zod';
 
 export const DBConfigSchema = z.object({
@@ -11,7 +12,26 @@ export const DBConfigSchema = z.object({
     .regex(/^[A-Za-z_]+$/, {
       message: 'Only letters and underscores are allowed',
     })
-    .optional(),
+    .optional()
+    .default('public'),
   DB_MIGRATIONS_TABLE: z.string().default('migrations'),
   DB_ENABLE_LOGGING: z.string().transform(Boolean).default(false),
 });
+
+// Load environment variables first
+loadConfig({
+  path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env',
+});
+
+// Parse configuration
+export const dbConfig = DBConfigSchema.parse(process.env);
+
+export default {
+  host: dbConfig.DB_HOST,
+  port: dbConfig.DB_PORT,
+  user: dbConfig.DB_USERNAME,
+  password: dbConfig.DB_PASSWORD,
+  dbName: dbConfig.DB_NAME,
+  schema: dbConfig.CORE_POSTGRES_SCHEMA,
+  debug: dbConfig.DB_ENABLE_LOGGING,
+};

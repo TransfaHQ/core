@@ -1,6 +1,3 @@
-import { EntityRepository } from '@mikro-orm/core';
-import { getRepositoryToken } from '@mikro-orm/nestjs';
-
 import request from 'supertest';
 
 import { HttpStatus } from '@nestjs/common';
@@ -11,23 +8,17 @@ import { setTestBasicAuthHeader } from '@libs/utils/tests';
 
 import { AuthService } from '@modules/auth/auth.service';
 import { KeyResponseDto } from '@modules/auth/dto';
-import { LedgerMetadataEntity } from '@modules/ledger/entities/ledger-metadata.entity';
-import { LedgerEntity } from '@modules/ledger/entities/ledger.entity';
 
 import { LedgerService } from '../services/ledger.service';
+import { Ledger } from '../types';
 
 describe('LedgerController', () => {
   const ctx = setupTestContext();
-  let ledgerRepository: EntityRepository<LedgerEntity>;
-  let ledgerMetadataRepository: EntityRepository<LedgerMetadataEntity>;
   let authKey: KeyResponseDto;
 
   beforeAll(async () => {
     const authService = ctx.app.get(AuthService);
     authKey = await authService.createKey({});
-
-    ledgerRepository = ctx.app.get(getRepositoryToken(LedgerEntity));
-    ledgerMetadataRepository = ctx.app.get(getRepositoryToken(LedgerMetadataEntity));
   });
 
   describe('POST /v1/ledgers', () => {
@@ -60,7 +51,11 @@ describe('LedgerController', () => {
           expect(response.body.createdAt).toBeDefined();
           expect(response.body.updatedAt).toBeDefined();
 
-          const ledger = await ledgerRepository.findOne({ id: response.body.id });
+          const ledger = await ctx.db.kysely
+            .selectFrom('ledgers')
+            .where('id', '=', response.body.id)
+            .selectAll()
+            .executeTakeFirst();
           expect(ledger!.name).toBe('test');
           expect(ledger!.description).toBe('test');
         });
@@ -80,7 +75,11 @@ describe('LedgerController', () => {
           expect(response.body.createdAt).toBeDefined();
           expect(response.body.updatedAt).toBeDefined();
 
-          const ledger = await ledgerRepository.findOne({ id: response.body.id });
+          const ledger = await ctx.db.kysely
+            .selectFrom('ledgers')
+            .where('id', '=', response.body.id)
+            .selectAll()
+            .executeTakeFirst();
           expect(ledger!.name).toBe('test without description');
           expect(ledger!.description).toBe(null);
         });
@@ -157,7 +156,7 @@ describe('LedgerController', () => {
   });
 
   describe('GET /v1/ledgers/:id', () => {
-    let ledger: LedgerEntity;
+    let ledger: Ledger;
     beforeEach(async () => {
       const ledgerService = ctx.app.get(LedgerService);
       ledger = await ledgerService.createLedger({
@@ -180,7 +179,7 @@ describe('LedgerController', () => {
   });
 
   describe('PATCH /v1/ledgers/:id', () => {
-    let ledger: LedgerEntity;
+    let ledger: Ledger;
     beforeEach(async () => {
       const ledgerService = ctx.app.get(LedgerService);
       ledger = await ledgerService.createLedger({
@@ -191,8 +190,12 @@ describe('LedgerController', () => {
         },
       });
     });
-    it('should return 200', async () => {
-      const ledgerBeforeUpdate = await ledgerRepository.findOneOrFail({ id: ledger.id });
+    it('should update ledger name', async () => {
+      const ledgerBeforeUpdate = await ctx.db.kysely
+        .selectFrom('ledgers')
+        .where('id', '=', ledger.id)
+        .selectAll()
+        .executeTakeFirstOrThrow();
       const previousName = ledgerBeforeUpdate.name;
       const name = 'Transfa Ledger';
 
@@ -205,13 +208,21 @@ describe('LedgerController', () => {
           expect(response.body.name).toBe(name);
         });
 
-      const ledgerAfterUpdate = await ledgerRepository.findOneOrFail({ id: ledger.id });
+      const ledgerAfterUpdate = await ctx.db.kysely
+        .selectFrom('ledgers')
+        .where('id', '=', ledger.id)
+        .selectAll()
+        .executeTakeFirstOrThrow();
       expect(ledgerAfterUpdate!.name).not.toBe(previousName);
       expect(ledgerAfterUpdate!.name).toBe(name);
     });
 
     it('should update description & metadata', async () => {
-      const ledgerBeforeUpdate = await ledgerRepository.findOneOrFail({ id: ledger.id });
+      const ledgerBeforeUpdate = await ctx.db.kysely
+        .selectFrom('ledgers')
+        .where('id', '=', ledger.id)
+        .selectAll()
+        .executeTakeFirstOrThrow();
       const previousDescription = ledgerBeforeUpdate.description;
       const description = 'Transfa Ledger';
       const metadata = { test: 'updated value' };
@@ -226,27 +237,33 @@ describe('LedgerController', () => {
           expect(response.body.metadata).toMatchObject(metadata);
         });
 
-      const ledgerAfterUpdate = await ledgerRepository.findOneOrFail({ id: ledger.id });
+      const ledgerAfterUpdate = await ctx.db.kysely
+        .selectFrom('ledgers')
+        .where('id', '=', ledger.id)
+        .selectAll()
+        .executeTakeFirstOrThrow();
       expect(ledgerAfterUpdate!.description).not.toBe(previousDescription);
       expect(ledgerAfterUpdate!.description).toBe(description);
 
-      expect(
-        await ledgerMetadataRepository.findOneOrFail({
-          ledger: { id: ledger.id },
-          key: 'test',
-          value: 'updated value',
-        }),
-      ).toBeDefined();
+      const updatedMetadata = await ctx.db.kysely
+        .selectFrom('ledgerMetadata')
+        .where('ledgerId', '=', ledger.id)
+        .where('key', '=', 'test')
+        .where('value', '=', 'updated value')
+        .selectAll()
+        .executeTakeFirstOrThrow();
+      expect(updatedMetadata).toBeDefined();
     });
 
     it('should remove metadata', async () => {
       const metadata = { test: null };
-      expect(
-        await ledgerMetadataRepository.findOneOrFail({
-          ledger: { id: ledger.id },
-          key: 'test',
-        }),
-      ).not.toBeNull();
+      const existingMetadata = await ctx.db.kysely
+        .selectFrom('ledgerMetadata')
+        .where('ledgerId', '=', ledger.id)
+        .where('key', '=', 'test')
+        .selectAll()
+        .executeTakeFirstOrThrow();
+      expect(existingMetadata).toBeDefined();
 
       await request(ctx.app.getHttpServer())
         .patch(`/v1/ledgers/${ledger.id}`)
@@ -257,12 +274,13 @@ describe('LedgerController', () => {
           expect(response.body.metadata.test).toBeUndefined();
         });
 
-      expect(
-        await ledgerMetadataRepository.findOne({
-          ledger: { id: ledger.id },
-          key: 'test',
-        }),
-      ).toBeNull();
+      const deletedMetadata = await ctx.db.kysely
+        .selectFrom('ledgerMetadata')
+        .where('ledgerId', '=', ledger.id)
+        .where('key', '=', 'test')
+        .selectAll()
+        .executeTakeFirst();
+      expect(deletedMetadata).toBeUndefined();
     });
   });
 });

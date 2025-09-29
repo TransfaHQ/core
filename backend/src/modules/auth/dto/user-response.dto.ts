@@ -8,8 +8,8 @@ export class UserResponseDto {
   email: string;
 
   @Expose()
-  createdAt: Date;
+  createdAt: Date | null;
 
   @Expose()
-  updatedAt: Date;
+  updatedAt: Date | null;
 }
