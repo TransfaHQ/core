@@ -150,12 +150,8 @@ jobs:
         working-directory: backend
         run: pnpm test --coverage --silent
 
-      - name: Report coverage
-        uses: davelosert/vitest-coverage-report-action@v2
-        if: github.event_name == 'pull_request'
-        with:
-          json-summary-path: ./backend/coverage/coverage-summary.json
-          json-final-path: ./backend/coverage/coverage-final.json
+      - name: Jest Coverage Comment
+        uses: MishaKav/jest-coverage-comment@1.0.29
 
 
   build:
