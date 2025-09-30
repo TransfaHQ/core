@@ -151,7 +151,7 @@ jobs:
         run: pnpm test --coverage --silent
 
       - name: Jest Coverage Comment
-        uses: MishaKav/jest-coverage-comment@1.0.29
+        uses: MishaKav/jest-coverage-comment
 
 
   build:
