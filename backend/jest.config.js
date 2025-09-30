@@ -20,5 +20,15 @@ module.exports = {
   setupFilesAfterEnv: [],
   globalTeardown: '<rootDir>/src/test/jest-e2e-global-teardown.ts',
   transformIgnorePatterns: ['/node_modules/(?!uuid)/'],
-  verbose: true
+  verbose: true,
+  collectCoverage: false,
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.spec.ts',
+    '!src/test/**',
+    '!src/main.ts',
+    '!src/repl.ts',
+  ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'json-summary'],
 };

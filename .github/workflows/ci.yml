@@ -79,6 +79,9 @@ jobs:
 
   test-backend:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     env:
       TIGER_BEETLE_CLUSTER_ID: 0
       TIGER_BEETLE_REPLICAS_ADDRESSES: 127.0.0.1:6064
@@ -145,7 +148,14 @@ jobs:
 
       - name: Run backend e2e tests
         working-directory: backend
-        run: pnpm test --silent
+        run: pnpm test --coverage --silent
+
+      - name: Report coverage
+        uses: davelosert/vitest-coverage-report-action@v2
+        if: github.event_name == 'pull_request'
+        with:
+          json-summary-path: ./backend/coverage/coverage-summary.json
+          json-final-path: ./backend/coverage/coverage-final.json
 
 
   build:
