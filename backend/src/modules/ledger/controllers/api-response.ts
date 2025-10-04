@@ -1,5 +1,6 @@
 import { NormalBalanceEnum } from '@libs/enums';
 
+import { CurrencyResponseDto } from '@modules/ledger/dto/currency/currency-response.dto';
 import { LedgerAccountResponseDto } from '@modules/ledger/dto/ledger-account/ledger-account-response.dto';
 import { LedgerResponseDto } from '@modules/ledger/dto/ledger-response.dto';
 import {
@@ -7,7 +8,7 @@ import {
   LedgerTransactionResponseDto,
 } from '@modules/ledger/dto/ledger-transaction/ledger-transaction-response.dto';
 
-import { Ledger, LedgerAccount, LedgerEntry, LedgerTransaction } from '../types';
+import { Currency, Ledger, LedgerAccount, LedgerEntry, LedgerTransaction } from '../types';
 
 export const ledgerAccountToApiV1Response = (entity: LedgerAccount): LedgerAccountResponseDto => {
   return {
@@ -59,5 +60,16 @@ export const ledgerTransactionToApiV1Resposne = (
     externalId: entity.externalId,
     ledgerEntries: entity.ledgerEntries.map(ledgerEntryToApiV1Response),
     metadata: Object.fromEntries((entity.metadata ?? []).map((v) => [v.key, v.value])),
+  };
+};
+
+export const currencyToApiV1Response = (entity: Currency): CurrencyResponseDto => {
+  return {
+    id: entity.id,
+    code: entity.code,
+    exponent: entity.exponent,
+    name: entity.name,
+    createdAt: entity.createdAt!,
+    updatedAt: entity.updatedAt!,
   };
 };
