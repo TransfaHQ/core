@@ -28,7 +28,7 @@ import { MTCursorPaginationInterceptor } from '@libs/api/interceptors/mt-cursor-
 import { CursorPaginatedResult } from '@libs/database';
 
 import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
-import { ledgerEntityToApiV1Response } from '@modules/ledger/controllers/api-response';
+import { ledgerToApiV1Response } from '@modules/ledger/controllers/api-response';
 import { CreateLedgerDto } from '@modules/ledger/dto/create-ledger.dto';
 import { LedgerResponseDto } from '@modules/ledger/dto/ledger-response.dto';
 import { ListLedgerRequestDto } from '@modules/ledger/dto/list-ledger.dto';
@@ -56,7 +56,7 @@ export class LedgerController {
   @ApiUnauthorizedResponse({ description: 'Invalid or missing API key' })
   async createLedger(@Body() body: CreateLedgerDto): Promise<LedgerResponseDto> {
     const response = await this.ledgerService.createLedger(body);
-    return ledgerEntityToApiV1Response(response);
+    return ledgerToApiV1Response(response);
   }
 
   @Get(':id')
@@ -78,7 +78,7 @@ export class LedgerController {
   @ApiUnauthorizedResponse({ description: 'Invalid or missing API key' })
   async retrieveLedger(@Param('id') id: string): Promise<LedgerResponseDto> {
     const response = await this.ledgerService.retrieveLedger(id);
-    return ledgerEntityToApiV1Response(response);
+    return ledgerToApiV1Response(response);
   }
 
   @Patch(':id')
@@ -103,7 +103,7 @@ export class LedgerController {
     @Body() data: UpdateLedgerDto,
   ): Promise<LedgerResponseDto> {
     const response = await this.ledgerService.update(id, data);
-    return ledgerEntityToApiV1Response(response);
+    return ledgerToApiV1Response(response);
   }
 
   @Get()
@@ -161,7 +161,7 @@ export class LedgerController {
     @Query() queryParams: ListLedgerRequestDto,
   ): Promise<CursorPaginatedResult<LedgerResponseDto>> {
     const response = await this.ledgerService.paginate(queryParams);
-    return { ...response, data: response.data.map(ledgerEntityToApiV1Response) };
+    return { ...response, data: response.data.map(ledgerToApiV1Response) };
   }
 }
 
@@ -193,6 +193,6 @@ export class MTLedgerController {
     @Query() queryParams: ListLedgerRequestDto,
   ): Promise<CursorPaginatedResult<LedgerResponseDto>> {
     const response = await this.ledgerService.paginate(queryParams);
-    return { ...response, data: response.data.map(ledgerEntityToApiV1Response) };
+    return { ...response, data: response.data.map(ledgerToApiV1Response) };
   }
 }

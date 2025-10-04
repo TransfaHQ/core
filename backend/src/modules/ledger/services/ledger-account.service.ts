@@ -25,7 +25,7 @@ export class LedgerAccountService {
   ) {}
 
   async createLedgerAccount(data: CreateLedgerAccountDto): Promise<LedgerAccount> {
-    return await this.db.transaction(async (trx) => {
+    return this.db.transaction(async (trx) => {
       const ledger = await trx
         .selectFrom('ledgers')
         .where('id', '=', data.ledgerId)
@@ -69,7 +69,7 @@ export class LedgerAccountService {
       );
 
       // Create account on tigerbeetle and save it
-      await this.tigerBeetleService.createAccount({
+      const tbAccount = await this.tigerBeetleService.createAccount({
         id: bufferToTbId(account.tigerBeetleId),
         debits_pending: 0n,
         credits_pending: 0n,
@@ -82,16 +82,12 @@ export class LedgerAccountService {
           account.normalBalance === NormalBalanceEnum.CREDIT
             ? AccountFlags.debits_must_not_exceed_credits
             : AccountFlags.credits_must_not_exceed_debits,
-        // todo; might be good to use theses fields to link accounts together
         user_data_128: 0n,
         user_data_64: 0n,
         user_data_32: account.normalBalance === NormalBalanceEnum.CREDIT ? 1 : 0, // account normal balance
         code: currency.id,
       });
 
-      const tbAccount = await this.tigerBeetleService.retrieveAccount(
-        bufferToTbId(account.tigerBeetleId),
-      );
       const balances = this.parseAccountBalanceFromTBAccount(account, tbAccount);
       return {
         ...account,
@@ -118,9 +114,7 @@ export class LedgerAccountService {
       .select(['key', 'value'])
       .where('ledgerAccountId', '=', response.id)
       .execute();
-    const tbAccount = await this.tigerBeetleService.retrieveAccount(
-      bufferToTbId(response.tigerBeetleId),
-    );
+    const tbAccount = await this.tigerBeetleService.retrieveAccount(response.tigerBeetleId);
     const balances = this.parseAccountBalanceFromTBAccount(response, tbAccount);
 
     return {
@@ -140,6 +134,7 @@ export class LedgerAccountService {
       normalBalance?: string;
       search?: string;
       metadata?: Record<string, string>;
+      ids?: string[];
     };
     order?: 'asc' | 'desc';
   }): Promise<CursorPaginatedResult<LedgerAccount>> {
@@ -150,7 +145,7 @@ export class LedgerAccountService {
 
       order = 'desc',
     } = options;
-    const { ledgerId, currency, normalBalance, search, metadata } = options.filters;
+    const { ledgerId, currency, normalBalance, search, metadata, ids } = options.filters;
 
     // Build base query with filters
     let baseQuery = this.db.kysely.selectFrom('ledgerAccounts');
@@ -165,6 +160,11 @@ export class LedgerAccountService {
     if (normalBalance) {
       baseQuery = baseQuery.where('normalBalance', '=', normalBalance);
     }
+
+    if (ids && ids?.length > 0) {
+      baseQuery = baseQuery.where('id', 'in', ids);
+    }
+
     if (search) {
       baseQuery = baseQuery.where((eb) =>
         eb('name', 'ilike', `%${search}%`)
@@ -208,7 +208,7 @@ export class LedgerAccountService {
 
     // Get TigerBeetle accounts for balance calculation
     const tbAccounts = await this.tigerBeetleService.retrieveAccounts(
-      paginatedResult.data.map((v) => bufferToTbId(v.tigerBeetleId)),
+      paginatedResult.data.map((v) => v.tigerBeetleId),
     );
 
     // Fetch metadata for accounts (if needed in the future)
@@ -341,9 +341,7 @@ export class LedgerAccountService {
         .execute();
 
       // Get TigerBeetle account for balance calculation
-      const tbAccount = await this.tigerBeetleService.retrieveAccount(
-        bufferToTbId(updatedAccount.tigerBeetleId),
-      );
+      const tbAccount = await this.tigerBeetleService.retrieveAccount(updatedAccount.tigerBeetleId);
       const balances = this.parseAccountBalanceFromTBAccount(updatedAccount, tbAccount);
 
       return {
@@ -354,7 +352,7 @@ export class LedgerAccountService {
     });
   }
 
-  private parseAccountBalanceFromTBAccount(
+  public parseAccountBalanceFromTBAccount(
     entity: Selectable<LedgerAccounts>,
     tbAccount: TigerBeetleAccount,
   ): LedgerAccountBalances {
@@ -373,18 +371,6 @@ export class LedgerAccountService {
       .toNumber();
 
     /**
-     * Credit Normal: pending_balance["credits"] - pending_balance["debits"]
-     * Debit Normal: pending_balance["debits"] - pending_balance["credits"]
-     */
-    let pendingAmount = 0;
-
-    if (entity.normalBalance === NormalBalanceEnum.CREDIT) {
-      pendingAmount = BigNumber(pendingCredit).minus(pendingDebit).toNumber();
-    } else {
-      pendingAmount = BigNumber(pendingDebit).minus(pendingCredit).toNumber();
-    }
-
-    /**
      * Sum amounts of all posted ledger entries with debit direction.
      */
     const postedDebit = BigNumber(tbAccount.debits_posted).toNumber();
@@ -394,51 +380,79 @@ export class LedgerAccountService {
      */
     const postedCredit = BigNumber(tbAccount.credits_posted).toNumber();
 
-    /**
-     * Credit Normal: posted_balance["credits"] - posted_balance["debits"]
-     * Debit Normal: posted_balance["debits"] - posted_balance["credits"]
-     */
-    let postedAmount = 0;
-
-    if (entity.normalBalance === NormalBalanceEnum.CREDIT) {
-      postedAmount = BigNumber(postedCredit).minus(postedDebit).toNumber();
-    } else {
-      postedAmount = BigNumber(postedDebit).minus(postedCredit).toNumber();
-    }
-
-    /**
-     * Credit Normal: posted_balance["credits"] - pending_balance["debits"]
-     * Debit Normal: posted_balance["debits"] - pending_balance["credits"]
-     */
-    let availableAmount = 0;
-    if (entity.normalBalance === NormalBalanceEnum.CREDIT) {
-      availableAmount = BigNumber(postedCredit).minus(pendingDebit).toNumber();
-    } else {
-      availableAmount = BigNumber(postedDebit).minus(pendingCredit).toNumber();
-    }
-
-    return {
-      pendingBalance: {
-        credits: pendingCredit,
-        debits: pendingDebit,
-        amount: pendingAmount,
-        currency: entity.currencyCode,
-        currencyExponent: entity.currencyExponent,
-      },
-      postedBalance: {
-        credits: postedCredit,
-        debits: postedDebit,
-        amount: postedAmount,
-        currency: entity.currencyCode,
-        currencyExponent: entity.currencyExponent,
-      },
-      avalaibleBalance: {
-        credits: postedCredit,
-        debits: pendingDebit,
-        amount: availableAmount,
-        currency: entity.currencyCode,
-        currencyExponent: entity.currencyExponent,
-      },
-    };
+    return computeBalancesAmount(entity, {
+      pendingCredit,
+      pendingDebit,
+      postedCredit,
+      postedDebit,
+    });
   }
 }
+
+export const computeBalancesAmount = (
+  account: LedgerAccount | Selectable<LedgerAccounts>,
+  balances: {
+    pendingCredit: number;
+    pendingDebit: number;
+    postedCredit: number;
+    postedDebit: number;
+  },
+): LedgerAccountBalances => {
+  const { pendingCredit, pendingDebit, postedCredit, postedDebit } = balances;
+
+  /**
+   * Credit Normal: pending_balance["credits"] - pending_balance["debits"]
+   * Debit Normal: pending_balance["debits"] - pending_balance["credits"]
+   */
+  let pendingAmount = 0;
+
+  /**
+   * Credit Normal: posted_balance["credits"] - posted_balance["debits"]
+   * Debit Normal: posted_balance["debits"] - posted_balance["credits"]
+   */
+
+  let postedAmount = 0;
+
+  /**
+   * Credit Normal: posted_balance["credits"] - pending_balance["debits"]
+   * Debit Normal: posted_balance["debits"] - pending_balance["credits"]
+   */
+  let availableAmount = 0;
+
+  if (account.normalBalance === NormalBalanceEnum.CREDIT) {
+    pendingAmount = BigNumber(pendingCredit).minus(pendingDebit).toNumber();
+
+    postedAmount = BigNumber(postedCredit).minus(postedDebit).toNumber();
+
+    availableAmount = BigNumber(postedCredit).minus(pendingDebit).toNumber();
+  } else {
+    pendingAmount = BigNumber(pendingDebit).minus(pendingCredit).toNumber();
+
+    postedAmount = BigNumber(postedDebit).minus(postedCredit).toNumber();
+
+    availableAmount = BigNumber(postedDebit).minus(pendingCredit).toNumber();
+  }
+  return {
+    pendingBalance: {
+      credits: pendingCredit,
+      debits: pendingDebit,
+      amount: pendingAmount,
+      currency: account.currencyCode,
+      currencyExponent: account.currencyExponent,
+    },
+    postedBalance: {
+      credits: postedCredit,
+      debits: postedDebit,
+      amount: postedAmount,
+      currency: account.currencyCode,
+      currencyExponent: account.currencyExponent,
+    },
+    avalaibleBalance: {
+      credits: postedCredit,
+      debits: pendingDebit,
+      amount: availableAmount,
+      currency: account.currencyCode,
+      currencyExponent: account.currencyExponent,
+    },
+  };
+};

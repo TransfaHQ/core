@@ -5,7 +5,6 @@ import { HttpStatus } from '@nestjs/common';
 
 import { setupTestContext } from '@src/test/helpers';
 
-import { bufferToTbId } from '@libs/database/utils';
 import { NormalBalanceEnum } from '@libs/enums';
 import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
 import { setTestBasicAuthHeader } from '@libs/utils/tests';
@@ -110,9 +109,7 @@ describe('LedgerAccountController', () => {
       expect(account).toBeDefined();
 
       // Make sure that account is created in TigerBeetle
-      const tbAccount = await tigerBeetleService.retrieveAccount(
-        bufferToTbId(account.tigerBeetleId),
-      );
+      const tbAccount = await tigerBeetleService.retrieveAccount(account.tigerBeetleId);
 
       expect(tbAccount.ledger).toEqual(account.ledgerTigerBeetleId);
       expect(tbAccount.code).toBe(+currency.id);
@@ -188,9 +185,7 @@ describe('LedgerAccountController', () => {
       expect(account).toBeDefined();
 
       // Make sure that account is created in TigerBeetle
-      const tbAccount = await tigerBeetleService.retrieveAccount(
-        bufferToTbId(account.tigerBeetleId),
-      );
+      const tbAccount = await tigerBeetleService.retrieveAccount(account.tigerBeetleId);
 
       expect(tbAccount.ledger).toEqual(account.ledgerTigerBeetleId);
       expect(tbAccount.code).toBe(+currency.id);

@@ -1,5 +1,6 @@
 import { Kysely, PostgresDialect } from 'kysely';
 import { Pool } from 'pg';
+import { generateKyselyTypes } from 'scripts/db/utils';
 
 import { dbConfig } from '@src/database/config.schema';
 import { checkPostgresVersion } from '@src/database/utils';
@@ -36,9 +37,6 @@ async function revertLastMigrationWithLog() {
   let kyselyDb: Kysely<DB> | undefined = undefined;
 
   try {
-    // Revert TypeORM migration
-    await revertTypeORMMigration();
-
     // Create Kysely instance for version check
     const dialect = new PostgresDialect({
       pool: new Pool({
@@ -55,6 +53,14 @@ async function revertLastMigrationWithLog() {
     });
 
     await checkPostgresVersion(kyselyDb);
+
+    // Revert TypeORM migration
+    await revertTypeORMMigration();
+
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('Generating Kysely types...');
+      await generateKyselyTypes();
+    }
 
     console.log('✅ Migration revert completed successfully');
   } catch (err) {

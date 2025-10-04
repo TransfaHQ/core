@@ -3,6 +3,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { DatabaseService } from '@libs/database/database.service';
 
 import { CreateCurrencyDto } from '@modules/ledger/dto/currency/create-currency.dto';
+import { Currency } from '@modules/ledger/types';
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -16,7 +17,7 @@ export interface PaginatedResult<T> {
 export class CurrencyService {
   constructor(private readonly db: DatabaseService) {}
 
-  async createCurrency(data: CreateCurrencyDto): Promise<any> {
+  async createCurrency(data: CreateCurrencyDto): Promise<Currency> {
     return await this.db.transaction(async (trx) => {
       // Check if currency code already exists
       const existingCurrency = await trx
@@ -43,7 +44,7 @@ export class CurrencyService {
     });
   }
 
-  async findByCode(code: string): Promise<any> {
+  async findByCode(code: string): Promise<Currency> {
     const currency = await this.db.kysely
       .selectFrom('currencies')
       .select(['id', 'code', 'exponent', 'name', 'createdAt', 'updatedAt'])
@@ -57,7 +58,7 @@ export class CurrencyService {
     return currency;
   }
 
-  async findById(id: number): Promise<any> {
+  async findById(id: number): Promise<Currency> {
     const currency = await this.db.kysely
       .selectFrom('currencies')
       .select(['id', 'code', 'exponent', 'name', 'createdAt', 'updatedAt'])
@@ -75,7 +76,7 @@ export class CurrencyService {
     page: number = 1,
     limit: number = 10,
     codeFilter?: string,
-  ): Promise<PaginatedResult<any>> {
+  ): Promise<PaginatedResult<Currency>> {
     let query = this.db.kysely
       .selectFrom('currencies')
       .select(['id', 'code', 'exponent', 'name', 'createdAt', 'updatedAt']);

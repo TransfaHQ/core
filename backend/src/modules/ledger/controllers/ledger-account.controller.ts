@@ -26,7 +26,7 @@ import {
 import { CursorPaginatedResult } from '@libs/database';
 
 import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
-import { ledgerAccountEntityToApiV1Response } from '@modules/ledger/controllers/api-response';
+import { ledgerAccountToApiV1Response } from '@modules/ledger/controllers/api-response';
 import { CreateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/create-ledger-account.dto';
 import { LedgerAccountResponseDto } from '@modules/ledger/dto/ledger-account/ledger-account-response.dto';
 import { ListLedgerAccountRequestDto } from '@modules/ledger/dto/ledger-account/list-ledger-account-request.dto';
@@ -62,7 +62,7 @@ export class LedgerAccountController {
     @Body() body: CreateLedgerAccountDto,
   ): Promise<LedgerAccountResponseDto> {
     const response = await this.ledgerAccountService.createLedgerAccount(body);
-    return ledgerAccountEntityToApiV1Response(response);
+    return ledgerAccountToApiV1Response(response);
   }
 
   @Get(':id')
@@ -88,7 +88,7 @@ export class LedgerAccountController {
   })
   async retrieveLedgerAccount(@Param('id') id: string): Promise<LedgerAccountResponseDto> {
     const response = await this.ledgerAccountService.retrieveLedgerAccount(id);
-    return ledgerAccountEntityToApiV1Response(response);
+    return ledgerAccountToApiV1Response(response);
   }
 
   @Get()
@@ -197,7 +197,7 @@ export class LedgerAccountController {
         metadata: queryParams.metadata,
       },
     });
-    return { ...response, data: response.data.map(ledgerAccountEntityToApiV1Response) };
+    return { ...response, data: response.data.map(ledgerAccountToApiV1Response) };
   }
 
   @Patch(':id')
@@ -226,6 +226,6 @@ export class LedgerAccountController {
     @Body() data: UpdateLedgerAccountDto,
   ): Promise<LedgerAccountResponseDto> {
     const response = (await this.ledgerAccountService.update(id, data)) as unknown as LedgerAccount;
-    return ledgerAccountEntityToApiV1Response(response);
+    return ledgerAccountToApiV1Response(response);
   }
 }
