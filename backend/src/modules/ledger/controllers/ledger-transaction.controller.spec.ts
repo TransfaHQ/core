@@ -158,7 +158,7 @@ describe('LedgerTransactionController', () => {
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send(data)
         .expect(HttpStatus.BAD_REQUEST)
-        .expect(async (response) => {
+        .expect((response) => {
           expect(response.body.message[0]).toBe(
             'sourceAccountId & destinationAccountId should have the same currency code',
           );
@@ -184,7 +184,7 @@ describe('LedgerTransactionController', () => {
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send(data)
         .expect(HttpStatus.BAD_REQUEST)
-        .expect(async (response) => {
+        .expect((response) => {
           expect(response.body.message[0]).toBe(
             'sourceAccountId & destinationAccountId should belong to the same ledger',
           );
@@ -210,7 +210,7 @@ describe('LedgerTransactionController', () => {
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .send(data)
         .expect(HttpStatus.BAD_REQUEST)
-        .expect(async (response) => {
+        .expect((response) => {
           expect(response.body.message[0]).toBe(
             'sourceAccountId & destinationAccountId should not be the same',
           );
@@ -364,6 +364,83 @@ describe('LedgerTransactionController', () => {
           .where('key', '=', 'test')
           .executeTakeFirst();
         expect(BigNumber(count!.count).toNumber()).toBe(1);
+      });
+
+      it('should make request idempotent', async () => {
+        const data = {
+          description: 'test',
+          externalId: uuidV7(),
+          metadata: { test: 'test' },
+          ledgerEntries: [
+            {
+              destinationAccountId: eurCreditAccount.id,
+              sourceAccountId: eurDebitAccount.id,
+              amount: 10,
+            },
+          ],
+        };
+
+        const idempotencyKey = uuidV7();
+
+        let transactionId1: string = '';
+        let response1: Record<string, any> = {};
+
+        await request(ctx.app.getHttpServer())
+          .post(endpoint)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+          .send(data)
+          .expect(HttpStatus.CREATED)
+          .expect((response) => {
+            response1 = response.body;
+            transactionId1 = response.body.id;
+            expect(response.body.ledgerEntries.length).toBe(2);
+            expect(response.body.externalId).toBe(data.externalId);
+            expect(response.body.description).toBe(data.description);
+            expect(response.body.id).toBeDefined();
+          });
+
+        const sourceTbAccount = await tigerBeetleService.retrieveAccount(
+          eurCreditAccount.tigerBeetleId,
+        );
+        const destinationTbAccount = await tigerBeetleService.retrieveAccount(
+          eurDebitAccount.tigerBeetleId,
+        );
+
+        expect(sourceTbAccount.debits_posted).toBe(1000n);
+        expect(destinationTbAccount.credits_posted).toBe(1000n);
+        const count = await ctx.trx
+          .selectFrom('ledgerTransactionMetadata')
+          .select(({ fn }) => [fn.countAll().as('count')])
+          .where('ledgerTransactionId', '=', transactionId1)
+          .where('key', '=', 'test')
+          .executeTakeFirst();
+        expect(BigNumber(count!.count).toNumber()).toBe(1);
+
+        let transactionId2 = '';
+        let response2: Record<string, any> = {};
+
+        await request(ctx.app.getHttpServer())
+          .post(endpoint)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+          .send(data)
+          .expect(HttpStatus.CREATED)
+          .expect((response) => {
+            response2 = response.body;
+            transactionId2 = response.body.id;
+            expect(response.body.ledgerEntries.length).toBe(2);
+            expect(response.body.externalId).toBe(data.externalId);
+            expect(response.body.description).toBe(data.description);
+            expect(response.body.id).toBeDefined();
+          });
+
+        expect(transactionId1).toBe(transactionId2);
+        expect(response1.ledgerEntries[0].id).toBe(response2.ledgerEntries[0].id);
+        expect(response1.ledgerEntries[0].amount).toBe(response2.ledgerEntries[0].amount);
+        expect(response1.ledgerEntries[0].type).toBe(response2.ledgerEntries[0].type);
+
+        expect(response1.ledgerEntries[1].id).toBe(response2.ledgerEntries[1].id);
+        expect(response1.ledgerEntries[1].amount).toBe(response2.ledgerEntries[1].amount);
+        expect(response1.ledgerEntries[1].type).toBe(response2.ledgerEntries[1].type);
       });
     });
   });

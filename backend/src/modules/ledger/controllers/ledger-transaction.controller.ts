@@ -1,4 +1,12 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
@@ -7,6 +15,8 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+
+import { IdempotencyInterceptor } from '@libs/api/interceptors/idempotency.interceptor';
 
 import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
 import { ledgerTransactionToApiV1Resposne } from '@modules/ledger/controllers/api-response';
@@ -23,6 +33,7 @@ export class LedgerTransactionController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(IdempotencyInterceptor)
   @ApiOperation({
     summary: 'Create a new ledger transaction',
     description: 'Creates a new ledger transaction with the provided details',
