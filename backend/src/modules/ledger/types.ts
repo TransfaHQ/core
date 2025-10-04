@@ -1,6 +1,12 @@
 import { Selectable } from 'kysely';
 
-import { LedgerAccounts, Ledgers } from '@libs/database/types';
+import {
+  Currencies,
+  LedgerAccounts,
+  LedgerEntries,
+  LedgerTransactions,
+  Ledgers,
+} from '@libs/database/types';
 
 export type Balance = {
   credits: number;
@@ -26,3 +32,14 @@ export type LedgerAccount = Selectable<LedgerAccounts> & {
   balances: LedgerAccountBalances;
   metadata?: Metadata[];
 };
+
+export type LedgerEntry = Selectable<LedgerEntries> & {
+  ledgerAccount: LedgerAccount;
+};
+
+export type LedgerTransaction = Selectable<LedgerTransactions> & {
+  metadata?: Metadata[];
+  ledgerEntries: LedgerEntry[];
+};
+
+export type Currency = Selectable<Currencies>;

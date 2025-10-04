@@ -20,6 +20,7 @@
     "db:migrate": "ts-node --files -r tsconfig-paths/register scripts/db/migrate.ts",
     "db:revert": "ts-node --files -r tsconfig-paths/register scripts/db/revert.ts",
     "db:create-migration": "cd src/database/migrations && npx typeorm migration:create",
+    "db:generate": "ts-node --files -r tsconfig-paths/register scripts/db/generate.ts",
     "tb:start:dev": "scripts/tigerbeetle/start.sh 0_0_transfa_dev",
     "tb:configure:dev": "scripts/tigerbeetle/configure.sh 0_0_transfa_dev",
     "tb:download": "scripts/tigerbeetle/download.sh"

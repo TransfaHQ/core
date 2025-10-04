@@ -5,6 +5,7 @@
     "prepare": "husky",
     "dev:frontend": "pnpm --filter frontend dev",
     "dev:backend": "pnpm --filter backend start:dev",
+    "dbgenerate:backend": "pnpm --filter backend db:generate",
     "build:frontend": "pnpm --filter frontend build",
     "build:backend": "pnpm --filter backend build",
     "lint": "pnpm --recursive lint",

@@ -2,17 +2,25 @@ import { LoggerModule } from 'nestjs-pino';
 import { join } from 'path';
 
 import { Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
 
+import { KyselyExceptionFilter } from '@libs/api/filters/kysely-exception.filter';
 import { ConfigService } from '@libs/config/config.service';
 
 import { AuthModule } from '@modules/auth/auth.module';
 import { BootstrapModule } from '@modules/bootstrap/bootstrap.module';
 import { LedgerModule } from '@modules/ledger/ledger.module';
-import { TransferModule } from '@modules/transfer/transfer.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+
+const filters = [
+  {
+    provide: APP_FILTER,
+    useClass: KyselyExceptionFilter,
+  },
+];
 
 @Module({
   imports: [
@@ -45,9 +53,8 @@ import { AppService } from './app.service';
     BootstrapModule,
     AuthModule,
     LedgerModule,
-    TransferModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, ...filters],
 })
 export class AppModule {}

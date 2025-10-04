@@ -1,11 +1,16 @@
+import { NormalBalanceEnum } from '@libs/enums';
+
+import { CurrencyResponseDto } from '@modules/ledger/dto/currency/currency-response.dto';
 import { LedgerAccountResponseDto } from '@modules/ledger/dto/ledger-account/ledger-account-response.dto';
 import { LedgerResponseDto } from '@modules/ledger/dto/ledger-response.dto';
+import {
+  LedgerEntryResponseDto,
+  LedgerTransactionResponseDto,
+} from '@modules/ledger/dto/ledger-transaction/ledger-transaction-response.dto';
 
-import { Ledger, LedgerAccount } from '../types';
+import { Currency, Ledger, LedgerAccount, LedgerEntry, LedgerTransaction } from '../types';
 
-export const ledgerAccountEntityToApiV1Response = (
-  entity: LedgerAccount,
-): LedgerAccountResponseDto => {
+export const ledgerAccountToApiV1Response = (entity: LedgerAccount): LedgerAccountResponseDto => {
   return {
     id: entity.id,
     name: entity.name,
@@ -20,7 +25,7 @@ export const ledgerAccountEntityToApiV1Response = (
   };
 };
 
-export const ledgerEntityToApiV1Response = (entity: Ledger): LedgerResponseDto => {
+export const ledgerToApiV1Response = (entity: Ledger): LedgerResponseDto => {
   return {
     id: entity.id,
     name: entity.name,
@@ -28,5 +33,43 @@ export const ledgerEntityToApiV1Response = (entity: Ledger): LedgerResponseDto =
     metadata: Object.fromEntries((entity.metadata ?? []).map((v) => [v.key, v.value])),
     createdAt: entity.createdAt,
     updatedAt: entity.updatedAt,
+  };
+};
+
+export const ledgerEntryToApiV1Response = (entity: LedgerEntry): LedgerEntryResponseDto => {
+  return {
+    id: entity.id,
+    createdAt: entity.createdAt,
+    updatedAt: entity.updatedAt,
+    amount: +entity.amount,
+    direction: entity.direction as NormalBalanceEnum,
+    ledgerAccountId: entity.ledgerAccountId,
+    ledgerAccountCurrency: entity.ledgerAccount!.currencyCode,
+    ledgerAccountCurrencyExponent: entity.ledgerAccount!.currencyExponent,
+  };
+};
+
+export const ledgerTransactionToApiV1Resposne = (
+  entity: LedgerTransaction,
+): LedgerTransactionResponseDto => {
+  return {
+    id: entity.id,
+    createdAt: entity.createdAt,
+    updatedAt: entity.updatedAt,
+    description: entity.description,
+    externalId: entity.externalId,
+    ledgerEntries: entity.ledgerEntries.map(ledgerEntryToApiV1Response),
+    metadata: Object.fromEntries((entity.metadata ?? []).map((v) => [v.key, v.value])),
+  };
+};
+
+export const currencyToApiV1Response = (entity: Currency): CurrencyResponseDto => {
+  return {
+    id: entity.id,
+    code: entity.code,
+    exponent: entity.exponent,
+    name: entity.name,
+    createdAt: entity.createdAt!,
+    updatedAt: entity.updatedAt!,
   };
 };

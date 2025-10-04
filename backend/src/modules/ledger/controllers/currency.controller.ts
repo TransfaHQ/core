@@ -24,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 
 import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
+import { currencyToApiV1Response } from '@modules/ledger/controllers/api-response';
 import { CreateCurrencyDto } from '@modules/ledger/dto/currency/create-currency.dto';
 import { CurrencyResponseDto } from '@modules/ledger/dto/currency/currency-response.dto';
 import { ListCurrencyRequestDto } from '@modules/ledger/dto/currency/list-currency-request.dto';
@@ -54,14 +55,7 @@ export class CurrencyController {
   })
   async createCurrency(@Body() body: CreateCurrencyDto): Promise<CurrencyResponseDto> {
     const response = await this.currencyService.createCurrency(body);
-    return {
-      id: response.id,
-      code: response.code,
-      exponent: response.exponent,
-      name: response.name,
-      createdAt: response.createdAt,
-      updatedAt: response.updatedAt,
-    };
+    return currencyToApiV1Response(response);
   }
 
   @Get(':code')
@@ -87,14 +81,7 @@ export class CurrencyController {
   })
   async getCurrency(@Param('code') code: string): Promise<CurrencyResponseDto> {
     const response = await this.currencyService.findByCode(code);
-    return {
-      id: response.id,
-      code: response.code,
-      exponent: response.exponent,
-      name: response.name,
-      createdAt: response.createdAt,
-      updatedAt: response.updatedAt,
-    };
+    return currencyToApiV1Response(response);
   }
 
   @Get()
@@ -165,14 +152,7 @@ export class CurrencyController {
     );
     return {
       ...response,
-      data: response.data.map((currency) => ({
-        id: currency.id,
-        code: currency.code,
-        exponent: currency.exponent,
-        name: currency.name,
-        createdAt: currency.createdAt,
-        updatedAt: currency.updatedAt,
-      })),
+      data: response.data.map(currencyToApiV1Response),
     };
   }
 

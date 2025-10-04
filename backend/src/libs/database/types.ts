@@ -9,15 +9,9 @@ export type Generated<T> =
     ? ColumnType<S, I | undefined, U>
     : ColumnType<T, T | undefined, T>;
 
-export type Int8 = ColumnType<string, bigint | number | string, bigint | number | string>;
+export type Numeric = ColumnType<string, number | string, number | string>;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
-
-export interface CoreMigrations {
-  id: Generated<number>;
-  name: string;
-  timestamp: Int8;
-}
 
 export interface Currencies {
   code: string;
@@ -61,6 +55,19 @@ export interface LedgerAccounts {
   updatedAt: Generated<Timestamp>;
 }
 
+export interface LedgerEntries {
+  amount: Numeric;
+  createdAt: Generated<Timestamp>;
+  deletedAt: Timestamp | null;
+  direction: string;
+  id: Generated<string>;
+  ledgerAccountId: string;
+  ledgerId: string;
+  ledgerTransactionId: string;
+  tigerBeetleId: Buffer;
+  updatedAt: Generated<Timestamp>;
+}
+
 export interface LedgerMetadata {
   createdAt: Generated<Timestamp | null>;
   deletedAt: Timestamp | null;
@@ -81,6 +88,26 @@ export interface Ledgers {
   updatedAt: Generated<Timestamp>;
 }
 
+export interface LedgerTransactionMetadata {
+  createdAt: Generated<Timestamp | null>;
+  deletedAt: Timestamp | null;
+  id: Generated<string>;
+  key: string;
+  ledgerTransactionId: string;
+  updatedAt: Generated<Timestamp | null>;
+  value: string;
+}
+
+export interface LedgerTransactions {
+  createdAt: Generated<Timestamp>;
+  deletedAt: Timestamp | null;
+  description: string;
+  externalId: string;
+  id: Generated<string>;
+  tigerBeetleId: Buffer;
+  updatedAt: Generated<Timestamp>;
+}
+
 export interface Users {
   createdAt: Generated<Timestamp | null>;
   deletedAt: Timestamp | null;
@@ -92,12 +119,14 @@ export interface Users {
 }
 
 export interface DB {
-  coreMigrations: CoreMigrations;
   currencies: Currencies;
   keys: Keys;
   ledgerAccountMetadata: LedgerAccountMetadata;
   ledgerAccounts: LedgerAccounts;
+  ledgerEntries: LedgerEntries;
   ledgerMetadata: LedgerMetadata;
   ledgers: Ledgers;
+  ledgerTransactionMetadata: LedgerTransactionMetadata;
+  ledgerTransactions: LedgerTransactions;
   users: Users;
 }

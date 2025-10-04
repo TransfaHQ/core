@@ -1,7 +1,11 @@
 import assert from 'assert';
-import { Account, CreateAccountError, createClient } from 'tigerbeetle-node';
+import { PinoLogger } from 'nestjs-pino';
+import { Account, CreateAccountError, Transfer, createClient } from 'tigerbeetle-node';
 
 import { Injectable, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+
+import { bufferToTbId, tbIdToBuffer } from '@libs/database/utils';
+import { TigerBeetleTransferException } from '@libs/exceptions';
 
 import { ConfigService } from '../config/config.service';
 
@@ -9,7 +13,10 @@ import { ConfigService } from '../config/config.service';
 export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
   private client: ReturnType<typeof createClient>;
 
-  constructor(protected readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly logger: PinoLogger,
+  ) {}
 
   onModuleInit() {
     this.client = createClient(this.configService.tigerBeetleConfigs);
@@ -19,27 +26,45 @@ export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
     if (this.client) this.client.destroy();
   }
 
-  async createAccount(data: Account): Promise<void> {
+  async createAccount(data: Account): Promise<Account> {
     const errors = await this.client.createAccounts([data]);
     for (const error of errors) {
-      console.error(
+      this.logger.error(
         `Batch account at ${error.index} failed to create: ${CreateAccountError[error.result]}.`,
       );
     }
-    assert.strictEqual(errors.length, 0);
+    assert.strictEqual(errors.length, 0, 'Unable to create account');
+    return this.retrieveAccount(tbIdToBuffer(data.id));
   }
 
-  createTransfers(): Promise<void> {
-    throw new Error('NotImplementedEror');
+  async createTransfers(data: Transfer[]): Promise<Transfer[]> {
+    const errors = await this.client.createTransfers(data);
+
+    if (errors.length > 0) {
+      this.logger.error(`Batch transfers failed to created with ${JSON.stringify(errors)}`);
+      throw new TigerBeetleTransferException('ledgerEntries', errors);
+    }
+
+    return this.client.lookupTransfers(data.map((v) => v.id));
   }
 
-  async retrieveAccounts(ids: bigint[]): Promise<Account[]> {
-    return this.client.lookupAccounts(ids);
+  async retrieveAccounts(ids: Buffer<ArrayBufferLike>[]): Promise<Account[]> {
+    return this.client.lookupAccounts(ids.map((i) => bufferToTbId(i)));
   }
 
-  async retrieveAccount(id: bigint): Promise<Account> {
+  async retrieveAccount(id: Buffer<ArrayBufferLike>): Promise<Account> {
     const response = await this.retrieveAccounts([id]);
     if (response.length === 0) throw new NotFoundException();
     return response[0];
+  }
+
+  async retrieveTransfer(id: Buffer<ArrayBufferLike>): Promise<Transfer> {
+    const response = await this.retrieveTransfers([id]);
+    if (response.length === 0) throw new NotFoundException();
+    return response[0];
+  }
+
+  async retrieveTransfers(ids: Buffer<ArrayBufferLike>[]): Promise<Transfer[]> {
+    return this.client.lookupTransfers(ids.map((i) => bufferToTbId(i)));
   }
 }
