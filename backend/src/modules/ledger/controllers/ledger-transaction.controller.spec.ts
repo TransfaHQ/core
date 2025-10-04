@@ -441,6 +441,14 @@ describe('LedgerTransactionController', () => {
         expect(response1.ledgerEntries[1].id).toBe(response2.ledgerEntries[1].id);
         expect(response1.ledgerEntries[1].amount).toBe(response2.ledgerEntries[1].amount);
         expect(response1.ledgerEntries[1].type).toBe(response2.ledgerEntries[1].type);
+
+        expect(
+          await ctx.trx
+            .selectFrom('idempotencyKeys')
+            .selectAll()
+            .where('externalId', '=', idempotencyKey)
+            .executeTakeFirst(),
+        ).toBeDefined();
       });
     });
   });
