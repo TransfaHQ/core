@@ -9,6 +9,18 @@ export type Generated<T> =
     ? ColumnType<S, I | undefined, U>
     : ColumnType<T, T | undefined, T>;
 
+export type Json = JsonValue;
+
+export type JsonArray = JsonValue[];
+
+export type JsonObject = {
+  [x: string]: JsonValue | undefined;
+};
+
+export type JsonPrimitive = boolean | number | string | null;
+
+export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
+
 export type Numeric = ColumnType<string, number | string, number | string>;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
@@ -20,6 +32,15 @@ export interface Currencies {
   id: Generated<number>;
   name: string;
   updatedAt: Generated<Timestamp | null>;
+}
+
+export interface IdempotencyKeys {
+  createdAt: Generated<Timestamp>;
+  endpoint: string;
+  externalId: string;
+  requestPayload: Json;
+  responsePayload: Json;
+  statusCode: number;
 }
 
 export interface Keys {
@@ -120,6 +141,7 @@ export interface Users {
 
 export interface DB {
   currencies: Currencies;
+  idempotencyKeys: IdempotencyKeys;
   keys: Keys;
   ledgerAccountMetadata: LedgerAccountMetadata;
   ledgerAccounts: LedgerAccounts;
