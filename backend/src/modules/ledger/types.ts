@@ -29,7 +29,7 @@ export type LedgerAccountBalances = {
 };
 
 export type LedgerAccount = Selectable<LedgerAccounts> & {
-  balances: LedgerAccountBalances;
+  balances?: LedgerAccountBalances;
   metadata?: Metadata[];
 };
 

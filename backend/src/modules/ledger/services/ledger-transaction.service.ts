@@ -1,8 +1,10 @@
 import { BigNumber } from 'bignumber.js';
 import { Transfer, TransferFlags, id } from 'tigerbeetle-node';
+import { validate } from 'uuid';
 
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
+import { CursorPaginatedResult, cursorPaginate } from '@libs/database';
 import { DatabaseService } from '@libs/database/database.service';
 import { bufferToTbId, tbIdToBuffer } from '@libs/database/utils';
 import { NormalBalanceEnum } from '@libs/enums';
@@ -210,5 +212,203 @@ export class LedgerTransactionService {
         }),
       };
     });
+  }
+
+  async retrieve(id: string): Promise<LedgerTransaction> {
+    const transaction = await this.db.kysely
+      .selectFrom('ledgerTransactions')
+      .selectAll()
+      .where((eb) => {
+        if (validate(id)) {
+          return eb('id', '=', id).or('externalId', '=', id);
+        }
+        return eb('externalId', '=', id);
+      })
+      .executeTakeFirst();
+
+    if (!transaction) {
+      throw new NotFoundException('Ledger transaction not found');
+    }
+
+    const metadata = await this.db.kysely
+      .selectFrom('ledgerTransactionMetadata')
+      .select(['key', 'value'])
+      .where('ledgerTransactionId', '=', transaction.id)
+      .execute();
+
+    const entries = await this.db.kysely
+      .selectFrom('ledgerEntries as le')
+      .innerJoin('ledgerAccounts as la', 'la.id', 'le.ledgerAccountId')
+      .select([
+        'le.id',
+        'le.createdAt',
+        'le.updatedAt',
+        'le.amount',
+        'le.direction',
+        'le.ledgerId',
+        'le.tigerBeetleId',
+        'le.ledgerAccountId',
+        'le.deletedAt',
+        'la.currencyCode',
+        'la.currencyExponent',
+      ])
+      .where('le.ledgerTransactionId', '=', transaction.id)
+      .execute();
+
+    return {
+      ...transaction,
+      metadata,
+      ledgerEntries: entries.map((entry) => ({
+        id: entry.id,
+        createdAt: entry.createdAt,
+        updatedAt: entry.updatedAt,
+        amount: entry.amount,
+        direction: entry.direction,
+        ledgerAccountId: entry.ledgerAccountId,
+        ledgerAccount: {
+          currencyCode: entry.currencyCode,
+          currencyExponent: entry.currencyExponent,
+        } as any,
+        ledgerId: entry.ledgerId,
+        ledgerTransactionId: transaction.id,
+        tigerBeetleId: entry.tigerBeetleId,
+        deletedAt: entry.deletedAt,
+      })),
+    };
+  }
+
+  async paginate(options: {
+    limit?: number;
+    cursor?: string;
+    direction?: 'next' | 'prev';
+    filters: {
+      externalId?: string;
+      search?: string;
+      metadata?: Record<string, string>;
+    };
+    order?: 'asc' | 'desc';
+  }): Promise<CursorPaginatedResult<LedgerTransaction>> {
+    const { limit = 15, cursor, direction = 'next', order = 'desc' } = options;
+    const { externalId, search, metadata } = options.filters;
+
+    let baseQuery = this.db.kysely.selectFrom('ledgerTransactions');
+
+    if (externalId) {
+      baseQuery = baseQuery.where('externalId', '=', externalId);
+    }
+
+    if (search) {
+      baseQuery = baseQuery.where('description', 'ilike', `%${search}%`);
+    }
+
+    Object.entries(metadata ?? {}).forEach(([key, value]) => {
+      baseQuery = baseQuery.where((eb) =>
+        eb.exists(
+          eb
+            .selectFrom('ledgerTransactionMetadata')
+            .select('id')
+            .where(
+              'ledgerTransactionMetadata.ledgerTransactionId',
+              '=',
+              eb.ref('ledgerTransactions.id'),
+            )
+            .where('ledgerTransactionMetadata.key', '=', key)
+            .where('ledgerTransactionMetadata.value', '=', value),
+        ),
+      );
+    });
+
+    const queryWithSelect = baseQuery.selectAll();
+
+    const paginatedResult = await cursorPaginate({
+      qb: queryWithSelect,
+      limit,
+      cursor,
+      direction,
+      initialOrder: order,
+    });
+
+    if (paginatedResult.data.length === 0) {
+      return {
+        ...paginatedResult,
+        data: [],
+      };
+    }
+
+    const transactionIds = paginatedResult.data.map((txn) => txn.id);
+
+    const metadataResults = await this.db.kysely
+      .selectFrom('ledgerTransactionMetadata')
+      .select(['ledgerTransactionId', 'key', 'value'])
+      .where('ledgerTransactionId', 'in', transactionIds)
+      .execute();
+
+    const metadataByTransactionId = metadataResults.reduce(
+      (acc, meta) => {
+        if (!acc[meta.ledgerTransactionId]) {
+          acc[meta.ledgerTransactionId] = [];
+        }
+        acc[meta.ledgerTransactionId].push({ key: meta.key, value: meta.value });
+        return acc;
+      },
+      {} as Record<string, Array<{ key: string; value: string }>>,
+    );
+
+    const entries = await this.db.kysely
+      .selectFrom('ledgerEntries as le')
+      .innerJoin('ledgerAccounts as la', 'la.id', 'le.ledgerAccountId')
+      .select([
+        'le.id',
+        'le.createdAt',
+        'le.updatedAt',
+        'le.amount',
+        'le.direction',
+        'le.ledgerId',
+        'le.tigerBeetleId',
+        'le.ledgerAccountId',
+        'le.deletedAt',
+        'le.ledgerTransactionId',
+        'la.currencyCode',
+        'la.currencyExponent',
+      ])
+      .where('le.ledgerTransactionId', 'in', transactionIds)
+      .execute();
+
+    const entriesByTransactionId = entries.reduce(
+      (acc, entry) => {
+        if (!acc[entry.ledgerTransactionId]) {
+          acc[entry.ledgerTransactionId] = [];
+        }
+        acc[entry.ledgerTransactionId].push({
+          id: entry.id,
+          createdAt: entry.createdAt,
+          updatedAt: entry.updatedAt,
+          amount: entry.amount,
+          direction: entry.direction,
+          ledgerAccountId: entry.ledgerAccountId,
+          ledgerAccount: {
+            currencyCode: entry.currencyCode,
+            currencyExponent: entry.currencyExponent,
+          } as any,
+          ledgerTransactionId: entry.ledgerTransactionId,
+          tigerBeetleId: entry.tigerBeetleId,
+          ledgerId: entry.ledgerId,
+          deletedAt: entry.deletedAt,
+        });
+        return acc;
+      },
+      {} as Record<string, any[]>,
+    );
+
+    const data = paginatedResult.data.map((transaction) => ({
+      ...transaction,
+      metadata: metadataByTransactionId[transaction.id] || [],
+      ledgerEntries: entriesByTransactionId[transaction.id] || [],
+    }));
+
+    return {
+      ...paginatedResult,
+      data,
+    };
   }
 }

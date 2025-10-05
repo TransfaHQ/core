@@ -367,4 +367,204 @@ describe('LedgerTransactionController', () => {
       });
     });
   });
+
+  describe('GET /v1/ledger_transactions/:id', () => {
+    const endpoint = '/v1/ledger_transactions';
+    let transactionId: string;
+    let externalId: string;
+
+    beforeAll(async () => {
+      externalId = uuidV7();
+      const data = {
+        description: 'test retrieve transaction',
+        externalId,
+        metadata: { test: 'retrieve' },
+        ledgerEntries: [
+          {
+            sourceAccountId: eurDebitAccount.id,
+            destinationAccountId: eurCreditAccount.id,
+            amount: 50,
+          },
+        ],
+      };
+
+      const response = await request(ctx.app.getHttpServer())
+        .post(endpoint)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send(data);
+
+      transactionId = response.body.id;
+    });
+
+    it('should return 401 when auth is not provided', async () => {
+      return request(ctx.app.getHttpServer())
+        .get(`${endpoint}/${transactionId}`)
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('should retrieve a transaction by id', async () => {
+      await request(ctx.app.getHttpServer())
+        .get(`${endpoint}/${transactionId}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.id).toBe(transactionId);
+          expect(response.body.externalId).toBe(externalId);
+          expect(response.body.description).toBe('test retrieve transaction');
+          expect(response.body.metadata.test).toBe('retrieve');
+          expect(response.body.ledgerEntries.length).toBe(2);
+        });
+    });
+
+    it('should retrieve a transaction by externalId', async () => {
+      await request(ctx.app.getHttpServer())
+        .get(`${endpoint}/${externalId}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.id).toBe(transactionId);
+          expect(response.body.externalId).toBe(externalId);
+          expect(response.body.description).toBe('test retrieve transaction');
+        });
+    });
+
+    it('should return 404 when transaction not found', async () => {
+      const nonExistentId = uuidV7();
+      await request(ctx.app.getHttpServer())
+        .get(`${endpoint}/${nonExistentId}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .expect(HttpStatus.NOT_FOUND);
+    });
+  });
+
+  describe('GET /v1/ledger_transactions', () => {
+    const endpoint = '/v1/ledger_transactions';
+    const createdTransactions: Array<{ id: string; externalId: string; description: string }> = [];
+
+    beforeAll(async () => {
+      for (let i = 0; i < 5; i++) {
+        const data = {
+          description: `test list transaction ${i}`,
+          externalId: uuidV7(),
+          metadata: { index: `${i}`, category: 'test' },
+          ledgerEntries: [
+            {
+              sourceAccountId: eurDebitAccount.id,
+              destinationAccountId: eurCreditAccount.id,
+              amount: 10 + i,
+            },
+          ],
+        };
+
+        const response = await request(ctx.app.getHttpServer())
+          .post(endpoint)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .send(data);
+
+        createdTransactions.push({
+          id: response.body.id,
+          externalId: data.externalId,
+          description: data.description,
+        });
+      }
+    });
+
+    it('should return 401 when auth is not provided', async () => {
+      return request(ctx.app.getHttpServer()).get(endpoint).expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('should list transactions with default pagination', async () => {
+      await request(ctx.app.getHttpServer())
+        .get(endpoint)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(Array.isArray(response.body.data)).toBe(true);
+          expect(response.body.data.length).toBeGreaterThan(0);
+          expect(response.body.hasNext).toBeDefined();
+          expect(response.body.hasPrev).toBeDefined();
+
+          const transaction = response.body.data[0];
+          expect(transaction.id).toBeDefined();
+          expect(transaction.externalId).toBeDefined();
+          expect(transaction.description).toBeDefined();
+          expect(transaction.metadata).toBeDefined();
+          expect(Array.isArray(transaction.ledgerEntries)).toBe(true);
+        });
+    });
+
+    it('should list transactions with custom limit', async () => {
+      await request(ctx.app.getHttpServer())
+        .get(endpoint)
+        .query({ limit: 2 })
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.data.length).toBeLessThanOrEqual(2);
+        });
+    });
+
+    it('should filter transactions by externalId', async () => {
+      const targetTransaction = createdTransactions[0];
+      await request(ctx.app.getHttpServer())
+        .get(endpoint)
+        .query({ external_id: targetTransaction.externalId })
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.data.length).toBe(1);
+          expect(response.body.data[0].externalId).toBe(targetTransaction.externalId);
+        });
+    });
+
+    it('should filter transactions by search (description)', async () => {
+      await request(ctx.app.getHttpServer())
+        .get(endpoint)
+        .query({ search: 'test list transaction 2' })
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.data.length).toBeGreaterThan(0);
+          expect(response.body.data[0].description).toContain('test list transaction 2');
+        });
+    });
+
+    it('should filter transactions by metadata', async () => {
+      await request(ctx.app.getHttpServer())
+        .get(endpoint)
+        .query({ 'metadata[category]': 'test' })
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.data.length).toBeGreaterThanOrEqual(5);
+          response.body.data.forEach((txn: any) => {
+            expect(txn.metadata.category).toBe('test');
+          });
+        });
+    });
+
+    it('should paginate transactions using cursor', async () => {
+      const firstPage = await request(ctx.app.getHttpServer())
+        .get(endpoint)
+        .query({ limit: 2 })
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .expect(HttpStatus.OK);
+
+      expect(firstPage.body.data.length).toBeLessThanOrEqual(2);
+      const nextCursor = firstPage.body.nextCursor;
+
+      if (nextCursor) {
+        await request(ctx.app.getHttpServer())
+          .get(endpoint)
+          .query({ limit: 2, cursor: nextCursor })
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK)
+          .expect(async (response) => {
+            expect(response.body.data.length).toBeGreaterThan(0);
+            // Ensure different data from first page
+            expect(response.body.data[0].id).not.toBe(firstPage.body.data[0].id);
+          });
+      }
+    });
+  });
 });
