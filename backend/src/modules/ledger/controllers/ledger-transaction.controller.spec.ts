@@ -460,7 +460,7 @@ describe('LedgerTransactionController', () => {
     let transactionId: string;
     let externalId: string;
 
-    beforeAll(async () => {
+    beforeEach(async () => {
       externalId = uuidV7();
       const data = {
         description: 'test retrieve transaction',
@@ -526,9 +526,10 @@ describe('LedgerTransactionController', () => {
 
   describe('GET /v1/ledger_transactions', () => {
     const endpoint = '/v1/ledger_transactions';
-    const createdTransactions: Array<{ id: string; externalId: string; description: string }> = [];
+    let createdTransactions: Array<{ id: string; externalId: string; description: string }> = [];
 
-    beforeAll(async () => {
+    beforeEach(async () => {
+      createdTransactions = [];
       for (let i = 0; i < 5; i++) {
         const data = {
           description: `test list transaction ${i}`,
