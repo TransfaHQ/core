@@ -105,7 +105,7 @@ export class LedgerTransactionController {
     example: '01234567-89ab-cdef-0123-456789abcdef',
   })
   @ApiQuery({
-    name: 'external_id',
+    name: 'externalId',
     required: false,
     type: String,
     description: 'Filter by external ID',
@@ -169,7 +169,7 @@ export class LedgerTransactionController {
       cursor: queryParams.cursor,
       direction: queryParams.direction,
       filters: {
-        externalId: queryParams.external_id,
+        externalId: queryParams.externalId,
         search: queryParams.search,
         metadata: queryParams.metadata,
       },

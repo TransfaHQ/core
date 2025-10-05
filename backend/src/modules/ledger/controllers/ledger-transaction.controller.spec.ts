@@ -595,7 +595,7 @@ describe('LedgerTransactionController', () => {
       const targetTransaction = createdTransactions[0];
       await request(ctx.app.getHttpServer())
         .get(endpoint)
-        .query({ external_id: targetTransaction.externalId })
+        .query({ externalId: targetTransaction.externalId })
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .expect(HttpStatus.OK)
         .expect(async (response) => {

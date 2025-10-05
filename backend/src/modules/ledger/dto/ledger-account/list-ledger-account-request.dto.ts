@@ -12,7 +12,7 @@ export class ListLedgerAccountRequestDto extends PaginatedRequestDto {
   })
   @IsOptional()
   @IsUUID()
-  ledger_id?: string;
+  ledgerId?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by currency code',
@@ -29,7 +29,7 @@ export class ListLedgerAccountRequestDto extends PaginatedRequestDto {
   })
   @IsOptional()
   @IsEnum(NormalBalanceEnum)
-  normal_balance?: NormalBalanceEnum;
+  normalBalance?: NormalBalanceEnum;
 
   @ApiPropertyOptional({
     description: 'Search by account name, description, or external ID',

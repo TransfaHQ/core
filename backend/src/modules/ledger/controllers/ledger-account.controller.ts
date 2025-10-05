@@ -112,7 +112,7 @@ export class LedgerAccountController {
     example: '01234567-89ab-cdef-0123-456789abcdef',
   })
   @ApiQuery({
-    name: 'ledger_id',
+    name: 'ledgerId',
     required: false,
     type: String,
     description: 'Filter by ledger ID',
@@ -126,7 +126,7 @@ export class LedgerAccountController {
     example: 'USD',
   })
   @ApiQuery({
-    name: 'normal_balance',
+    name: 'normalBalance',
     required: false,
     enum: ['credit', 'debit'],
     description: 'Filter by normal balance type',
@@ -190,9 +190,9 @@ export class LedgerAccountController {
       cursor: queryParams.cursor,
       direction: queryParams.direction,
       filters: {
-        ledgerId: queryParams.ledger_id,
+        ledgerId: queryParams.ledgerId,
         currency: queryParams.currency,
-        normalBalance: queryParams.normal_balance,
+        normalBalance: queryParams.normalBalance,
         search: queryParams.search,
         metadata: queryParams.metadata,
       },

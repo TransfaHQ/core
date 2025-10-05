@@ -11,7 +11,7 @@ export class ListLedgerTransactionRequestDto extends PaginatedRequestDto {
   })
   @IsOptional()
   @IsString()
-  external_id?: string;
+  externalId?: string;
 
   @ApiPropertyOptional({
     description: 'Search by transaction description',
