@@ -8,6 +8,7 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -22,6 +23,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
+import { IdempotencyInterceptor } from '@libs/api/interceptors/idempotency.interceptor';
 import { CursorPaginatedResult } from '@libs/database';
 
 import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
@@ -40,6 +42,7 @@ export class LedgerTransactionController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(IdempotencyInterceptor)
   @ApiOperation({
     summary: 'Create a new ledger transaction',
     description: 'Creates a new ledger transaction with the provided details',
