@@ -25,6 +25,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
     if (!idempotencyKey) {
       throw new BadRequestException(['Missing Idempotency-Key header']);
     }
+    responseObj.setHeader('X-Idempotency-Key', idempotencyKey);
 
     const existingResponse = await this.db.kysely
       .selectFrom('idempotencyKeys')
@@ -35,8 +36,10 @@ export class IdempotencyInterceptor implements NestInterceptor {
 
     if (existingResponse) {
       responseObj.status(existingResponse.statusCode);
+      responseObj.setHeader('X-Idempotency-Replayed', 'true');
       return of(existingResponse.responsePayload);
     }
+    responseObj.setHeader('X-Idempotency-Replayed', 'false');
 
     return next.handle().pipe(
       tap(async (response) => {

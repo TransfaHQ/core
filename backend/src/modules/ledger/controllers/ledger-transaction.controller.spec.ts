@@ -397,6 +397,7 @@ describe('LedgerTransactionController', () => {
             expect(response.body.externalId).toBe(data.externalId);
             expect(response.body.description).toBe(data.description);
             expect(response.body.id).toBeDefined();
+            expect(response.headers['x-idempotency-replayed']).toBe('false');
           });
 
         const sourceTbAccount = await tigerBeetleService.retrieveAccount(
@@ -425,6 +426,7 @@ describe('LedgerTransactionController', () => {
           .send(data)
           .expect(HttpStatus.CREATED)
           .expect((response) => {
+            expect(response.headers['x-idempotency-replayed']).toBe('true');
             response2 = response.body;
             transactionId2 = response.body.id;
             expect(response.body.ledgerEntries.length).toBe(2);
