@@ -329,11 +329,11 @@ describe('LedgerAccountController', () => {
       });
     });
 
-    describe('Filter by ledger_id', () => {
-      it('should filter accounts by ledger_id', async () => {
+    describe('Filter by ledgerId', () => {
+      it('should filter accounts by ledgerId', async () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
-          .query({ ledger_id: ledger.id })
+          .query({ ledgerId: ledger.id })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
           .expect(HttpStatus.OK)
           .expect((response) => {
@@ -344,10 +344,10 @@ describe('LedgerAccountController', () => {
           });
       });
 
-      it('should filter accounts by second ledger_id', async () => {
+      it('should filter accounts by second ledgerId', async () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
-          .query({ ledger_id: secondLedger.id })
+          .query({ ledgerId: secondLedger.id })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
           .expect(HttpStatus.OK)
           .expect((response) => {
@@ -357,11 +357,11 @@ describe('LedgerAccountController', () => {
           });
       });
 
-      it('should return empty array for non-existent ledger_id', async () => {
+      it('should return empty array for non-existent ledgerId', async () => {
         const nonExistentId = uuidV7();
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
-          .query({ ledger_id: nonExistentId })
+          .query({ ledgerId: nonExistentId })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
           .expect(HttpStatus.OK)
           .expect((response) => {
@@ -410,11 +410,11 @@ describe('LedgerAccountController', () => {
       });
     });
 
-    describe('Filter by normal_balance', () => {
-      it('should filter accounts by credit normal_balance', async () => {
+    describe('Filter by normalBalance', () => {
+      it('should filter accounts by credit normalBalance', async () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
-          .query({ normal_balance: 'credit' })
+          .query({ normalBalance: 'credit' })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
           .expect(HttpStatus.OK)
           .expect((response) => {
@@ -425,10 +425,10 @@ describe('LedgerAccountController', () => {
           });
       });
 
-      it('should filter accounts by debit normal_balance', async () => {
+      it('should filter accounts by debit normalBalance', async () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
-          .query({ normal_balance: 'debit' })
+          .query({ normalBalance: 'debit' })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
           .expect(HttpStatus.OK)
           .expect((response) => {
@@ -560,11 +560,11 @@ describe('LedgerAccountController', () => {
     });
 
     describe('Combined filters', () => {
-      it('should combine ledger_id and currency filters', async () => {
+      it('should combine ledgerId and currency filters', async () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            ledger_id: ledger.id,
+            ledgerId: ledger.id,
             currency: 'EUR',
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -576,11 +576,11 @@ describe('LedgerAccountController', () => {
           });
       });
 
-      it('should combine normal_balance and currency filters', async () => {
+      it('should combine normalBalance and currency filters', async () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            normal_balance: 'debit',
+            normalBalance: 'debit',
             currency: 'USD',
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -592,11 +592,11 @@ describe('LedgerAccountController', () => {
           });
       });
 
-      it('should combine search with ledger_id filter', async () => {
+      it('should combine search with ledgerId filter', async () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            ledger_id: secondLedger.id,
+            ledgerId: secondLedger.id,
             search: 'metadata',
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -608,11 +608,11 @@ describe('LedgerAccountController', () => {
           });
       });
 
-      it('should combine metadata filter with ledger_id', async () => {
+      it('should combine metadata filter with ledgerId', async () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            ledger_id: secondLedger.id,
+            ledgerId: secondLedger.id,
             'metadata[type]': 'operational',
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -628,7 +628,7 @@ describe('LedgerAccountController', () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            ledger_id: ledger.id,
+            ledgerId: ledger.id,
             'metadata[department]': 'finance',
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -933,7 +933,7 @@ describe('LedgerAccountController', () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            ledger_id: secondLedgerForPagination.id,
+            ledgerId: secondLedgerForPagination.id,
             limit: 100,
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -951,7 +951,7 @@ describe('LedgerAccountController', () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            ledger_id: ledger.id,
+            ledgerId: ledger.id,
             limit: 5,
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
