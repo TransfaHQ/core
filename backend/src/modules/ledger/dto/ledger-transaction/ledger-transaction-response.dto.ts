@@ -46,6 +46,12 @@ export class LedgerEntryResponseDto {
     example: 2,
   })
   ledgerAccountCurrencyExponent: number;
+
+  @ApiProperty({
+    description: 'Name of the associated ledger account',
+    example: 'Cash Account',
+  })
+  ledgerAccountName: string;
 }
 
 export class LedgerTransactionResponseDto {

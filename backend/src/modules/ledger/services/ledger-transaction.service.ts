@@ -251,6 +251,7 @@ export class LedgerTransactionService {
         'le.deletedAt',
         'la.currencyCode',
         'la.currencyExponent',
+        'la.name as accountName',
       ])
       .where('le.ledgerTransactionId', '=', transaction.id)
       .execute();
@@ -268,6 +269,7 @@ export class LedgerTransactionService {
         ledgerAccount: {
           currencyCode: entry.currencyCode,
           currencyExponent: entry.currencyExponent,
+          name: entry.accountName,
         } as any,
         ledgerId: entry.ledgerId,
         ledgerTransactionId: transaction.id,
@@ -370,6 +372,7 @@ export class LedgerTransactionService {
         'le.ledgerTransactionId',
         'la.currencyCode',
         'la.currencyExponent',
+        'la.name as accountName',
       ])
       .where('le.ledgerTransactionId', 'in', transactionIds)
       .execute();
@@ -389,6 +392,7 @@ export class LedgerTransactionService {
           ledgerAccount: {
             currencyCode: entry.currencyCode,
             currencyExponent: entry.currencyExponent,
+            name: entry.accountName,
           } as any,
           ledgerTransactionId: entry.ledgerTransactionId,
           tigerBeetleId: entry.tigerBeetleId,

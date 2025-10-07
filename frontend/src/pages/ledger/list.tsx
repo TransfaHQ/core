@@ -6,6 +6,7 @@ import { CreateLedgerDialog } from "@/pages/ledger/dialogs/create";
 import { EditLedgerDialog } from "@/pages/ledger/dialogs/edit";
 import { LedgerEmptyState } from "@/pages/ledger/empty-state";
 import { $api } from "@/lib/api/client";
+import { formatDate } from "@/lib/date";
 import type { components } from "@/lib/api/generated/api-types";
 
 type LedgerResponse = components["schemas"]["LedgerResponseDto"];
@@ -34,7 +35,7 @@ export function LedgerList() {
       header: "Created",
       cell: (ledger) => (
         <div className="text-muted-foreground">
-          {new Date(ledger.createdAt).toLocaleDateString()}
+          {formatDate(ledger.createdAt)}
         </div>
       ),
     },

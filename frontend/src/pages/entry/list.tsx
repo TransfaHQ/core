@@ -10,9 +10,11 @@ import {
   type EntryFilters,
 } from "@/pages/entry/components/entry-filter-bar";
 import { CreateTransactionSheet } from "@/pages/entry/sheets/create-transaction";
+import { TransactionDetailsSheet } from "@/pages/entry/sheets/transaction-details";
 import { Pagination, type PaginationInfo } from "@/components/ui/pagination";
 import { $api } from "@/lib/api/client";
 import { formatBalance } from "@/lib/currency";
+import { formatDateTime } from "@/lib/date";
 
 // Manual type definition until API types are regenerated
 type LedgerEntryResponse = {
@@ -50,6 +52,12 @@ export function EntryList() {
   // Pagination state
   const [pageSize, setPageSize] = useState(20);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
+
+  // Transaction details sheet state
+  const [selectedTransactionId, setSelectedTransactionId] = useState<
+    string | null
+  >(null);
+  const [isDetailsSheetOpen, setIsDetailsSheetOpen] = useState(false);
 
   // Build query parameters from filters and pagination
   const queryParams = useMemo(() => {
@@ -137,6 +145,12 @@ export function EntryList() {
     setCursor(newCursor);
   }, []);
 
+  // Handle row click to open transaction details
+  const handleRowClick = useCallback((entry: LedgerEntryResponse) => {
+    setSelectedTransactionId(entry.ledgerTransactionId);
+    setIsDetailsSheetOpen(true);
+  }, []);
+
   const columns: TableColumn<LedgerEntryResponse>[] = [
     {
       header: "Transaction",
@@ -194,7 +208,7 @@ export function EntryList() {
       header: "Created",
       cell: (entry) => (
         <div className="text-muted-foreground">
-          {new Date(entry.createdAt).toLocaleString()}
+          {formatDateTime(entry.createdAt)}
         </div>
       ),
     },
@@ -221,6 +235,7 @@ export function EntryList() {
             error={error}
             emptyState={<EntryEmptyState />}
             getRowKey={(entry) => entry.id}
+            onRowClick={handleRowClick}
           />
 
           {/* Pagination Controls */}
@@ -236,6 +251,12 @@ export function EntryList() {
           )}
         </div>
       </ListPageLayout>
+
+      <TransactionDetailsSheet
+        transactionId={selectedTransactionId}
+        open={isDetailsSheetOpen}
+        onOpenChange={setIsDetailsSheetOpen}
+      />
     </Layout>
   );
 }

@@ -304,7 +304,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        CreateUserDto: Record<string, never>;
+        CreateUserDto: {
+            /**
+             * @description User email address
+             * @example user@example.com
+             */
+            email: string;
+            /** @description User password */
+            password: string;
+        };
         UserResponseDto: Record<string, never>;
         LoginDto: {
             /**
@@ -312,10 +320,7 @@ export interface components {
              * @example user@example.com
              */
             email: string;
-            /**
-             * @description User password
-             * @example password123
-             */
+            /** @description User password */
             password: string;
         };
         LoginResponseDto: {
@@ -532,13 +537,13 @@ export interface components {
             /**
              * Format: date-time
              * @description Creation timestamp
-             * @example 2025-10-07T18:11:14.615Z
+             * @example 2025-10-07T21:45:08.682Z
              */
             createdAt: string;
             /**
              * Format: date-time
              * @description Last update timestamp
-             * @example 2025-10-07T18:11:14.615Z
+             * @example 2025-10-07T21:45:08.682Z
              */
             updatedAt: string;
         };
@@ -640,7 +645,7 @@ export interface components {
             description: string;
             /**
              * @description External system reference ID (must be unique per transaction)
-             * @example 0199bfde-d041-723b-8649-e6b93342428a
+             * @example 0199c0a2-a555-70d1-8140-776d55d53790
              */
             externalId: string;
             /** @description Array of ledger entries involved in the transaction */
@@ -659,7 +664,7 @@ export interface components {
         LedgerEntryResponseDto: {
             /**
              * @description Unique identifier for the ledger entry
-             * @example 0199bfde-d040-742c-8c45-fc6baa543af8
+             * @example 0199c0a2-a554-751b-a156-4da52d8bfa34
              */
             id: string;
             /**
@@ -687,7 +692,7 @@ export interface components {
             direction: "credit" | "debit";
             /**
              * @description ID of the associated ledger account
-             * @example 0199bfde-d040-742c-8c46-02d7d682ac22
+             * @example 0199c0a2-a554-751b-a156-51388badd982
              */
             ledgerAccountId: string;
             /**
@@ -700,11 +705,16 @@ export interface components {
              * @example 2
              */
             ledgerAccountCurrencyExponent: number;
+            /**
+             * @description Name of the associated ledger account
+             * @example Cash Account
+             */
+            ledgerAccountName: string;
         };
         LedgerTransactionResponseDto: {
             /**
              * @description Unique identifier for the transaction
-             * @example 0199bfde-d040-742c-8c46-0792d4333892
+             * @example 0199c0a2-a554-751b-a156-543ce9f62822
              */
             id: string;
             /**
@@ -721,7 +731,7 @@ export interface components {
             updatedAt: string;
             /**
              * @description External system ID for cross-reference
-             * @example 0199bfde-d040-742c-8c46-083d5a46ff76
+             * @example 0199c0a2-a554-751b-a156-58f0942e0816
              */
             externalId: string;
             /**
@@ -769,7 +779,7 @@ export interface components {
         LedgerEntryStandaloneResponseDto: {
             /**
              * @description Unique identifier for the ledger entry
-             * @example 0199bfde-d03e-745b-9ef1-d5341b4fffbb
+             * @example 0199c0a2-a551-74c5-b03d-8a5a550b731e
              */
             id: string;
             /**
@@ -797,17 +807,17 @@ export interface components {
             direction: "credit" | "debit";
             /**
              * @description ID of the associated ledger
-             * @example 0199bfde-d03e-745b-9ef1-d96089b685f8
+             * @example 0199c0a2-a551-74c5-b03d-8ec099049725
              */
             ledgerId: string;
             /**
              * @description ID of the associated ledger transaction
-             * @example 0199bfde-d03e-745b-9ef1-dce6451f6872
+             * @example 0199c0a2-a551-74c5-b03d-911953195b7e
              */
             ledgerTransactionId: string;
             /**
              * @description ID of the associated ledger account
-             * @example 0199bfde-d03e-745b-9ef1-e03443223748
+             * @example 0199c0a2-a551-74c5-b03d-942c031664a1
              */
             ledgerAccountId: string;
             /**
@@ -860,7 +870,10 @@ export interface operations {
     AuthController_createUser_v1: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Admin secret key passed as environment variable */
+                "x-admin-key"?: string;
+            };
             path?: never;
             cookie?: never;
         };

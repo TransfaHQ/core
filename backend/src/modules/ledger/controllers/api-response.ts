@@ -51,6 +51,7 @@ export const ledgerEntryToApiV1Response = (entity: LedgerEntry): LedgerEntryResp
     ledgerAccountId: entity.ledgerAccountId,
     ledgerAccountCurrency: entity.ledgerAccount!.currencyCode,
     ledgerAccountCurrencyExponent: currencyExponent,
+    ledgerAccountName: entity.ledgerAccount!.name,
   };
 };
 

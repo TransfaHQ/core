@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { EditAccountDialog } from "@/pages/account/dialogs/edit";
 import { $api } from "@/lib/api/client";
 import { formatBalance } from "@/lib/currency";
+import { formatDateTime } from "@/lib/date";
 
 
 interface AccountDetailsPanelProps {
@@ -37,17 +38,6 @@ export function AccountDetailsPanel({
   });
 
   if (!accountId) return null;
-
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -205,11 +195,11 @@ export function AccountDetailsPanel({
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Created at</span>
-                <span className="text-sm">{formatDate(account.createdAt)}</span>
+                <span className="text-sm">{formatDateTime(account.createdAt)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Updated at</span>
-                <span className="text-sm">{formatDate(account.updatedAt)}</span>
+                <span className="text-sm">{formatDateTime(account.updatedAt)}</span>
               </div>
             </div>
           </div>
