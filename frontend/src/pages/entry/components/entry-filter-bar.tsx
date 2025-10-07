@@ -38,7 +38,7 @@ export function EntryFilterBar({
   const getNonSearchFiltersCount = () => {
     let count = 0;
     if (filters.ledgerId && filters.ledgerId !== "all") count++;
-    if (filters.accountId) count++;
+    if (filters.accountId && filters.accountId !== "all") count++;
     if (filters.transactionExternalId) count++;
     if (filters.direction && filters.direction !== "all") count++;
     return count;

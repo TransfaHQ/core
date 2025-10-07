@@ -257,8 +257,9 @@ describe('LedgerTransactionController', () => {
 
         await Promise.all(
           entries.map(async (entry) => {
-            const amount = 10 * 1e2;
-            expect(entry.amount).toBe(amount);
+            expect(entry.amount).toBe(10);
+
+            const tbAmount = 10 * 1e2;
             if (entry.ledgerAccountId === eurDebitAccount.id) {
               expect(entry.direction).toBe(NormalBalanceEnum.DEBIT);
               expect(entry.ledgerAccountCurrency).toBe(eurDebitAccount.currencyCode);
@@ -304,15 +305,15 @@ describe('LedgerTransactionController', () => {
             const tbTransfer = await tigerBeetleService.retrieveTransfer(ledgerEntry.tigerBeetleId);
             const tbAccount = await tigerBeetleService.retrieveAccount(ledgerAccount.tigerBeetleId);
 
-            expect(tbTransfer.amount).toBe(BigInt(amount));
+            expect(tbTransfer.amount).toBe(BigInt(tbAmount));
             expect(tbTransfer.id).toBe(bufferToTbId(ledgerEntry.tigerBeetleId));
             expect(ledgerEntry.ledgerTransactionId).toBe(transactionId);
             if (entry.direction === NormalBalanceEnum.CREDIT) {
               expect(tbTransfer.credit_account_id).toBe(bufferToTbId(ledgerAccount.tigerBeetleId));
-              expect(tbAccount.credits_posted).toBe(BigInt(amount));
+              expect(tbAccount.credits_posted).toBe(BigInt(tbAmount));
             } else {
               expect(tbTransfer.debit_account_id).toBe(bufferToTbId(ledgerAccount.tigerBeetleId));
-              expect(tbAccount.debits_posted).toBe(BigInt(amount));
+              expect(tbAccount.debits_posted).toBe(BigInt(tbAmount));
             }
 
             expect(tbTransfer.code).toBe(1);

@@ -1,14 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { AccountCombobox } from "@/components/account-combobox";
 import {
   Sheet,
   SheetClose,
@@ -63,6 +57,7 @@ export function CreateTransactionSheet() {
     }
   }, [open]);
 
+  // Fetch accounts to support validation
   const { data: accounts } = $api.useQuery("get", "/v1/ledger_accounts", {
     params: {
       query: {
@@ -347,62 +342,28 @@ export function CreateTransactionSheet() {
                       <Label htmlFor={`source-${entry.id}`}>
                         Source Account *
                       </Label>
-                      <Select
+                      <AccountCombobox
                         value={entry.sourceAccountId}
                         onValueChange={handleEntryChange(
                           entry.id,
                           "sourceAccountId"
                         )}
-                      >
-                        <SelectTrigger id={`source-${entry.id}`}>
-                          <SelectValue placeholder="Select source account" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {accounts?.data && accounts.data.length > 0 ? (
-                            accounts.data.map((account) => (
-                              <SelectItem key={account.id} value={account.id}>
-                                {account.name} (
-                                {account.balances.avalaibleBalance.currency})
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value="null" disabled>
-                              No accounts available
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Select source account"
+                      />
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor={`destination-${entry.id}`}>
                         Destination Account *
                       </Label>
-                      <Select
+                      <AccountCombobox
                         value={entry.destinationAccountId}
                         onValueChange={handleEntryChange(
                           entry.id,
                           "destinationAccountId"
                         )}
-                      >
-                        <SelectTrigger id={`destination-${entry.id}`}>
-                          <SelectValue placeholder="Select destination account" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {accounts?.data && accounts.data.length > 0 ? (
-                            accounts.data.map((account) => (
-                              <SelectItem key={account.id} value={account.id}>
-                                {account.name} (
-                                {account.balances.avalaibleBalance.currency})
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value="null" disabled>
-                              No accounts available
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Select destination account"
+                      />
                     </div>
 
                     <div className="space-y-2">
@@ -437,15 +398,6 @@ export function CreateTransactionSheet() {
           </div>
 
           <SheetFooter>
-            <SheetClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={createTransaction.isPending}
-              >
-                Cancel
-              </Button>
-            </SheetClose>
             <Button
               type="submit"
               disabled={createTransaction.isPending || !isFormValid}

@@ -78,7 +78,7 @@ export function EntryFilterModal({
     const clearedFilters = {
       search: filters.search, // Keep search as it's handled outside modal
       ledgerId: "all",
-      accountId: "",
+      accountId: "all",
       transactionExternalId: "",
       direction: "all" as const,
     };
@@ -91,7 +91,7 @@ export function EntryFilterModal({
   const getNonSearchFiltersCount = () => {
     let count = 0;
     if (modalFilters.ledgerId && modalFilters.ledgerId !== "all") count++;
-    if (modalFilters.accountId) count++;
+    if (modalFilters.accountId && modalFilters.accountId !== "all") count++;
     if (modalFilters.transactionExternalId) count++;
     if (modalFilters.direction && modalFilters.direction !== "all") count++;
     return count;
@@ -140,7 +140,7 @@ export function EntryFilterModal({
                 <SelectValue placeholder="All accounts" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All accounts</SelectItem>
+                <SelectItem value="all">All accounts</SelectItem>
                 {accounts?.data?.map((account) => (
                   <SelectItem key={account.id} value={account.id}>
                     {account.name}

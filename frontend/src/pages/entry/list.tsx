@@ -42,7 +42,7 @@ export function EntryList() {
   const [filters, setFilters] = useState<EntryFilters>({
     search: "",
     ledgerId: "all",
-    accountId: "",
+    accountId: "all",
     transactionExternalId: "",
     direction: "all",
   });
@@ -60,7 +60,8 @@ export function EntryList() {
     if (cursor) params.cursor = cursor;
     if (filters.ledgerId && filters.ledgerId !== "all")
       params.ledgerId = filters.ledgerId;
-    if (filters.accountId) params.accountId = filters.accountId;
+    if (filters.accountId && filters.accountId !== "all")
+      params.accountId = filters.accountId;
     if (filters.transactionExternalId)
       params.transactionExternalId = filters.transactionExternalId;
     if (filters.direction && filters.direction !== "all") {
@@ -119,7 +120,7 @@ export function EntryList() {
     setFilters({
       search: "",
       ledgerId: "all",
-      accountId: "",
+      accountId: "all",
       transactionExternalId: "",
       direction: "all",
     });
