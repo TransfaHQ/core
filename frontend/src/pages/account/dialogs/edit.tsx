@@ -47,7 +47,7 @@ export function EditAccountDialog({
     if (open) {
       setFormData({
         name: account.name,
-        description: account.description,
+        description: account.description ?? undefined,
         metadata: account.metadata || {},
       });
     }

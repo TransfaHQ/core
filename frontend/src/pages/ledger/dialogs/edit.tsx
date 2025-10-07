@@ -24,7 +24,7 @@ interface EditLedgerDialogProps {
   ledger: {
     id: string;
     name: string;
-    description?: string;
+    description: string | null;
   };
 }
 
@@ -59,14 +59,13 @@ export function EditLedgerDialog({ ledger }: EditLedgerDialogProps) {
     });
   };
 
-  const handleInputChange = (field: keyof FormData) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: e.target.value,
-    }));
-  };
+  const handleInputChange =
+    (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: e.target.value,
+      }));
+    };
 
   const resetForm = () => {
     setFormData({
