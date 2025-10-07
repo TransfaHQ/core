@@ -13,6 +13,7 @@ import {
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiHeader,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -43,6 +44,12 @@ export class LedgerTransactionController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({
+    name: 'idempotency-key',
+    required: true,
+    description: 'Unique key to prevent duplicate transactions',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
   @ApiOperation({
     summary: 'Create a new ledger transaction',
     description: 'Creates a new ledger transaction with the provided details',

@@ -1,5 +1,6 @@
 import { Controller, Get, HttpCode, HttpStatus, Query, UseGuards } from '@nestjs/common';
 import {
+  ApiExtraModels,
   ApiOkResponse,
   ApiOperation,
   ApiQuery,
@@ -19,6 +20,7 @@ import { LedgerEntryService } from '@modules/ledger/services/ledger-entry.servic
 
 @ApiTags('ledger-entries')
 @ApiSecurity('api-key')
+@ApiExtraModels(LedgerEntryStandaloneResponseDto)
 @UseGuards(ApiKeyOrJwtGuard)
 @Controller({ version: '1', path: 'ledger_entries' })
 export class LedgerEntryController {

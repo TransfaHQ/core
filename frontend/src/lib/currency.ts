@@ -1,6 +1,6 @@
 /**
  * Formats a balance amount as currency
- * @param balance - The balance amount in the smallest unit (e.g., cents for USD)
+ * @param balance - The balance amount as a decimal (e.g., 10.50 for USD)
  * @param currency - The currency code (e.g., 'USD', 'EUR', 'BTC')
  * @param exponent - The number of decimal places for the currency
  * @param locale - The locale to use for formatting (defaults to 'en-US')
@@ -12,7 +12,7 @@ export const formatBalance = (
   exponent: number,
   locale = "en-US"
 ): string => {
-  const amount = balance / Math.pow(10, exponent);
+  const amount = balance;
 
   // Try to format as standard currency first
   try {

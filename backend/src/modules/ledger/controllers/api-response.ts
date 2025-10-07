@@ -39,15 +39,18 @@ export const ledgerToApiV1Response = (entity: Ledger): LedgerResponseDto => {
 };
 
 export const ledgerEntryToApiV1Response = (entity: LedgerEntry): LedgerEntryResponseDto => {
+  const currencyExponent = entity.ledgerAccount!.currencyExponent;
+  const decimalAmount = +entity.amount / Math.pow(10, currencyExponent);
+
   return {
     id: entity.id,
     createdAt: entity.createdAt,
     updatedAt: entity.updatedAt,
-    amount: +entity.amount,
+    amount: decimalAmount,
     direction: entity.direction as NormalBalanceEnum,
     ledgerAccountId: entity.ledgerAccountId,
     ledgerAccountCurrency: entity.ledgerAccount!.currencyCode,
-    ledgerAccountCurrencyExponent: entity.ledgerAccount!.currencyExponent,
+    ledgerAccountCurrencyExponent: currencyExponent,
   };
 };
 
@@ -79,16 +82,20 @@ export const currencyToApiV1Response = (entity: Currency): CurrencyResponseDto =
 export const ledgerEntryStandaloneToApiV1Response = (
   entity: LedgerEntryWithAccount,
 ): LedgerEntryStandaloneResponseDto => {
+  const decimalAmount = +entity.amount / Math.pow(10, entity.currencyExponent);
+
   return {
     id: entity.id,
     createdAt: entity.createdAt,
     updatedAt: entity.updatedAt,
-    amount: +entity.amount,
+    amount: decimalAmount,
     direction: entity.direction as NormalBalanceEnum,
     ledgerId: entity.ledgerId,
     ledgerTransactionId: entity.ledgerTransactionId,
     ledgerAccountId: entity.ledgerAccountId,
     ledgerAccountCurrency: entity.currencyCode,
     ledgerAccountCurrencyExponent: entity.currencyExponent,
+    ledgerAccountName: entity.accountName,
+    ledgerTransactionExternalId: entity.transactionExternalId,
   };
 };

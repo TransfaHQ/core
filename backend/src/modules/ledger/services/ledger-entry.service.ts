@@ -15,6 +15,8 @@ export type LedgerEntryWithAccount = {
   ledgerAccountId: string;
   currencyCode: string;
   currencyExponent: number;
+  accountName: string;
+  transactionExternalId: string;
   deletedAt: Date | null;
 };
 
@@ -96,13 +98,13 @@ export class LedgerEntryService {
       };
     }
 
-    // Fetch currency information for the accounts
+    // Fetch account information (currency and name)
     const accountIds = Array.from(
       new Set(paginatedResult.data.map((entry) => entry.ledgerAccountId)),
     );
     const accounts = await this.db.kysely
       .selectFrom('ledgerAccounts')
-      .select(['id', 'currencyCode', 'currencyExponent'])
+      .select(['id', 'currencyCode', 'currencyExponent', 'name'])
       .where('id', 'in', accountIds)
       .execute();
 
@@ -111,10 +113,29 @@ export class LedgerEntryService {
         acc[account.id] = {
           currencyCode: account.currencyCode,
           currencyExponent: account.currencyExponent,
+          name: account.name,
         };
         return acc;
       },
-      {} as Record<string, { currencyCode: string; currencyExponent: number }>,
+      {} as Record<string, { currencyCode: string; currencyExponent: number; name: string }>,
+    );
+
+    // Fetch transaction external IDs
+    const transactionIds = Array.from(
+      new Set(paginatedResult.data.map((entry) => entry.ledgerTransactionId)),
+    );
+    const transactions = await this.db.kysely
+      .selectFrom('ledgerTransactions')
+      .select(['id', 'externalId'])
+      .where('id', 'in', transactionIds)
+      .execute();
+
+    const transactionMap = transactions.reduce(
+      (acc, transaction) => {
+        acc[transaction.id] = transaction.externalId;
+        return acc;
+      },
+      {} as Record<string, string>,
     );
 
     const data: LedgerEntryWithAccount[] = paginatedResult.data.map((entry) => ({
@@ -129,6 +150,8 @@ export class LedgerEntryService {
       deletedAt: entry.deletedAt,
       currencyCode: accountMap[entry.ledgerAccountId].currencyCode,
       currencyExponent: accountMap[entry.ledgerAccountId].currencyExponent,
+      accountName: accountMap[entry.ledgerAccountId].name,
+      transactionExternalId: transactionMap[entry.ledgerTransactionId],
     }));
 
     return {
