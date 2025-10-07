@@ -15,6 +15,7 @@ import { Pagination, type PaginationInfo } from "@/components/ui/pagination";
 import { $api } from "@/lib/api/client";
 import type { components } from "@/lib/api/generated/api-types";
 import { formatBalance } from "@/lib/currency";
+import { formatDate } from "@/lib/date";
 
 type LedgerAccountResponse = components["schemas"]["LedgerAccountResponseDto"];
 
@@ -183,7 +184,7 @@ export function AccountList() {
       header: "Created",
       cell: (account) => (
         <div className="text-muted-foreground">
-          {new Date(account.createdAt).toLocaleDateString()}
+          {formatDate(account.createdAt)}
         </div>
       ),
     },

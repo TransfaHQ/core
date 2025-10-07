@@ -14,6 +14,7 @@ import { TransactionDetailsSheet } from "@/pages/entry/sheets/transaction-detail
 import { Pagination, type PaginationInfo } from "@/components/ui/pagination";
 import { $api } from "@/lib/api/client";
 import { formatBalance } from "@/lib/currency";
+import { formatDateTime } from "@/lib/date";
 
 // Manual type definition until API types are regenerated
 type LedgerEntryResponse = {
@@ -207,7 +208,7 @@ export function EntryList() {
       header: "Created",
       cell: (entry) => (
         <div className="text-muted-foreground">
-          {new Date(entry.createdAt).toLocaleString()}
+          {formatDateTime(entry.createdAt)}
         </div>
       ),
     },

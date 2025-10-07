@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { $api } from "@/lib/api/client";
 import { formatBalance } from "@/lib/currency";
+import { formatDateTime } from "@/lib/date";
 
 interface TransactionDetailsSheetProps {
   transactionId: string | null;
@@ -84,7 +85,7 @@ export function TransactionDetailsSheet({
                     Created At
                   </div>
                   <div className="text-sm">
-                    {new Date(transaction.createdAt).toLocaleString()}
+                    {formatDateTime(transaction.createdAt)}
                   </div>
                 </div>
               </div>
