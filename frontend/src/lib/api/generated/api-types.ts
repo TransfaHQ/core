@@ -362,7 +362,7 @@ export interface components {
              * @description Description of the ledger purpose
              * @example Main accounting ledger for company operations
              */
-            description: Record<string, never>;
+            description: string | null;
             /**
              * @description Additional data represented as key-value pairs. Both the key and value must be strings.
              * @example {
@@ -501,7 +501,7 @@ export interface components {
              * @description Description of the ledger account
              * @example Main accounting ledger account
              */
-            description: Record<string, never>;
+            description: string | null;
             /**
              * @description Normal balance type
              * @example DEBIT
@@ -516,7 +516,7 @@ export interface components {
              * @description External identifier for the ledger account
              * @example EXT-12345
              */
-            externalId: Record<string, never>;
+            externalId: string | null;
             /** @description Balances of the ledger account */
             balances: components["schemas"]["LedgerAccountBalancesDto"];
             /**
@@ -532,13 +532,13 @@ export interface components {
             /**
              * Format: date-time
              * @description Creation timestamp
-             * @example 2025-10-07T17:12:38.137Z
+             * @example 2025-10-07T18:11:14.615Z
              */
             createdAt: string;
             /**
              * Format: date-time
              * @description Last update timestamp
-             * @example 2025-10-07T17:12:38.137Z
+             * @example 2025-10-07T18:11:14.615Z
              */
             updatedAt: string;
         };
@@ -640,7 +640,7 @@ export interface components {
             description: string;
             /**
              * @description External system reference ID (must be unique per transaction)
-             * @example 0199bfa9-2803-7157-8103-e08bcc51c99c
+             * @example 0199bfde-d041-723b-8649-e6b93342428a
              */
             externalId: string;
             /** @description Array of ledger entries involved in the transaction */
@@ -659,7 +659,7 @@ export interface components {
         LedgerEntryResponseDto: {
             /**
              * @description Unique identifier for the ledger entry
-             * @example 0199bfa9-2802-73e6-a256-192080ce6574
+             * @example 0199bfde-d040-742c-8c45-fc6baa543af8
              */
             id: string;
             /**
@@ -687,7 +687,7 @@ export interface components {
             direction: "credit" | "debit";
             /**
              * @description ID of the associated ledger account
-             * @example 0199bfa9-2802-73e6-a256-1dea2d819d2c
+             * @example 0199bfde-d040-742c-8c46-02d7d682ac22
              */
             ledgerAccountId: string;
             /**
@@ -704,7 +704,7 @@ export interface components {
         LedgerTransactionResponseDto: {
             /**
              * @description Unique identifier for the transaction
-             * @example 0199bfa9-2803-7157-8103-d95325416845
+             * @example 0199bfde-d040-742c-8c46-0792d4333892
              */
             id: string;
             /**
@@ -721,7 +721,7 @@ export interface components {
             updatedAt: string;
             /**
              * @description External system ID for cross-reference
-             * @example 0199bfa9-2803-7157-8103-debcad16afeb
+             * @example 0199bfde-d040-742c-8c46-083d5a46ff76
              */
             externalId: string;
             /**
@@ -769,7 +769,7 @@ export interface components {
         LedgerEntryStandaloneResponseDto: {
             /**
              * @description Unique identifier for the ledger entry
-             * @example 0199bfa9-27ff-76fd-9674-789867e860ae
+             * @example 0199bfde-d03e-745b-9ef1-d5341b4fffbb
              */
             id: string;
             /**
@@ -797,17 +797,17 @@ export interface components {
             direction: "credit" | "debit";
             /**
              * @description ID of the associated ledger
-             * @example 0199bfa9-2800-729d-a2d6-8c221b0d2e86
+             * @example 0199bfde-d03e-745b-9ef1-d96089b685f8
              */
             ledgerId: string;
             /**
              * @description ID of the associated ledger transaction
-             * @example 0199bfa9-2800-729d-a2d6-9173da53ba89
+             * @example 0199bfde-d03e-745b-9ef1-dce6451f6872
              */
             ledgerTransactionId: string;
             /**
              * @description ID of the associated ledger account
-             * @example 0199bfa9-2800-729d-a2d6-95494ffb3fb1
+             * @example 0199bfde-d03e-745b-9ef1-e03443223748
              */
             ledgerAccountId: string;
             /**
@@ -820,6 +820,16 @@ export interface components {
              * @example 2
              */
             ledgerAccountCurrencyExponent: number;
+            /**
+             * @description Name of the associated ledger account
+             * @example Cash Account
+             */
+            ledgerAccountName: string;
+            /**
+             * @description External ID of the associated ledger transaction
+             * @example tx_external_123
+             */
+            ledgerTransactionExternalId: string;
         };
     };
     responses: never;

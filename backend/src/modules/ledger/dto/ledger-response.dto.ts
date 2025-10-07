@@ -16,6 +16,8 @@ export class LedgerResponseDto {
   @ApiProperty({
     description: 'Description of the ledger purpose',
     example: 'Main accounting ledger for company operations',
+    nullable: true,
+    type: String,
   })
   description: string | null;
 
