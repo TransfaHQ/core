@@ -1,3 +1,4 @@
+import logo from "@/assets/logo.svg";
 import {
   Sidebar,
   SidebarContent,
@@ -9,9 +10,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { ArrowRightLeft, BookOpen, FileText, Tags, Wallet } from "lucide-react";
+import { ArrowRightLeft, BookOpen, Tags, Wallet } from "lucide-react";
 import { Link, useLocation } from "react-router";
-import logo from "@/assets/logo.svg";
 
 export function AppSidebar() {
   const location = useLocation();
@@ -19,9 +19,8 @@ export function AppSidebar() {
   const menuItems = [
     { icon: BookOpen, label: "Ledgers", path: "/ledgers" },
     { icon: Wallet, label: "Accounts", path: "/accounts" },
-    { icon: ArrowRightLeft, label: "Transactions", path: "/transactions" },
+    { icon: ArrowRightLeft, label: "Movements", path: "/movements" },
     { icon: Tags, label: "Categories", path: "/categories" },
-    { icon: FileText, label: "Entries", path: "/entries" },
   ];
 
   return (
@@ -39,7 +38,10 @@ export function AppSidebar() {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton asChild isActive={location.pathname === item.path}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname === item.path}
+                  >
                     <Link to={item.path}>
                       <item.icon />
                       <span>{item.label}</span>

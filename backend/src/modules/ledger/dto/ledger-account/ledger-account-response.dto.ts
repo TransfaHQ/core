@@ -57,6 +57,8 @@ export class LedgerAccountResponseDto {
   @ApiProperty({
     description: 'Description of the ledger account',
     example: 'Main accounting ledger account',
+    nullable: true,
+    type: String,
   })
   @IsString()
   description: string | null;
@@ -72,7 +74,12 @@ export class LedgerAccountResponseDto {
   @IsString()
   ledgerId: string;
 
-  @ApiProperty({ description: 'External identifier for the ledger account', example: 'EXT-12345' })
+  @ApiProperty({
+    description: 'External identifier for the ledger account',
+    example: 'EXT-12345',
+    nullable: true,
+    type: String,
+  })
   @IsString()
   externalId: string | null;
 

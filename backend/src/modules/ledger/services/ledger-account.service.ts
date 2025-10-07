@@ -432,25 +432,36 @@ export const computeBalancesAmount = (
 
     availableAmount = BigNumber(postedDebit).minus(pendingCredit).toNumber();
   }
+
+  // Convert from smallest units to decimals
+  const divisor = Math.pow(10, account.currencyExponent);
+  const decimalPendingCredit = pendingCredit / divisor;
+  const decimalPendingDebit = pendingDebit / divisor;
+  const decimalPostedCredit = postedCredit / divisor;
+  const decimalPostedDebit = postedDebit / divisor;
+  const decimalPendingAmount = pendingAmount / divisor;
+  const decimalPostedAmount = postedAmount / divisor;
+  const decimalAvailableAmount = availableAmount / divisor;
+
   return {
     pendingBalance: {
-      credits: pendingCredit,
-      debits: pendingDebit,
-      amount: pendingAmount,
+      credits: decimalPendingCredit,
+      debits: decimalPendingDebit,
+      amount: decimalPendingAmount,
       currency: account.currencyCode,
       currencyExponent: account.currencyExponent,
     },
     postedBalance: {
-      credits: postedCredit,
-      debits: postedDebit,
-      amount: postedAmount,
+      credits: decimalPostedCredit,
+      debits: decimalPostedDebit,
+      amount: decimalPostedAmount,
       currency: account.currencyCode,
       currencyExponent: account.currencyExponent,
     },
     avalaibleBalance: {
-      credits: postedCredit,
-      debits: pendingDebit,
-      amount: availableAmount,
+      credits: decimalPostedCredit,
+      debits: decimalPendingDebit,
+      amount: decimalAvailableAmount,
       currency: account.currencyCode,
       currencyExponent: account.currencyExponent,
     },
