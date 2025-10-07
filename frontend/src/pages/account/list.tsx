@@ -39,10 +39,10 @@ export function AccountList() {
     };
 
     if (cursor) params.cursor = cursor;
-    if (filters.ledgerId && filters.ledgerId !== "all") params.ledger_id = filters.ledgerId;
+    if (filters.ledgerId && filters.ledgerId !== "all") params.ledgerId = filters.ledgerId;
     if (filters.currency) params.currency = filters.currency;
     if (filters.normalBalance && filters.normalBalance !== "all") {
-      params.normal_balance = filters.normalBalance as "debit" | "credit";
+      params.normalBalance = filters.normalBalance as "debit" | "credit";
     }
     if (filters.search.trim()) params.search = filters.search.trim();
     return params;
