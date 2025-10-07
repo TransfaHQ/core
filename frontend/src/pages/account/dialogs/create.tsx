@@ -40,7 +40,7 @@ export function CreateAccountDialog() {
     name: "",
     description: undefined,
     ledgerId: "",
-    currency: "USD",
+    currency: "",
     normalBalance: "debit",
     externalId: undefined,
   });
@@ -56,7 +56,7 @@ export function CreateAccountDialog() {
         name: "",
         description: undefined,
         ledgerId: "",
-        currency: "USD",
+        currency: "",
         normalBalance: "debit",
         externalId: undefined,
       });
