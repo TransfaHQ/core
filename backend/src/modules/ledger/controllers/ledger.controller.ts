@@ -36,7 +36,7 @@ import { UpdateLedgerDto } from '@modules/ledger/dto/update-ledger.dto';
 import { LedgerService } from '@modules/ledger/services/ledger.service';
 
 @ApiTags('ledgers')
-@ApiSecurity('api-key')
+@ApiSecurity('basic')
 @UseGuards(ApiKeyOrJwtGuard)
 @Controller({ version: '1', path: 'ledgers' })
 export class LedgerController {
@@ -166,7 +166,7 @@ export class LedgerController {
 }
 
 @ApiTags('ledgers')
-@ApiSecurity('api-key')
+@ApiSecurity('basic')
 @UseGuards(ApiKeyOrJwtGuard)
 @Controller({ version: '0', path: 'ledgers' })
 export class MTLedgerController {

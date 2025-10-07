@@ -19,7 +19,7 @@ import { ListLedgerEntryRequestDto } from '@modules/ledger/dto/ledger-entry/list
 import { LedgerEntryService } from '@modules/ledger/services/ledger-entry.service';
 
 @ApiTags('ledger-entries')
-@ApiSecurity('api-key')
+@ApiSecurity('basic')
 @ApiExtraModels(LedgerEntryStandaloneResponseDto)
 @UseGuards(ApiKeyOrJwtGuard)
 @Controller({ version: '1', path: 'ledger_entries' })

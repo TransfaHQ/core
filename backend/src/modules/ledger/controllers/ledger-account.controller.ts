@@ -36,7 +36,7 @@ import { LedgerAccountService } from '@modules/ledger/services/ledger-account.se
 import { LedgerAccount } from '../types';
 
 @ApiTags('ledger-accounts')
-@ApiSecurity('api-key')
+@ApiSecurity('basic')
 @UseGuards(ApiKeyOrJwtGuard)
 @Controller({ version: '1', path: 'ledger_accounts' })
 export class LedgerAccountController {

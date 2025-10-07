@@ -12,7 +12,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AuthService } from './auth.service';
 import {
@@ -39,13 +39,14 @@ export class AuthController {
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new user' })
+  @ApiHeader({
+    name: 'x-admin-key',
+    description: 'Admin secret key passed as environment variable',
+  })
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({ status: 201, description: 'User created successfully', type: UserResponseDto })
   @ApiResponse({ status: 409, description: 'Email already exists' })
-  async createUser(
-    @Body()
-    createUserDto: CreateUserDto,
-  ): Promise<UserResponseDto> {
+  async createUser(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
     return this.authService.createUser(createUserDto);
   }
 

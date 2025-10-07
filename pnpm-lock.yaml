@@ -32,6 +32,9 @@ importers:
       '@nestjs/swagger':
         specifier: ^11.2.0
         version: 11.2.0(@nestjs/common@11.1.6(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.6)(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)
+      '@scalar/nestjs-api-reference':
+        specifier: ^1.0.3
+        version: 1.0.3
       '@types/bcryptjs':
         specifier: ^2.4.6
         version: 2.4.6
@@ -1672,6 +1675,22 @@ packages:
     resolution: {integrity: sha512-ARz+Bs8kY6FtitYM96PqPEVvPXqEZmPZsSkXvyX19YzDqkCaIlhCieLLMI5hxO9SRZ2XtCtm8wxhy0iJ2jxNfw==}
     cpu: [x64]
     os: [win32]
+
+  '@scalar/core@0.3.18':
+    resolution: {integrity: sha512-STi6LiJTqOYwz4VhKi61SYhqOTT8TJ3M//XQyT3OwwfY0iBR/HNKUNnHsIWJdwaoGO4Ida5jj4L0JmpKtwQxTQ==}
+    engines: {node: '>=20'}
+
+  '@scalar/nestjs-api-reference@1.0.3':
+    resolution: {integrity: sha512-w77rCC8cL32YeU17uByRS8zhp97WHIyXxV/HJtrwQP8nK+dul76DCSBBDhy49gkO7wcCUS47E8CjNrkf6dv+Vw==}
+    engines: {node: '>=20'}
+
+  '@scalar/openapi-types@0.4.0':
+    resolution: {integrity: sha512-vdFLzz7vETw6kS3bxWUHCBeFtJOnr1bk/+FXKyxKkd6TbcyT6USXkoelI704IaBdoXyOgGX10FD1IVrs4FwUow==}
+    engines: {node: '>=20'}
+
+  '@scalar/types@0.3.0':
+    resolution: {integrity: sha512-RVL4waBX2jpshVBU8l1J8gsG+Ai9oRoTN1Zc1+yaO2WG/ZMXOBtq1noJWpUk2c2i16E1oxmRZC8/nPNFRbkxog==}
+    engines: {node: '>=20'}
 
   '@scarf/scarf@1.4.0':
     resolution: {integrity: sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==}
@@ -4092,6 +4111,11 @@ packages:
   nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
+    hasBin: true
+
+  nanoid@5.1.5:
+    resolution: {integrity: sha512-Ir/+ZpE9fDsNH0hQ3C68uyThDXzYcim2EqcZ8zn8Chtt1iylPT9xXJB0kPCnqzgcEGikO9RxSrh63MsmVCU7Fw==}
+    engines: {node: ^18 || >=20}
     hasBin: true
 
   napi-build-utils@2.0.0:
@@ -6807,6 +6831,25 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.52.2':
     optional: true
 
+  '@scalar/core@0.3.18':
+    dependencies:
+      '@scalar/types': 0.3.0
+
+  '@scalar/nestjs-api-reference@1.0.3':
+    dependencies:
+      '@scalar/core': 0.3.18
+
+  '@scalar/openapi-types@0.4.0':
+    dependencies:
+      zod: 4.1.11
+
+  '@scalar/types@0.3.0':
+    dependencies:
+      '@scalar/openapi-types': 0.4.0
+      nanoid: 5.1.5
+      type-fest: 4.41.0
+      zod: 4.1.11
+
   '@scarf/scarf@1.4.0': {}
 
   '@sinclair/typebox@0.34.41': {}
@@ -9496,6 +9539,8 @@ snapshots:
   mute-stream@2.0.0: {}
 
   nanoid@3.3.11: {}
+
+  nanoid@5.1.5: {}
 
   napi-build-utils@2.0.0: {}
 

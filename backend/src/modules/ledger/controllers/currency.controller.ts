@@ -31,7 +31,7 @@ import { ListCurrencyRequestDto } from '@modules/ledger/dto/currency/list-curren
 import { CurrencyService, PaginatedResult } from '@modules/ledger/services/currency.service';
 
 @ApiTags('currencies')
-@ApiSecurity('api-key')
+@ApiSecurity('basic')
 @UseGuards(ApiKeyOrJwtGuard)
 @Controller({ version: '1', path: 'currencies' })
 export class CurrencyController {

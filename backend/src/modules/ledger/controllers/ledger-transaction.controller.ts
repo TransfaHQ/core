@@ -35,7 +35,7 @@ import { RecordLedgerTransactionDto } from '@modules/ledger/dto/ledger-transacti
 import { LedgerTransactionService } from '@modules/ledger/services/ledger-transaction.service';
 
 @ApiTags('ledger-transactions')
-@ApiSecurity('api-key')
+@ApiSecurity('basic')
 @UseGuards(ApiKeyOrJwtGuard)
 @Controller({ version: '1', path: 'ledger_transactions' })
 export class LedgerTransactionController {

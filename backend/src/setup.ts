@@ -1,3 +1,5 @@
+import { apiReference } from '@scalar/nestjs-api-reference';
+
 import cookieParser from 'cookie-parser';
 import { Logger } from 'nestjs-pino';
 
@@ -26,18 +28,24 @@ export async function setupApp(app: INestApplication<NestExpressApplication>) {
     .setTitle('Core API')
     .setDescription('Financial ledger and accounting API')
     .setVersion('1.0')
-    .addApiKey(
+    .addBasicAuth(
       {
-        type: 'apiKey',
-        name: 'x-api-key',
-        in: 'header',
+        type: 'http',
+        scheme: 'basic',
+        description: 'Use API Key ID as username and API Secret as password',
       },
-      'api-key',
+      'basic',
     )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('apidocs', app, document);
+  app.use(
+    '/api-reference',
+    apiReference({
+      content: document,
+    }),
+  );
 
   const db = app.get(DatabaseService);
   await checkPostgresVersion(db.kysely);
