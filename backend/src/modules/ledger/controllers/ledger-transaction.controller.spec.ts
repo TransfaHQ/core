@@ -223,6 +223,7 @@ describe('LedgerTransactionController', () => {
           description: 'test',
           externalId: uuidV7(),
           metadata: { test: 'test' },
+          effectiveAt: '2025-01-10',
           ledgerEntries: [
             {
               sourceAccountId: eurDebitAccount.id,
@@ -252,6 +253,7 @@ describe('LedgerTransactionController', () => {
             expect(response.body.externalId).toBe(data.externalId);
             expect(response.body.description).toBe(data.description);
             expect(response.body.id).toBeDefined();
+            expect(response.body.effectiveAt).toBe('2025-01-10T00:00:00.000Z');
             entries = response.body.ledgerEntries;
           });
 
@@ -372,6 +374,7 @@ describe('LedgerTransactionController', () => {
           description: 'test',
           externalId: uuidV7(),
           metadata: { test: 'test' },
+          effectiveAt: '2025-10-08T20:53:21.239Z',
           ledgerEntries: [
             {
               destinationAccountId: eurCreditAccount.id,
@@ -399,6 +402,7 @@ describe('LedgerTransactionController', () => {
             expect(response.body.description).toBe(data.description);
             expect(response.body.id).toBeDefined();
             expect(response.headers['x-idempotency-replayed']).toBe('false');
+            expect(response.body.effectiveAt).toBe(data.effectiveAt);
           });
 
         const sourceTbAccount = await tigerBeetleService.retrieveAccount(
@@ -578,6 +582,7 @@ describe('LedgerTransactionController', () => {
           expect(transaction.externalId).toBeDefined();
           expect(transaction.description).toBeDefined();
           expect(transaction.metadata).toBeDefined();
+          expect(transaction.effectiveAt).toBeDefined();
           expect(Array.isArray(transaction.ledgerEntries)).toBe(true);
         });
     });

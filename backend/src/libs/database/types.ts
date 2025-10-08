@@ -123,7 +123,7 @@ export interface LedgerTransactions {
   createdAt: Generated<Timestamp>;
   deletedAt: Timestamp | null;
   description: string;
-  effectiveAt: Generated<Timestamp | null>;
+  effectiveAt: Generated<Timestamp>;
   externalId: string;
   id: Generated<string>;
   tigerBeetleId: Buffer;

@@ -16,7 +16,7 @@ import {
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { IsIsoDateOrDateTime } from '@libs/api/validators/is-date-or-datetime.validator';
+import { IsValidDateOrDateTime } from '@libs/api/validators/is-date-or-datetime.validator';
 import { IsMetadata } from '@libs/api/validators/is-metadata.validator';
 import { uuidV7 } from '@libs/utils/uuid';
 
@@ -99,6 +99,6 @@ export class RecordLedgerTransactionDto {
     required: false,
   })
   @IsOptional()
-  @IsIsoDateOrDateTime()
+  @IsValidDateOrDateTime()
   readonly effectiveAt?: string;
 }
