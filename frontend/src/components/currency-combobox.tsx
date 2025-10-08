@@ -35,7 +35,7 @@ export function CurrencyCombobox({
       params: {
         query: {
           limit: 20,
-          code: debouncedSearch || undefined,
+          code: debouncedSearch.trim() || undefined,
         },
       },
     },

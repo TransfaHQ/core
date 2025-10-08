@@ -39,7 +39,7 @@ export function AccountCombobox({
       params: {
         query: {
           limit: 20,
-          search: debouncedSearch || undefined,
+          search: debouncedSearch.trim() || undefined,
         },
       },
     },
