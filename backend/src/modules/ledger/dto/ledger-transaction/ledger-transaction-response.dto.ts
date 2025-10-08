@@ -122,4 +122,12 @@ export class LedgerTransactionResponseDto {
     },
   })
   metadata?: Record<string, string>;
+
+  @ApiProperty({
+    example: '2025-10-08T20:53:21.239Z',
+    description:
+      'Format: ISO8601 to 6 decimal places. Defaults to time of insertion in the DB if not provided',
+    required: false,
+  })
+  readonly effectiveAt: Date | null;
 }

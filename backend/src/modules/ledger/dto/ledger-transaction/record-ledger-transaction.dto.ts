@@ -16,6 +16,7 @@ import {
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+import { IsIsoDateOrDateTime } from '@libs/api/validators/is-date-or-datetime.validator';
 import { IsMetadata } from '@libs/api/validators/is-metadata.validator';
 import { uuidV7 } from '@libs/utils/uuid';
 
@@ -90,4 +91,14 @@ export class RecordLedgerTransactionDto {
   @IsObject()
   @IsMetadata({ message: 'metadata must have string keys/values max length 255' })
   metadata?: Record<string, string>;
+
+  @ApiProperty({
+    example: '2025-10-08T20:53:21.239Z',
+    description:
+      'Format: ISO8601 to 6 decimal places. Defaults to time of insertion in the DB if not provided',
+    required: false,
+  })
+  @IsOptional()
+  @IsIsoDateOrDateTime()
+  readonly effectiveAt?: string;
 }

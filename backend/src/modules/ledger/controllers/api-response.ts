@@ -65,6 +65,7 @@ export const ledgerTransactionToApiV1Resposne = (
     description: entity.description,
     externalId: entity.externalId,
     ledgerEntries: entity.ledgerEntries.map(ledgerEntryToApiV1Response),
+    effectiveAt: entity.effectiveAt,
     metadata: Object.fromEntries((entity.metadata ?? []).map((v) => [v.key, v.value])),
   };
 };
