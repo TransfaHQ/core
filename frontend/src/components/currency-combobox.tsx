@@ -1,6 +1,9 @@
+import { useState } from "react";
+import { keepPreviousData } from "@tanstack/react-query";
 import { SearchableCombobox } from "@/components/ui/searchable-combobox";
 import { $api } from "@/lib/api/client";
 import { formatCurrencyDisplay } from "@/lib/currency";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface CurrencyComboboxProps {
   value: string;
@@ -22,16 +25,22 @@ export function CurrencyCombobox({
   disabled = false,
   className,
 }: CurrencyComboboxProps) {
-  // Fetch currencies
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
   const { data: currenciesResponse, isLoading } = $api.useQuery(
     "get",
     "/v1/currencies",
     {
       params: {
         query: {
-          limit: 100,
+          limit: 20,
+          code: debouncedSearch || undefined,
         },
       },
+    },
+    {
+      placeholderData: keepPreviousData,
     }
   );
 
@@ -42,6 +51,7 @@ export function CurrencyCombobox({
       items={currencies}
       value={value}
       onValueChange={onValueChange}
+      onSearchChange={setSearchQuery}
       getItemValue={(currency) => currency.code}
       getItemLabel={(currency) =>
         formatCurrencyDisplay(currency.code, currency.name)

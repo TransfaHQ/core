@@ -20,6 +20,7 @@ interface SearchableComboboxProps<T> {
   items: T[];
   value: string;
   onValueChange: (value: string) => void;
+  onSearchChange: (search: string) => void;
   getItemValue: (item: T) => string;
   getItemLabel: (item: T) => string;
   placeholder?: string;
@@ -34,6 +35,7 @@ export function SearchableCombobox<T>({
   items,
   value,
   onValueChange,
+  onSearchChange,
   getItemValue,
   getItemLabel,
   placeholder = "Select item...",
@@ -48,10 +50,10 @@ export function SearchableCombobox<T>({
 
   const selectedItem = items.find((item) => getItemValue(item) === value);
 
-  // Filter items based on search query
-  const filteredItems = items.filter((item) =>
-    getItemLabel(item).toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleSearchChange = (search: string) => {
+    setSearchQuery(search);
+    onSearchChange(search);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -76,14 +78,14 @@ export function SearchableCombobox<T>({
           <CommandInput
             placeholder={searchPlaceholder}
             value={searchQuery}
-            onValueChange={setSearchQuery}
+            onValueChange={handleSearchChange}
           />
           <CommandList>
             <CommandEmpty>
               {isLoading ? "Loading..." : emptyMessage}
             </CommandEmpty>
             <CommandGroup>
-              {filteredItems.map((item) => {
+              {items.map((item) => {
                 const itemValue = getItemValue(item);
                 const isSelected = value === itemValue;
                 return (

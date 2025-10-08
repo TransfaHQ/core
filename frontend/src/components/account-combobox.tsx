@@ -1,5 +1,8 @@
+import { useState } from "react";
+import { keepPreviousData } from "@tanstack/react-query";
 import { SearchableCombobox } from "@/components/ui/searchable-combobox";
 import { $api } from "@/lib/api/client";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface AccountComboboxProps {
   value: string;
@@ -26,16 +29,22 @@ export function AccountCombobox({
   disabled = false,
   className,
 }: AccountComboboxProps) {
-  // Fetch accounts
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
   const { data: accountsResponse, isLoading } = $api.useQuery(
     "get",
     "/v1/ledger_accounts",
     {
       params: {
         query: {
-          limit: 1000,
+          limit: 20,
+          search: debouncedSearch || undefined,
         },
       },
+    },
+    {
+      placeholderData: keepPreviousData,
     }
   );
 
@@ -46,6 +55,7 @@ export function AccountCombobox({
       items={accounts}
       value={value}
       onValueChange={onValueChange}
+      onSearchChange={setSearchQuery}
       getItemValue={(account) => account.id}
       getItemLabel={(account) =>
         `${account.name} (${account.balances.availableBalance.currency})`
