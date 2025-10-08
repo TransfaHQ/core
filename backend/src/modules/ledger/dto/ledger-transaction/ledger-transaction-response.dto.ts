@@ -126,7 +126,6 @@ export class LedgerTransactionResponseDto {
   @ApiProperty({
     example: '2025-10-08T20:53:21.239Z',
     description: 'Format: ISO8601. Defaults to time of insertion in the DB if not provided',
-    required: false,
   })
   readonly effectiveAt: Date;
 }
