@@ -27,6 +27,27 @@ pnpm install
 
 ### Development
 
+Download and configure tigerbeetle
+
+```bash
+cd backend
+npm run tb:download
+npm run tb:configure:dev
+npm run tb:start:dev
+```
+
+Configure `.env`
+
+```bash
+cp .env.example .env
+```
+
+Migrate postgres db
+
+```bash
+npm run db:migrate
+```
+
 Start both frontend and backend in development mode:
 
 ```bash
@@ -80,6 +101,7 @@ This project uses Husky for git hooks:
 ## Tech Stack
 
 ### Frontend
+
 - React 19
 - TypeScript
 - Vite
@@ -88,6 +110,7 @@ This project uses Husky for git hooks:
 - React Query
 
 ### Backend
+
 - NestJS
 - TypeScript
 - TypeORM
