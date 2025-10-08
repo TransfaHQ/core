@@ -100,7 +100,6 @@ export function CurrencyCombobox({
       valueMapRef.current.set(item.value, item);
     }
   };
-  console.log(currencies);
   return (
     <SearchableCombobox
       items={currencies}
