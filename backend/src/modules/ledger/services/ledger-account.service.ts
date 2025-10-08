@@ -236,32 +236,8 @@ export class LedgerAccountService {
       const tbAccount = tbAccounts.find(
         (account) => account.id === bufferToTbId(entity.tigerBeetleId),
       );
-      const balances = tbAccount
-        ? this.parseAccountBalanceFromTBAccount(entity, tbAccount)
-        : {
-            pendingBalance: {
-              credits: 0,
-              debits: 0,
-              amount: 0,
-              currency: entity.currencyCode,
-              currencyExponent: entity.currencyExponent,
-            },
-            postedBalance: {
-              credits: 0,
-              debits: 0,
-              amount: 0,
-              currency: entity.currencyCode,
-              currencyExponent: entity.currencyExponent,
-            },
-            avalaibleBalance: {
-              credits: 0,
-              debits: 0,
-              amount: 0,
-              currency: entity.currencyCode,
-              currencyExponent: entity.currencyExponent,
-            },
-          };
 
+      const balances = this.parseAccountBalanceFromTBAccount(entity, tbAccount!);
       return {
         ...entity,
         balances,
@@ -440,7 +416,7 @@ export const computeBalancesAmount = (
       currency: account.currencyCode,
       currencyExponent: account.currencyExponent,
     },
-    avalaibleBalance: {
+    availableBalance: {
       credits: decimalPostedCredit,
       debits: decimalAvailableDebit,
       amount: decimalAvailableAmount,

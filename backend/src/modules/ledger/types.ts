@@ -25,7 +25,7 @@ export type Ledger = Selectable<Ledgers> & {
 export type LedgerAccountBalances = {
   pendingBalance: Balance;
   postedBalance: Balance;
-  avalaibleBalance: Balance;
+  availableBalance: Balance;
 };
 
 export type LedgerAccount = Selectable<LedgerAccounts> & {

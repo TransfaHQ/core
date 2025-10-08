@@ -1,21 +1,21 @@
-import { useState, useMemo, useCallback } from "react";
+import type { TableColumn } from "@/components/data-table";
+import { DataTable } from "@/components/data-table";
 import Layout from "@/components/layout";
 import { ListPageLayout } from "@/components/list-page-layout";
-import { DataTable } from "@/components/data-table";
-import type { TableColumn } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
-import { CreateAccountDialog } from "@/pages/account/dialogs/create";
-import { AccountEmptyState } from "@/pages/account/empty-state";
-import { AccountDetailsPanel } from "@/pages/account/components/account-details-panel";
-import {
-  AccountFilterBar,
-  type AccountFilters,
-} from "@/pages/account/components/account-filter-bar";
 import { Pagination, type PaginationInfo } from "@/components/ui/pagination";
 import { $api } from "@/lib/api/client";
 import type { components } from "@/lib/api/generated/api-types";
 import { formatBalance } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
+import { AccountDetailsPanel } from "@/pages/account/components/account-details-panel";
+import {
+  AccountFilterBar,
+  type AccountFilters,
+} from "@/pages/account/components/account-filter-bar";
+import { CreateAccountDialog } from "@/pages/account/dialogs/create";
+import { AccountEmptyState } from "@/pages/account/empty-state";
+import { useCallback, useMemo, useState } from "react";
 
 type LedgerAccountResponse = components["schemas"]["LedgerAccountResponseDto"];
 
@@ -127,7 +127,7 @@ export function AccountList() {
       header: "Currency",
       cell: (account) => (
         <Badge variant="outline">
-          {account.balances.avalaibleBalance.currency}
+          {account.balances.availableBalance.currency}
         </Badge>
       ),
     },
@@ -171,7 +171,7 @@ export function AccountList() {
       header: "Available Balance",
       cell: (account) => {
         const { amount, currency, currencyExponent } =
-          account.balances.avalaibleBalance;
+          account.balances.availableBalance;
         return (
           <div className="text-right font-mono">
             {formatBalance(amount, currency, currencyExponent)}

@@ -39,7 +39,7 @@ export class LedgerAccountBalancesDto {
   postedBalance: BalanceDto;
 
   @ApiProperty({ type: BalanceDto, description: 'Available balance' })
-  avalaibleBalance: BalanceDto;
+  availableBalance: BalanceDto;
 }
 
 export class LedgerAccountResponseDto {

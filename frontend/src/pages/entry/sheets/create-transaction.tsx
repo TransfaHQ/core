@@ -88,8 +88,8 @@ export function CreateTransactionSheet() {
     }
 
     // Check if different currencies
-    const sourceCurrency = sourceAccount.balances.avalaibleBalance.currency;
-    const destCurrency = destinationAccount.balances.avalaibleBalance.currency;
+    const sourceCurrency = sourceAccount.balances.availableBalance.currency;
+    const destCurrency = destinationAccount.balances.availableBalance.currency;
     if (sourceCurrency !== destCurrency) {
       return `Accounts must have the same currency (Source: ${sourceCurrency}, Destination: ${destCurrency})`;
     }

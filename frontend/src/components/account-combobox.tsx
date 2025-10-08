@@ -13,7 +13,7 @@ type LedgerAccount = {
   id: string;
   name: string;
   balances: {
-    avalaibleBalance: {
+    availableBalance: {
       currency: string;
     };
   };
@@ -48,7 +48,7 @@ export function AccountCombobox({
       onValueChange={onValueChange}
       getItemValue={(account) => account.id}
       getItemLabel={(account) =>
-        `${account.name} (${account.balances.avalaibleBalance.currency})`
+        `${account.name} (${account.balances.availableBalance.currency})`
       }
       placeholder={placeholder}
       searchPlaceholder="Search accounts..."
