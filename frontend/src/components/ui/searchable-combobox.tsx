@@ -1,14 +1,7 @@
 import { useState } from "react";
 import { ChevronsUpDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
@@ -16,12 +9,11 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-interface SearchableComboboxProps<T> {
-  items: T[];
-  value: string;
-  onValueChange: (value: string) => void;
-  getItemValue: (item: T) => string;
-  getItemLabel: (item: T) => string;
+interface SearchableComboboxProps {
+  items: { label: string; value: string }[];
+  selectedItem?: { label: string; value: string };
+  onValueChange: (item?: { label: string; value: string }) => void;
+  onSearchChange: (search: string) => void;
   placeholder?: string;
   searchPlaceholder?: string;
   emptyMessage?: string;
@@ -30,31 +22,53 @@ interface SearchableComboboxProps<T> {
   className?: string;
 }
 
-export function SearchableCombobox<T>({
+export function SearchableCombobox({
   items,
-  value,
+  selectedItem,
   onValueChange,
-  getItemValue,
-  getItemLabel,
+  onSearchChange,
   placeholder = "Select item...",
   searchPlaceholder = "Search...",
   emptyMessage = "No items found.",
   isLoading = false,
   disabled = false,
   className,
-}: SearchableComboboxProps<T>) {
+}: SearchableComboboxProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const selectedItem = items.find((item) => getItemValue(item) === value);
+  const handleSearchChange = (search: string) => {
+    setSearchQuery(search);
+    onSearchChange(search);
+  };
 
-  // Filter items based on search query
-  const filteredItems = items.filter((item) =>
-    getItemLabel(item).toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen) {
+      setSearchQuery("");
+      onSearchChange("");
+    }
+  };
+
+  const handleSelectChange = (currentValue: string) => {
+    if (currentValue === selectedItem?.value) {
+      onValueChange();
+      setOpen(false);
+      setSearchQuery("");
+      onSearchChange("");
+    } else {
+      const item = items.find((item) => item.value === currentValue);
+      onValueChange(item);
+      setOpen(false);
+      setSearchQuery("");
+      onSearchChange("");
+    }
+  };
+
+  console.log("items", items);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -63,52 +77,61 @@ export function SearchableCombobox<T>({
           className={cn("w-full justify-between", className)}
           disabled={disabled}
         >
-          {selectedItem ? (
-            <span className="truncate">{getItemLabel(selectedItem)}</span>
+          {selectedItem && selectedItem.value ? (
+            <span className="truncate">{selectedItem.label}</span>
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-        <Command>
-          <CommandInput
-            placeholder={searchPlaceholder}
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-          />
-          <CommandList>
-            <CommandEmpty>
-              {isLoading ? "Loading..." : emptyMessage}
-            </CommandEmpty>
-            <CommandGroup>
-              {filteredItems.map((item) => {
-                const itemValue = getItemValue(item);
-                const isSelected = value === itemValue;
-                return (
-                  <CommandItem
-                    key={itemValue}
-                    value={itemValue}
-                    onSelect={(currentValue) => {
-                      onValueChange(currentValue === value ? "" : currentValue);
-                      setOpen(false);
-                      setSearchQuery("");
-                    }}
-                  >
-                    <Check
+      <PopoverContent
+        className="w-[var(--radix-popover-trigger-width)] p-0"
+        align="start"
+      >
+        <div className="flex flex-col">
+          <div className="border-b p-3">
+            <Input
+              placeholder={searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="h-9"
+            />
+          </div>
+          <div className="max-h-[300px] overflow-y-auto">
+            {items.length === 0 ? (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                {isLoading ? "Loading..." : emptyMessage}
+              </div>
+            ) : (
+              <div className="p-1">
+                {items.map((item) => {
+                  const isSelected = selectedItem
+                    ? selectedItem.value === item.value
+                    : false;
+                  return (
+                    <div
+                      key={item.value}
                       className={cn(
-                        "mr-2 h-4 w-4",
-                        isSelected ? "opacity-100" : "opacity-0"
+                        "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
+                        isSelected && "bg-accent"
                       )}
-                    />
-                    <span className="truncate">{getItemLabel(item)}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+                      onClick={() => handleSelectChange(item.value)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          isSelected ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </PopoverContent>
     </Popover>
   );

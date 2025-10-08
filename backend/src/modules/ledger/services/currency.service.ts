@@ -75,14 +75,18 @@ export class CurrencyService {
   async paginate(
     page: number = 1,
     limit: number = 10,
-    codeFilter?: string,
+    searchFilter?: string,
   ): Promise<PaginatedResult<Currency>> {
     let query = this.db.kysely
       .selectFrom('currencies')
       .select(['id', 'code', 'exponent', 'name', 'createdAt', 'updatedAt']);
 
-    if (codeFilter) {
-      query = query.where('code', 'ilike', `%${codeFilter.toUpperCase()}%`);
+    if (searchFilter) {
+      const searchUpper = searchFilter.toUpperCase();
+      const searchPattern = `%${searchFilter}%`;
+      query = query.where((eb) =>
+        eb.or([eb('code', 'ilike', `%${searchUpper}%`), eb('name', 'ilike', searchPattern)]),
+      );
     }
 
     const [data, totalResult] = await Promise.all([
@@ -94,7 +98,13 @@ export class CurrencyService {
       this.db.kysely
         .selectFrom('currencies')
         .select(({ fn }) => [fn.count<number>('id').as('count')])
-        .$if(!!codeFilter, (qb) => qb.where('code', 'ilike', `%${codeFilter!.toUpperCase()}%`))
+        .$if(!!searchFilter, (qb) => {
+          const searchUpper = searchFilter!.toUpperCase();
+          const searchPattern = `%${searchFilter}%`;
+          return qb.where((eb) =>
+            eb.or([eb('code', 'ilike', `%${searchUpper}%`), eb('name', 'ilike', searchPattern)]),
+          );
+        })
         .executeTakeFirstOrThrow(),
     ]);
 
