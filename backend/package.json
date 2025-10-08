@@ -41,6 +41,7 @@
     "class-validator": "^0.14.2",
     "cookie-parser": "^1.4.7",
     "currency-codes": "^2.2.0",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.2.2",
     "kysely": "^0.28.7",
     "ms": "^2.1.3",

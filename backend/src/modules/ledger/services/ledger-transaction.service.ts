@@ -162,6 +162,7 @@ export class LedgerTransactionService {
           externalId: data.externalId as string,
           description: data.description,
           tigerBeetleId: tbIdToBuffer(ledgerTransferTbId),
+          effectiveAt: data.effectiveAt,
         })
         .returningAll()
         .executeTakeFirstOrThrow();
