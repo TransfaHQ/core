@@ -31,11 +31,11 @@ export class ListCurrencyRequestDto {
   limit?: number = 10;
 
   @ApiProperty({
-    description: 'Filter by currency code (partial match)',
+    description: 'Search currencies by code or name (partial match)',
     example: 'USD',
     required: false,
   })
   @IsOptional()
   @IsString()
-  code?: string;
+  search?: string;
 }

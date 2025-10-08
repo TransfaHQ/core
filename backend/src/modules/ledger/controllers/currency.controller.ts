@@ -105,10 +105,10 @@ export class CurrencyController {
     example: 10,
   })
   @ApiQuery({
-    name: 'code',
+    name: 'search',
     required: false,
     type: String,
-    description: 'Filter by currency code (partial match)',
+    description: 'Search currencies by code or name (partial match)',
     example: 'USD',
   })
   @ApiOkResponse({
@@ -148,7 +148,7 @@ export class CurrencyController {
     const response = await this.currencyService.paginate(
       queryParams.page,
       queryParams.limit,
-      queryParams.code,
+      queryParams.search,
     );
     return {
       ...response,

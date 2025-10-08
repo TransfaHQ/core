@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData } from "@tanstack/react-query";
 import { SearchableCombobox } from "@/components/ui/searchable-combobox";
 import { $api } from "@/lib/api/client";
@@ -15,8 +15,6 @@ interface CurrencyComboboxProps {
 
 type Item = { label: string; value: string };
 
-const valueMap = new Map<string, Item>();
-
 export function CurrencyCombobox({
   value,
   onValueChange,
@@ -27,12 +25,45 @@ export function CurrencyCombobox({
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 300);
   const [currentValue, setValue] = useState<Item | undefined>();
+  const valueMapRef = useRef(new Map<string, Item>());
+
+  // Fetch the selected currency to resolve its label
+  const { data: selectedCurrencyResponse } = $api.useQuery(
+    "get",
+    "/v1/currencies/{code}",
+    {
+      params: {
+        path: { code: value },
+      },
+    },
+    {
+      enabled: Boolean(value && !valueMapRef.current.get(value)),
+    }
+  );
 
   useEffect(() => {
-    if (value && valueMap.get(value)) {
-      setValue(valueMap.get(value));
+    if (!value) {
+      setValue(undefined);
+      return;
     }
-  }, [value]);
+
+    const cachedItem = valueMapRef.current.get(value);
+    if (cachedItem) {
+      setValue(cachedItem);
+      return;
+    }
+
+    // Use the fetched currency data to populate the label
+    if (selectedCurrencyResponse) {
+      const currency = selectedCurrencyResponse;
+      const item = {
+        label: formatCurrencyDisplay(currency.code, currency.name),
+        value: currency.code,
+      };
+      valueMapRef.current.set(value, item);
+      setValue(item);
+    }
+  }, [value, selectedCurrencyResponse]);
 
   const { data: currenciesResponse, isLoading } = $api.useQuery(
     "get",
@@ -41,7 +72,7 @@ export function CurrencyCombobox({
       params: {
         query: {
           limit: 20,
-          code: debouncedSearch.trim() || undefined,
+          search: debouncedSearch.trim() || undefined,
         },
       },
     },
@@ -50,21 +81,30 @@ export function CurrencyCombobox({
     }
   );
 
-  const handleValueChange = (item: Item) => {
-    setValue(item);
-    onValueChange(item.value);
-    valueMap.set(item.value, item);
-  };
-
-  const currencies = currenciesResponse?.data || [];
-
-  return (
-    <SearchableCombobox
-      items={currencies.map((currency) => ({
+  const currencies = useMemo(
+    () =>
+      (currenciesResponse?.data ?? []).map((currency) => ({
         label: formatCurrencyDisplay(currency.code, currency.name),
         value: currency.code,
-      }))}
-      value={currentValue}
+      })),
+    [currenciesResponse?.data]
+  );
+
+  const handleValueChange = (item?: Item) => {
+    if (!item) {
+      setValue({ value: "", label: "All currencies" });
+      onValueChange("");
+    } else {
+      setValue(item);
+      onValueChange(item.value);
+      valueMapRef.current.set(item.value, item);
+    }
+  };
+  console.log(currencies);
+  return (
+    <SearchableCombobox
+      items={currencies}
+      selectedItem={currentValue}
       onValueChange={handleValueChange}
       onSearchChange={setSearchQuery}
       placeholder={placeholder}

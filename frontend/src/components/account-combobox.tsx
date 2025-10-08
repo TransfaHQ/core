@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { keepPreviousData } from "@tanstack/react-query";
 import { SearchableCombobox } from "@/components/ui/searchable-combobox";
 import { $api } from "@/lib/api/client";
@@ -14,8 +14,6 @@ interface AccountComboboxProps {
 
 type Item = { label: string; value: string };
 
-const valueMap = new Map<string, Item>();
-
 export function AccountCombobox({
   value,
   onValueChange,
@@ -26,12 +24,45 @@ export function AccountCombobox({
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 300);
   const [currentValue, setValue] = useState<Item | undefined>();
+  const valueMapRef = useRef(new Map<string, Item>());
+
+  // Fetch the selected account to resolve its label
+  const { data: selectedAccountResponse } = $api.useQuery(
+    "get",
+    "/v1/ledger_accounts/{id}",
+    {
+      params: {
+        path: { id: value },
+      },
+    },
+    {
+      enabled: Boolean(value && !valueMapRef.current.get(value)),
+    }
+  );
 
   useEffect(() => {
-    if (value && valueMap.get(value)) {
-      setValue(valueMap.get(value));
+    if (!value) {
+      setValue(undefined);
+      return;
     }
-  }, [value]);
+
+    const cachedItem = valueMapRef.current.get(value);
+    if (cachedItem) {
+      setValue(cachedItem);
+      return;
+    }
+
+    // Use the fetched account data to populate the label
+    if (selectedAccountResponse) {
+      const account = selectedAccountResponse;
+      const item = {
+        label: `${account.name} (${account.balances.availableBalance.currency})`,
+        value: account.id,
+      };
+      valueMapRef.current.set(value, item);
+      setValue(item);
+    }
+  }, [value, selectedAccountResponse]);
 
   const { data: accountsResponse, isLoading } = $api.useQuery(
     "get",
@@ -49,10 +80,15 @@ export function AccountCombobox({
     }
   );
 
-  const handleValueChange = (item: Item) => {
-    setValue(item);
-    onValueChange(item.value);
-    valueMap.set(item.value, item);
+  const handleValueChange = (item?: Item) => {
+    if (!item) {
+      setValue({ value: "", label: "All currencies" });
+      onValueChange("");
+    } else {
+      setValue(item);
+      onValueChange(item.value);
+      valueMapRef.current.set(item.value, item);
+    }
   };
 
   const accounts = accountsResponse?.data || [];
@@ -63,7 +99,7 @@ export function AccountCombobox({
         label: `${account.name} (${account.balances.availableBalance.currency})`,
         value: account.id,
       }))}
-      value={currentValue}
+      selectedItem={currentValue}
       onValueChange={handleValueChange}
       onSearchChange={setSearchQuery}
       placeholder={placeholder}

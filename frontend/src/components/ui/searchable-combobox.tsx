@@ -1,14 +1,7 @@
 import { useState } from "react";
 import { ChevronsUpDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
@@ -18,8 +11,8 @@ import { cn } from "@/lib/utils";
 
 interface SearchableComboboxProps {
   items: { label: string; value: string }[];
-  value?: { label: string; value: string };
-  onValueChange: (item: { label: string; value: string }) => void;
+  selectedItem?: { label: string; value: string };
+  onValueChange: (item?: { label: string; value: string }) => void;
   onSearchChange: (search: string) => void;
   placeholder?: string;
   searchPlaceholder?: string;
@@ -31,7 +24,7 @@ interface SearchableComboboxProps {
 
 export function SearchableCombobox({
   items,
-  value,
+  selectedItem,
   onValueChange,
   onSearchChange,
   placeholder = "Select item...",
@@ -58,14 +51,21 @@ export function SearchableCombobox({
   };
 
   const handleSelectChange = (currentValue: string) => {
-    const selectedItem = items.find((item) => item.value === currentValue);
-    if (selectedItem) {
-      onValueChange(selectedItem);
+    if (currentValue === selectedItem?.value) {
+      onValueChange();
+      setOpen(false);
+      setSearchQuery("");
+      onSearchChange("");
+    } else {
+      const item = items.find((item) => item.value === currentValue);
+      onValueChange(item);
       setOpen(false);
       setSearchQuery("");
       onSearchChange("");
     }
   };
+
+  console.log("items", items);
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -77,8 +77,8 @@ export function SearchableCombobox({
           className={cn("w-full justify-between", className)}
           disabled={disabled}
         >
-          {value ? (
-            <span className="truncate">{value.label}</span>
+          {selectedItem && selectedItem.value ? (
+            <span className="truncate">{selectedItem.label}</span>
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
           )}
@@ -89,38 +89,49 @@ export function SearchableCombobox({
         className="w-[var(--radix-popover-trigger-width)] p-0"
         align="start"
       >
-        <Command>
-          <CommandInput
-            placeholder={searchPlaceholder}
-            value={searchQuery}
-            onValueChange={handleSearchChange}
-          />
-          <CommandList>
-            <CommandEmpty>
-              {isLoading ? "Loading..." : emptyMessage}
-            </CommandEmpty>
-            <CommandGroup>
-              {items.map((item) => {
-                const isSelected = value ? value.value === item.value : false;
-                return (
-                  <CommandItem
-                    key={item.value}
-                    value={item.value}
-                    onSelect={handleSelectChange}
-                  >
-                    <Check
+        <div className="flex flex-col">
+          <div className="border-b p-3">
+            <Input
+              placeholder={searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="h-9"
+            />
+          </div>
+          <div className="max-h-[300px] overflow-y-auto">
+            {items.length === 0 ? (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                {isLoading ? "Loading..." : emptyMessage}
+              </div>
+            ) : (
+              <div className="p-1">
+                {items.map((item) => {
+                  const isSelected = selectedItem
+                    ? selectedItem.value === item.value
+                    : false;
+                  return (
+                    <div
+                      key={item.value}
                       className={cn(
-                        "mr-2 h-4 w-4",
-                        isSelected ? "opacity-100" : "opacity-0"
+                        "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
+                        isSelected && "bg-accent"
                       )}
-                    />
-                    <span className="truncate">{item.label}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+                      onClick={() => handleSelectChange(item.value)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          isSelected ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </PopoverContent>
     </Popover>
   );
