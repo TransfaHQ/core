@@ -16,13 +16,11 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-interface SearchableComboboxProps<T> {
-  items: T[];
-  value: string;
-  onValueChange: (value: string) => void;
+interface SearchableComboboxProps {
+  items: { label: string; value: string }[];
+  value?: { label: string; value: string };
+  onValueChange: (item: { label: string; value: string }) => void;
   onSearchChange: (search: string) => void;
-  getItemValue: (item: T) => string;
-  getItemLabel: (item: T) => string;
   placeholder?: string;
   searchPlaceholder?: string;
   emptyMessage?: string;
@@ -31,24 +29,20 @@ interface SearchableComboboxProps<T> {
   className?: string;
 }
 
-export function SearchableCombobox<T>({
+export function SearchableCombobox({
   items,
   value,
   onValueChange,
   onSearchChange,
-  getItemValue,
-  getItemLabel,
   placeholder = "Select item...",
   searchPlaceholder = "Search...",
   emptyMessage = "No items found.",
   isLoading = false,
   disabled = false,
   className,
-}: SearchableComboboxProps<T>) {
+}: SearchableComboboxProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
-  const selectedItem = items.find((item) => getItemValue(item) === value);
 
   const handleSearchChange = (search: string) => {
     setSearchQuery(search);
@@ -58,6 +52,16 @@ export function SearchableCombobox<T>({
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     if (!newOpen) {
+      setSearchQuery("");
+      onSearchChange("");
+    }
+  };
+
+  const handleSelectChange = (currentValue: string) => {
+    const selectedItem = items.find((item) => item.value === currentValue);
+    if (selectedItem) {
+      onValueChange(selectedItem);
+      setOpen(false);
       setSearchQuery("");
       onSearchChange("");
     }
@@ -73,8 +77,8 @@ export function SearchableCombobox<T>({
           className={cn("w-full justify-between", className)}
           disabled={disabled}
         >
-          {selectedItem ? (
-            <span className="truncate">{getItemLabel(selectedItem)}</span>
+          {value ? (
+            <span className="truncate">{value.label}</span>
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
           )}
@@ -97,17 +101,12 @@ export function SearchableCombobox<T>({
             </CommandEmpty>
             <CommandGroup>
               {items.map((item) => {
-                const itemValue = getItemValue(item);
-                const isSelected = value === itemValue;
+                const isSelected = value ? value.value === item.value : false;
                 return (
                   <CommandItem
-                    key={itemValue}
-                    value={itemValue}
-                    onSelect={(currentValue) => {
-                      onValueChange(currentValue === value ? "" : currentValue);
-                      setOpen(false);
-                      setSearchQuery("");
-                    }}
+                    key={item.value}
+                    value={item.value}
+                    onSelect={handleSelectChange}
                   >
                     <Check
                       className={cn(
@@ -115,7 +114,7 @@ export function SearchableCombobox<T>({
                         isSelected ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    <span className="truncate">{getItemLabel(item)}</span>
+                    <span className="truncate">{item.label}</span>
                   </CommandItem>
                 );
               })}

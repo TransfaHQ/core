@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { keepPreviousData } from "@tanstack/react-query";
 import { SearchableCombobox } from "@/components/ui/searchable-combobox";
 import { $api } from "@/lib/api/client";
@@ -13,10 +13,9 @@ interface CurrencyComboboxProps {
   className?: string;
 }
 
-type Currency = {
-  code: string;
-  name: string;
-};
+type Item = { label: string; value: string };
+
+const valueMap = new Map<string, Item>();
 
 export function CurrencyCombobox({
   value,
@@ -27,6 +26,13 @@ export function CurrencyCombobox({
 }: CurrencyComboboxProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 300);
+  const [currentValue, setValue] = useState<Item | undefined>();
+
+  useEffect(() => {
+    if (value && valueMap.get(value)) {
+      setValue(valueMap.get(value));
+    }
+  }, [value]);
 
   const { data: currenciesResponse, isLoading } = $api.useQuery(
     "get",
@@ -44,18 +50,23 @@ export function CurrencyCombobox({
     }
   );
 
+  const handleValueChange = (item: Item) => {
+    setValue(item);
+    onValueChange(item.value);
+    valueMap.set(item.value, item);
+  };
+
   const currencies = currenciesResponse?.data || [];
 
   return (
-    <SearchableCombobox<Currency>
-      items={currencies}
-      value={value}
-      onValueChange={onValueChange}
+    <SearchableCombobox
+      items={currencies.map((currency) => ({
+        label: formatCurrencyDisplay(currency.code, currency.name),
+        value: currency.code,
+      }))}
+      value={currentValue}
+      onValueChange={handleValueChange}
       onSearchChange={setSearchQuery}
-      getItemValue={(currency) => currency.code}
-      getItemLabel={(currency) =>
-        formatCurrencyDisplay(currency.code, currency.name)
-      }
       placeholder={placeholder}
       searchPlaceholder="Search currencies..."
       emptyMessage="No currencies found."
