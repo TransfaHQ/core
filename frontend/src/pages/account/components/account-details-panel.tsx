@@ -1,17 +1,17 @@
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetDescription,
   SheetFooter,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { EditAccountDialog } from "@/pages/account/dialogs/edit";
 import { $api } from "@/lib/api/client";
 import { formatBalance } from "@/lib/currency";
 import { formatDateTime } from "@/lib/date";
+import { EditAccountDialog } from "@/pages/account/dialogs/edit";
 
 
 interface AccountDetailsPanelProps {
@@ -62,7 +62,7 @@ export function AccountDetailsPanel({
                 <span>{account.name}</span>
                 <div className="flex gap-2">
                   <Badge variant="outline">
-                    {account.balances.avalaibleBalance.currency}
+                    {account.balances.availableBalance.currency}
                   </Badge>
                   <Badge
                     variant={
@@ -119,9 +119,9 @@ export function AccountDetailsPanel({
                   </span>
                   <span className="font-mono font-semibold">
                     {formatBalance(
-                      account.balances.avalaibleBalance.amount,
-                      account.balances.avalaibleBalance.currency,
-                      account.balances.avalaibleBalance.currencyExponent
+                      account.balances.availableBalance.amount,
+                      account.balances.availableBalance.currency,
+                      account.balances.availableBalance.currencyExponent
                     )}
                   </span>
                 </div>

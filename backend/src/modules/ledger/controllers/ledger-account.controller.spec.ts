@@ -76,7 +76,7 @@ describe('LedgerAccountController', () => {
             currencyExponent: currency.exponent,
           });
 
-          expect(response.body.balances.avalaibleBalance).toMatchObject({
+          expect(response.body.balances.availableBalance).toMatchObject({
             credits: 0,
             debits: 0,
             amount: 0,
@@ -152,7 +152,7 @@ describe('LedgerAccountController', () => {
             currencyExponent: currency.exponent,
           });
 
-          expect(response.body.balances.avalaibleBalance).toMatchObject({
+          expect(response.body.balances.availableBalance).toMatchObject({
             credits: 0,
             debits: 0,
             amount: 0,

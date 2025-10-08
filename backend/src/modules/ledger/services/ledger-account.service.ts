@@ -236,32 +236,8 @@ export class LedgerAccountService {
       const tbAccount = tbAccounts.find(
         (account) => account.id === bufferToTbId(entity.tigerBeetleId),
       );
-      const balances = tbAccount
-        ? this.parseAccountBalanceFromTBAccount(entity, tbAccount)
-        : {
-            pendingBalance: {
-              credits: 0,
-              debits: 0,
-              amount: 0,
-              currency: entity.currencyCode,
-              currencyExponent: entity.currencyExponent,
-            },
-            postedBalance: {
-              credits: 0,
-              debits: 0,
-              amount: 0,
-              currency: entity.currencyCode,
-              currencyExponent: entity.currencyExponent,
-            },
-            avalaibleBalance: {
-              credits: 0,
-              debits: 0,
-              amount: 0,
-              currency: entity.currencyCode,
-              currencyExponent: entity.currencyExponent,
-            },
-          };
 
+      const balances = this.parseAccountBalanceFromTBAccount(entity, tbAccount!);
       return {
         ...entity,
         balances,
@@ -356,28 +332,12 @@ export class LedgerAccountService {
     entity: Selectable<LedgerAccounts>,
     tbAccount: TigerBeetleAccount,
   ): LedgerAccountBalances {
-    /**
-     * Summed amounts of all posted and pending ledger entries with debit direction.
-     */
-    const pendingDebit = BigNumber(tbAccount.debits_posted)
-      .plus(tbAccount.debits_pending)
-      .toNumber();
+    const pendingDebit = BigNumber(tbAccount.debits_pending).toNumber();
 
-    /**
-     * 	Summed amounts of all posted and pending ledger entries with credit direction.
-     */
-    const pendingCredit = BigNumber(tbAccount.credits_pending)
-      .plus(tbAccount.credits_posted)
-      .toNumber();
+    const pendingCredit = BigNumber(tbAccount.credits_pending).toNumber();
 
-    /**
-     * Sum amounts of all posted ledger entries with debit direction.
-     */
     const postedDebit = BigNumber(tbAccount.debits_posted).toNumber();
 
-    /**
-     * 	Sum amounts of all posted ledger entries with credit direction.
-     */
     const postedCredit = BigNumber(tbAccount.credits_posted).toNumber();
 
     return computeBalancesAmount(entity, {
@@ -400,37 +360,34 @@ export const computeBalancesAmount = (
 ): LedgerAccountBalances => {
   const { pendingCredit, pendingDebit, postedCredit, postedDebit } = balances;
 
-  /**
-   * Credit Normal: pending_balance["credits"] - pending_balance["debits"]
-   * Debit Normal: pending_balance["debits"] - pending_balance["credits"]
-   */
   let pendingAmount = 0;
-
-  /**
-   * Credit Normal: posted_balance["credits"] - posted_balance["debits"]
-   * Debit Normal: posted_balance["debits"] - posted_balance["credits"]
-   */
 
   let postedAmount = 0;
 
-  /**
-   * Credit Normal: posted_balance["credits"] - pending_balance["debits"]
-   * Debit Normal: posted_balance["debits"] - pending_balance["credits"]
-   */
   let availableAmount = 0;
+
+  /** Debit available is sum of pending + post on the account */
+  const availableDebit = BigNumber(postedDebit).plus(pendingDebit).toNumber();
 
   if (account.normalBalance === NormalBalanceEnum.CREDIT) {
     pendingAmount = BigNumber(pendingCredit).minus(pendingDebit).toNumber();
 
     postedAmount = BigNumber(postedCredit).minus(postedDebit).toNumber();
-
-    availableAmount = BigNumber(postedCredit).minus(pendingDebit).toNumber();
+    /**
+     * available amount is posted credit minus available debit
+     */
+    availableAmount = BigNumber(postedCredit).minus(availableDebit).toNumber();
   } else {
     pendingAmount = BigNumber(pendingDebit).minus(pendingCredit).toNumber();
 
     postedAmount = BigNumber(postedDebit).minus(postedCredit).toNumber();
 
-    availableAmount = BigNumber(postedDebit).minus(pendingCredit).toNumber();
+    /**
+     * the available amount is posted debit minus sum of posted credit + pending credit
+     */
+    availableAmount = BigNumber(postedDebit)
+      .minus(BigNumber(postedCredit).plus(pendingCredit))
+      .toNumber();
   }
 
   // Convert from smallest units to decimals
@@ -442,6 +399,7 @@ export const computeBalancesAmount = (
   const decimalPendingAmount = pendingAmount / divisor;
   const decimalPostedAmount = postedAmount / divisor;
   const decimalAvailableAmount = availableAmount / divisor;
+  const decimalAvailableDebit = availableDebit / divisor;
 
   return {
     pendingBalance: {
@@ -458,9 +416,9 @@ export const computeBalancesAmount = (
       currency: account.currencyCode,
       currencyExponent: account.currencyExponent,
     },
-    avalaibleBalance: {
+    availableBalance: {
       credits: decimalPostedCredit,
-      debits: decimalPendingDebit,
+      debits: decimalAvailableDebit,
       amount: decimalAvailableAmount,
       currency: account.currencyCode,
       currencyExponent: account.currencyExponent,
