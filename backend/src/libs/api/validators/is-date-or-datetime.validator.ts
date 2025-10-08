@@ -2,7 +2,7 @@ import { ValidationArguments, ValidationOptions, registerDecorator } from 'class
 import { isValid, parseISO } from 'date-fns';
 
 export function IsValidDateOrDateTime(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isValidDateOrDateTime',
       target: object.constructor,
