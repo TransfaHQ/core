@@ -94,8 +94,7 @@ export class RecordLedgerTransactionDto {
 
   @ApiProperty({
     example: '2025-10-08T20:53:21.239Z',
-    description:
-      'Format: ISO8601 to 6 decimal places. Defaults to time of insertion in the DB if not provided',
+    description: 'Format: ISO8601. Defaults to time of insertion in the DB if not provided',
     required: false,
   })
   @IsOptional()

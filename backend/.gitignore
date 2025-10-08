@@ -149,3 +149,4 @@ apidocs/*.json
 apidocs/*.bru
 
 client/
+package-lock.json
