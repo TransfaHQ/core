@@ -11,6 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import {
+  ApiAcceptedResponse,
   ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiHeader,
@@ -26,12 +27,16 @@ import {
 
 import { IdempotencyInterceptor } from '@libs/api/interceptors/idempotency.interceptor';
 import { CursorPaginatedResult } from '@libs/database';
+import { LedgerTransactionStatusEnum } from '@libs/enums';
 
 import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
 import { ledgerTransactionToApiV1Resposne } from '@modules/ledger/controllers/api-response';
 import { LedgerTransactionResponseDto } from '@modules/ledger/dto/ledger-transaction/ledger-transaction-response.dto';
 import { ListLedgerTransactionRequestDto } from '@modules/ledger/dto/ledger-transaction/list-ledger-transaction-request.dto';
-import { RecordLedgerTransactionDto } from '@modules/ledger/dto/ledger-transaction/record-ledger-transaction.dto';
+import {
+  PostOrArchiveLedgerTransactionDto,
+  RecordLedgerTransactionDto,
+} from '@modules/ledger/dto/ledger-transaction/record-ledger-transaction.dto';
 import { LedgerTransactionService } from '@modules/ledger/services/ledger-transaction.service';
 
 @ApiTags('ledger-transactions')
@@ -182,5 +187,73 @@ export class LedgerTransactionController {
       },
     });
     return { ...response, data: response.data.map(ledgerTransactionToApiV1Resposne) };
+  }
+
+  @Post(':id/post')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({
+    name: 'idempotency-key',
+    required: true,
+    description: 'Unique key to prevent duplicate transactions',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
+  @ApiOperation({
+    summary: 'Post a pending transaction',
+    description: 'Post a pending transaction',
+  })
+  @ApiAcceptedResponse({
+    description: 'The ledger transaction has been successfully posted',
+    type: LedgerTransactionResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  @ApiUnauthorizedResponse({ description: 'Invalid or missing API key' })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the ledger transaction',
+    example: 'a7f68f16-9834-4a6e-9a7d-5e9f4fc1d1a2',
+  })
+  async postPendingTransaction(
+    @Param() params: PostOrArchiveLedgerTransactionDto,
+  ): Promise<LedgerTransactionResponseDto> {
+    const response = await this.ledgerService.postOrArchiveTransaction(
+      params.id,
+      LedgerTransactionStatusEnum.POSTED,
+    );
+    return ledgerTransactionToApiV1Resposne(response);
+  }
+
+  @Post(':id/archive')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({
+    name: 'idempotency-key',
+    required: true,
+    description: 'Unique key to prevent duplicate transactions',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
+  @ApiOperation({
+    summary: 'Archive a pending transaction',
+    description: 'Archive a pending transaction',
+  })
+  @ApiAcceptedResponse({
+    description: 'The ledger transaction has been successfully archived',
+    type: LedgerTransactionResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  @ApiUnauthorizedResponse({ description: 'Invalid or missing API key' })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the ledger transaction',
+    example: 'a7f68f16-9834-4a6e-9a7d-5e9f4fc1d1a2',
+  })
+  async archivePendingTransaction(
+    @Param() params: PostOrArchiveLedgerTransactionDto,
+  ): Promise<LedgerTransactionResponseDto> {
+    const response = await this.ledgerService.postOrArchiveTransaction(
+      params.id,
+      LedgerTransactionStatusEnum.ARCHIVED,
+    );
+    return ledgerTransactionToApiV1Resposne(response);
   }
 }

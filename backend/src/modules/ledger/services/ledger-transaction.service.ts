@@ -1,5 +1,7 @@
 import { BigNumber } from 'bignumber.js';
-import { Transfer, TransferFlags, id } from 'tigerbeetle-node';
+import { Selectable } from 'kysely';
+import { PinoLogger } from 'nestjs-pino';
+import { Transfer, TransferFlags, amount_max, id } from 'tigerbeetle-node';
 import { validate } from 'uuid';
 
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
@@ -21,6 +23,7 @@ export class LedgerTransactionService {
     private readonly db: DatabaseService,
     private readonly tigerBeetleService: TigerBeetleService,
     private readonly ledgerAccountService: LedgerAccountService,
+    private readonly logger: PinoLogger,
   ) {}
 
   async record(data: RecordLedgerTransactionDto): Promise<LedgerTransaction> {
@@ -277,7 +280,7 @@ export class LedgerTransactionService {
           currencyCode: entry.currencyCode,
           currencyExponent: entry.currencyExponent,
           name: entry.accountName,
-        } as any,
+        } as Selectable<LedgerAccount>,
         ledgerId: entry.ledgerId,
         ledgerTransactionId: transaction.id,
         tigerBeetleId: entry.tigerBeetleId,
@@ -421,5 +424,123 @@ export class LedgerTransactionService {
       ...paginatedResult,
       data,
     };
+  }
+
+  /**
+   * Posts or archives a pending ledger transaction in TigerBeetle and updates its status in the database.
+   *
+   * ## 🧩 TigerBeetle Two-Phase Commit
+   * This function implements TigerBeetle's **two-phase commit**:
+   * 1. First, a transfer is created with a `pending` flag (`debit_pending`/`credit_pending`) — this reserves the funds.
+   * 2. Then, this function either:
+   *    - Posts the pending transfer using `post_pending_transfer`
+   *    - Or voids it using `void_pending_transfer`
+   *
+   * This is done by referencing the original `pending_id` (from the pending transfer).
+   *
+   * ## 💰 Why `amount_max` Is Used for Posting
+   * - TigerBeetle allows using a magic constant `amount_max` to indicate:
+   *   > "Use the full pending amount from the original transfer"
+   * - This avoids having to duplicate the amount exactly in the posting phase.
+   * - For archival (voiding), the amount is set to `0n`, meaning "cancel the pending transfer."
+   *
+   * ## 🔗 Purpose of `linked` Flags
+   * - TigerBeetle allows linking multiple transfers as a batch using the `linked` flag.
+   * - This ensures that **either all transfers succeed together or all fail**, enabling atomic multi-entry transactions.
+   * - The `linked` flag is set on **all but the last transfer**.
+   * - The **last transfer clears `linked`** to signal "this is the end of the batch."
+   *
+   * @param ledgerTransactionId - The UUID of the transaction to post or archive
+   * @param status - The new status to apply (`POSTED` or `ARCHIVED`)
+   * @returns The updated `LedgerTransaction` after status change
+   *
+   * @throws {NotFoundException} If the transaction doesn't exist or isn't pending
+   * @throws {Error} If TigerBeetle transfer creation fails
+   */
+  async postOrArchiveTransaction(
+    ledgerTransactionId: string,
+    status: LedgerTransactionStatusEnum,
+  ): Promise<LedgerTransaction> {
+    await this.db.transaction(async (trx) => {
+      const ledgerTransaction = await trx
+        .selectFrom('ledgerTransactions')
+        .select(['id', 'status', 'tigerBeetleId'])
+        .where(({ eb, and }) =>
+          and([
+            eb('id', '=', ledgerTransactionId),
+            eb('status', '=', LedgerTransactionStatusEnum.PENDING),
+          ]),
+        )
+        .forUpdate() // lock transaction and make sure there is no update happening at the same time
+        .executeTakeFirstOrThrow();
+
+      const ledgerEntries = await trx
+        .selectFrom('ledgerEntries')
+        .select(['id', 'tigerBeetleId', 'ledgerId'])
+        .where('ledgerTransactionId', '=', ledgerTransactionId)
+        .execute();
+
+      this.logger.info(
+        `${status} transaction ${ledgerTransactionId} with ${ledgerEntries.length} entries`,
+      );
+
+      const ledgers = await trx
+        .selectFrom('ledgers')
+        .select(['id', 'tigerBeetleId'])
+        .where('id', 'in', Array.from(new Set(ledgerEntries.map((v) => v.ledgerId))))
+        .execute();
+
+      // amount_max is a helper from tigerbeetle package that helps to post the full amount
+      const transferAmount = status === LedgerTransactionStatusEnum.ARCHIVED ? 0n : amount_max;
+      // We need to post or archive here
+      const tbTransfersData: Transfer[] = [];
+      const tbTransferIds = new Set();
+
+      for (const entry of ledgerEntries) {
+        const tbTransferId = bufferToTbId(entry.tigerBeetleId);
+        // Each tb transfer has 2 entries on on our end. Here we are selecting all of them.
+        // We just want to post only one time. A way to do it, might filtering on tigerbeetleId directly
+        if (tbTransferIds.has(tbTransferId)) continue;
+
+        const data: Transfer = {
+          id: id(),
+          credit_account_id: 0n, // we don't need to set the account id if we set the pending_id already
+          debit_account_id: 0n, // we don't need to set the account id if we set the pending_id already
+          amount: transferAmount,
+          user_data_128: bufferToTbId(ledgerTransaction.tigerBeetleId),
+          user_data_64: 0n,
+          user_data_32: 0,
+          ledger: ledgers.find((v) => v.id === entry.ledgerId)!.tigerBeetleId, // ledgers will always has value. So it is safe here
+          code: 1,
+          flags:
+            status === LedgerTransactionStatusEnum.POSTED
+              ? TransferFlags.linked | TransferFlags.post_pending_transfer
+              : TransferFlags.void_pending_transfer | TransferFlags.linked,
+          pending_id: tbTransferId,
+          timeout: 0,
+          timestamp: 0n,
+        };
+
+        tbTransfersData.push(data);
+        tbTransferIds.add(tbTransferId);
+      }
+
+      // Remove linked flag from the latest transfer.
+      // No check here because for a transaction, there will be always at least two entries then this list won't be empty
+      tbTransfersData[tbTransfersData.length - 1].flags =
+        status === LedgerTransactionStatusEnum.POSTED
+          ? TransferFlags.post_pending_transfer
+          : TransferFlags.void_pending_transfer;
+
+      await this.tigerBeetleService.createTransfers(tbTransfersData);
+
+      await trx
+        .updateTable('ledgerTransactions')
+        .set({ status })
+        .where('id', '=', ledgerTransactionId)
+        .execute();
+    });
+
+    return this.retrieve(ledgerTransactionId);
   }
 }

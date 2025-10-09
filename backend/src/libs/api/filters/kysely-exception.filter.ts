@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { NoResultError } from 'kysely';
 import { DatabaseError } from 'pg';
 
 import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Logger } from '@nestjs/common';
@@ -74,6 +75,36 @@ export class KyselyExceptionFilter implements ExceptionFilter {
       statusCode: status,
       message: detail,
       error: status < 500 ? message : undefined,
+    });
+  }
+}
+
+@Catch(NoResultError)
+export class KyselyNoResultErrorExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(KyselyNoResultErrorExceptionFilter.name);
+
+  catch(exception: NoResultError, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+    let message = 'Resource not found';
+    try {
+      const tableName = (exception.node as any)?.from?.froms?.[0]?.table?.identifier?.name;
+      if (tableName) {
+        message = `${tableName} resource not found`;
+      }
+    } catch (err) {
+      this.logger.debug(`Failed to extract table name from NoResultError: ${err}`);
+    }
+
+    this.logger.error(`Database Error: ${JSON.stringify(exception.node)}`, exception.stack);
+
+    // Default error response
+    const status = HttpStatus.NOT_FOUND;
+
+    response.status(status).json({
+      statusCode: status,
+      message,
+      error: message,
     });
   }
 }

@@ -5,7 +5,10 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
 
-import { KyselyExceptionFilter } from '@libs/api/filters/kysely-exception.filter';
+import {
+  KyselyExceptionFilter,
+  KyselyNoResultErrorExceptionFilter,
+} from '@libs/api/filters/kysely-exception.filter';
 import { ConfigService } from '@libs/config/config.service';
 
 import { AuthModule } from '@modules/auth/auth.module';
@@ -19,6 +22,10 @@ const filters = [
   {
     provide: APP_FILTER,
     useClass: KyselyExceptionFilter,
+  },
+  {
+    provide: APP_FILTER,
+    useClass: KyselyNoResultErrorExceptionFilter,
   },
 ];
 
