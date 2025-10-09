@@ -771,4 +771,198 @@ describe('LedgerTransactionController', () => {
       }
     });
   });
+
+  describe('POST /v1/ledger_transactions/:id/post', () => {
+    const endpoint = '/v1/ledger_transactions';
+    let transactionId: string;
+    let externalId: string;
+
+    beforeEach(async () => {
+      externalId = uuidV7();
+      const data = {
+        description: 'test retrieve transaction',
+        externalId,
+        metadata: { test: 'retrieve' },
+        status: 'pending',
+        ledgerEntries: [
+          {
+            sourceAccountId: eurDebitAccount.id,
+            destinationAccountId: eurCreditAccount.id,
+            amount: 50,
+          },
+        ],
+      };
+
+      const response = await request(ctx.app.getHttpServer())
+        .post(endpoint)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send(data);
+
+      transactionId = response.body.id;
+    });
+
+    it('should return 401 when auth is not provided', async () => {
+      return request(ctx.app.getHttpServer())
+        .post(`${endpoint}/${transactionId}/post`)
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('should post transaction', async () => {
+      const idempotencyKey = uuidV7();
+      // fetch account and its balances
+      const eurDebitAccountResponse = await request(ctx.app.getHttpServer())
+        .get(`/v1/ledger_accounts/${eurDebitAccount.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret));
+
+      const eurCreditAccountResponse = await request(ctx.app.getHttpServer())
+        .get(`/v1/ledger_accounts/${eurCreditAccount.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret));
+
+      await request(ctx.app.getHttpServer())
+        .post(`${endpoint}/${transactionId}/post`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+        .expect(HttpStatus.ACCEPTED)
+        .expect(async (response) => {
+          expect(response.headers['x-idempotency-replayed']).toBe('false');
+
+          expect(response.body.id).toBe(transactionId);
+          expect(response.body.externalId).toBe(externalId);
+          expect(response.body.status).toBe(LedgerTransactionStatusEnum.POSTED);
+        });
+
+      // fetch account and its balances
+      const eurDebitAccountResponse2 = await request(ctx.app.getHttpServer())
+        .get(`/v1/ledger_accounts/${eurDebitAccount.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret));
+
+      const eurCreditAccountResponse2 = await request(ctx.app.getHttpServer())
+        .get(`/v1/ledger_accounts/${eurCreditAccount.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret));
+
+      expect(eurCreditAccountResponse2.body.balances.availableBalance.amount).toBe(
+        eurCreditAccountResponse.body.balances.availableBalance.amount + 50,
+      );
+
+      expect(eurDebitAccountResponse2.body.balances.availableBalance.amount).toBe(
+        eurDebitAccountResponse.body.balances.availableBalance.amount + 50,
+      );
+
+      // reply won't work
+      await request(ctx.app.getHttpServer())
+        .post(`${endpoint}/${transactionId}/post`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+        .expect(HttpStatus.ACCEPTED)
+        .expect(async (response) => {
+          expect(response.headers['x-idempotency-replayed']).toBe('true');
+          expect(response.body.id).toBe(transactionId);
+          expect(response.body.externalId).toBe(externalId);
+          expect(response.body.status).toBe(LedgerTransactionStatusEnum.POSTED);
+        });
+    });
+
+    it('should return 404 when transaction not found', async () => {
+      const nonExistentId = uuidV7();
+      await request(ctx.app.getHttpServer())
+        .get(`${endpoint}/${nonExistentId}/post`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .expect(HttpStatus.NOT_FOUND);
+    });
+  });
+
+  describe('POST /v1/ledger_transactions/:id/archive', () => {
+    const endpoint = '/v1/ledger_transactions';
+    let transactionId: string;
+    let externalId: string;
+
+    beforeEach(async () => {
+      externalId = uuidV7();
+      const data = {
+        description: 'test retrieve transaction',
+        externalId,
+        metadata: { test: 'retrieve' },
+        status: 'pending',
+        ledgerEntries: [
+          {
+            sourceAccountId: eurDebitAccount.id,
+            destinationAccountId: eurCreditAccount.id,
+            amount: 50,
+          },
+        ],
+      };
+
+      const response = await request(ctx.app.getHttpServer())
+        .post(endpoint)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send(data);
+
+      transactionId = response.body.id;
+    });
+
+    it('should return 401 when auth is not provided', async () => {
+      return request(ctx.app.getHttpServer())
+        .post(`${endpoint}/${transactionId}/archive`)
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('should archive transaction', async () => {
+      const idempotencyKey = uuidV7();
+      // fetch account and its balances
+      const eurDebitAccountResponse = await request(ctx.app.getHttpServer())
+        .get(`/v1/ledger_accounts/${eurDebitAccount.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret));
+
+      const eurCreditAccountResponse = await request(ctx.app.getHttpServer())
+        .get(`/v1/ledger_accounts/${eurCreditAccount.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret));
+
+      await request(ctx.app.getHttpServer())
+        .post(`${endpoint}/${transactionId}/archive`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+        .expect(HttpStatus.ACCEPTED)
+        .expect(async (response) => {
+          expect(response.headers['x-idempotency-replayed']).toBe('false');
+
+          expect(response.body.id).toBe(transactionId);
+          expect(response.body.externalId).toBe(externalId);
+          expect(response.body.status).toBe(LedgerTransactionStatusEnum.ARCHIVED);
+        });
+
+      // fetch account and its balances
+      const eurDebitAccountResponse2 = await request(ctx.app.getHttpServer())
+        .get(`/v1/ledger_accounts/${eurDebitAccount.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret));
+
+      const eurCreditAccountResponse2 = await request(ctx.app.getHttpServer())
+        .get(`/v1/ledger_accounts/${eurCreditAccount.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret));
+
+      expect(eurCreditAccountResponse2.body.balances.availableBalance.amount).toBe(
+        eurCreditAccountResponse.body.balances.availableBalance.amount,
+      );
+
+      expect(eurDebitAccountResponse2.body.balances.availableBalance.amount).toBe(
+        eurDebitAccountResponse.body.balances.availableBalance.amount,
+      );
+
+      // reply won't work
+      await request(ctx.app.getHttpServer())
+        .post(`${endpoint}/${transactionId}/archive`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+        .expect(HttpStatus.ACCEPTED)
+        .expect(async (response) => {
+          expect(response.headers['x-idempotency-replayed']).toBe('true');
+          expect(response.body.id).toBe(transactionId);
+          expect(response.body.externalId).toBe(externalId);
+          expect(response.body.status).toBe(LedgerTransactionStatusEnum.ARCHIVED);
+        });
+    });
+
+    it('should return 404 when transaction not found', async () => {
+      const nonExistentId = uuidV7();
+      await request(ctx.app.getHttpServer())
+        .get(`${endpoint}/${nonExistentId}/archive`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .expect(HttpStatus.NOT_FOUND);
+    });
+  });
 });

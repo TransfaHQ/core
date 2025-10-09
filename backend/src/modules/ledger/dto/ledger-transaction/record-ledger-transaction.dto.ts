@@ -26,10 +26,6 @@ const allowLedgerTransactionOnRecord = [
   LedgerTransactionStatusEnum.PENDING,
   LedgerTransactionStatusEnum.POSTED,
 ];
-const allowLedgerTransactionOnPostOrArchive = [
-  LedgerTransactionStatusEnum.ARCHIVED,
-  LedgerTransactionStatusEnum.POSTED,
-];
 
 export class RecordLedgerEntryDto {
   @ApiProperty({
@@ -122,14 +118,6 @@ export class RecordLedgerTransactionDto {
 }
 
 export class PostOrArchiveLedgerTransactionDto {
-  @ApiProperty({
-    enum: allowLedgerTransactionOnPostOrArchive,
-    description: 'Transaction status must be either archived or posted',
-    example: LedgerTransactionStatusEnum.POSTED,
-  })
-  @IsIn(allowLedgerTransactionOnPostOrArchive)
-  status: LedgerTransactionStatusEnum;
-
   @ApiProperty({
     description: 'Unique identifier of the ledger transaction',
     example: 'a7f68f16-9834-4a6e-9a7d-5e9f4fc1d1a2',

@@ -49,7 +49,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
           .insertInto('idempotencyKeys')
           .values({
             externalId: idempotencyKey,
-            requestPayload: request.body,
+            requestPayload: request.body ?? {},
             responsePayload: response,
             statusCode,
             endpoint,
@@ -65,7 +65,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
             .insertInto('idempotencyKeys')
             .values({
               externalId: idempotencyKey,
-              requestPayload: request.body,
+              requestPayload: request.body ?? {},
               responsePayload: err.response,
               statusCode,
               endpoint,

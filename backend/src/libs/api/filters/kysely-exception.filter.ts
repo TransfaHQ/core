@@ -92,8 +92,8 @@ export class KyselyNoResultErrorExceptionFilter implements ExceptionFilter {
       if (tableName) {
         message = `${tableName} resource not found`;
       }
-    } catch {
-      // pass
+    } catch (err) {
+      this.logger.debug(`Failed to extract table name from NoResultError: ${err}`);
     }
 
     this.logger.error(`Database Error: ${JSON.stringify(exception.node)}`, exception.stack);
