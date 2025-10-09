@@ -12,6 +12,7 @@ export class AddStatusToLedgerTransactionTable1759966819821 implements Migration
         CREATE INDEX idx_ledger_transactions_status ON ledger_transactions(status);
     `);
 
+    // Until now, only posted transactions has been done so it is safe to make this update
     await queryRunner.query(`UPDATE ledger_transactions SET status = 'posted';`);
   }
 

@@ -4,7 +4,7 @@ export enum NormalBalanceEnum {
 }
 
 export enum LedgerTransactionStatusEnum {
-  posted = 'posted',
-  archvied = 'archived',
-  pending = 'pending',
+  POSTED = 'posted',
+  ARCHIVED = 'archived',
+  PENDING = 'pending',
 }

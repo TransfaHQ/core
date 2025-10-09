@@ -94,7 +94,7 @@ export class LedgerTransactionService {
       };
     }
 
-    const ledgerTransactionStatus = data.status ?? LedgerTransactionStatusEnum.posted;
+    const ledgerTransactionStatus = data.status ?? LedgerTransactionStatusEnum.POSTED;
     // Parse them into transfer
     const ledgerEntryData: {
       id: string;
@@ -126,7 +126,7 @@ export class LedgerTransactionService {
         ledger: ledger.tigerBeetleId,
         code: 1,
         flags:
-          ledgerTransactionStatus === LedgerTransactionStatusEnum.posted
+          ledgerTransactionStatus === LedgerTransactionStatusEnum.POSTED
             ? TransferFlags.linked
             : TransferFlags.pending | TransferFlags.linked,
         pending_id: 0n,
@@ -157,7 +157,7 @@ export class LedgerTransactionService {
 
     // Remove linked flag from the latest transfer
     tbTransfersData[tbTransfersData.length - 1].flags =
-      ledgerTransactionStatus === LedgerTransactionStatusEnum.posted ? 0 : TransferFlags.pending;
+      ledgerTransactionStatus === LedgerTransactionStatusEnum.POSTED ? 0 : TransferFlags.pending;
 
     return this.db.transaction(async (trx) => {
       // Create transaction record

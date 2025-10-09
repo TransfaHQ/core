@@ -22,7 +22,7 @@ import { IsMetadata } from '@libs/api/validators/is-metadata.validator';
 import { LedgerTransactionStatusEnum } from '@libs/enums';
 import { uuidV7 } from '@libs/utils/uuid';
 
-const allowdStatuses = [LedgerTransactionStatusEnum.pending, LedgerTransactionStatusEnum.posted];
+const allowedStatuses = [LedgerTransactionStatusEnum.PENDING, LedgerTransactionStatusEnum.POSTED];
 
 export class RecordLedgerEntryDto {
   @ApiProperty({
@@ -106,10 +106,10 @@ export class RecordLedgerTransactionDto {
 
   @ApiPropertyOptional({
     description: 'status of the transaction',
-    enum: allowdStatuses,
-    example: LedgerTransactionStatusEnum.posted,
+    enum: allowedStatuses,
+    example: LedgerTransactionStatusEnum.POSTED,
   })
   @IsOptional()
-  @IsIn(allowdStatuses)
-  status: LedgerTransactionStatusEnum = LedgerTransactionStatusEnum.posted;
+  @IsIn(allowedStatuses)
+  status: LedgerTransactionStatusEnum = LedgerTransactionStatusEnum.POSTED;
 }

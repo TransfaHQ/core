@@ -349,6 +349,20 @@ export class LedgerAccountService {
   }
 }
 
+/**
+ * Computes decimal balances (pending, posted, and available) for a given ledger account,
+ * depending on whether it has a normal balance of debit or credit.
+ *
+ * @param account - The ledger account, including currency and normal balance info.
+ * @param balances - Raw balances in smallest currency units (integers):
+ *    - pendingCredit: pending credits to the account
+ *    - pendingDebit: pending debits from the account
+ *    - postedCredit: confirmed (posted) credits
+ *    - postedDebit: confirmed (posted) debits
+ *
+ * @returns LedgerAccountBalances - Object containing normalized decimal balances
+ *    for pending, posted, and available amounts, along with credit/debit breakdowns.
+ */
 export const computeBalancesAmount = (
   account: LedgerAccount | Selectable<LedgerAccounts>,
   balances: {
@@ -360,47 +374,53 @@ export const computeBalancesAmount = (
 ): LedgerAccountBalances => {
   const { pendingCredit, pendingDebit, postedCredit, postedDebit } = balances;
 
+  // Initialize computed values (in smallest units, e.g. cents)
   let pendingAmount = 0;
-
   let postedAmount = 0;
-
   let availableAmount = 0;
-
   let availableDebit = 0;
   let availableCredit = 0;
 
+  // 🧭 If the account is CREDIT-normal:
+  // CREDIT accounts increase with credits and decrease with debits
   if (account.normalBalance === NormalBalanceEnum.CREDIT) {
-    /** available debit is sum of pending + posted debit on the account */
+    // Total debits (pending + posted) that reduce credit account
     availableDebit = BigNumber(postedDebit).plus(pendingDebit).toNumber();
 
+    // Pending net amount = pendingCredit - pendingDebit
     pendingAmount = BigNumber(pendingCredit).minus(pendingDebit).toNumber();
 
+    // Posted net amount = postedCredit - postedDebit
     postedAmount = BigNumber(postedCredit).minus(postedDebit).toNumber();
 
-    /** available credit is posted credit for normal credit account because we can't spend pending amount */
+    // Available credit = posted credits only (you can't spend pending credits)
     availableCredit = postedCredit;
-    /**
-     * available amount is posted credit minus available debit
-     */
+
+    // Available balance = posted credit - all debits (posted + pending)
     availableAmount = BigNumber(availableCredit).minus(availableDebit).toNumber();
   } else {
+    // 🧭 If the account is DEBIT-normal:
+    // DEBIT accounts increase with debits and decrease with credits
+
+    // Pending net amount = pendingDebit - pendingCredit
     pendingAmount = BigNumber(pendingDebit).minus(pendingCredit).toNumber();
 
+    // Posted net amount = postedDebit - postedCredit
     postedAmount = BigNumber(postedDebit).minus(postedCredit).toNumber();
 
-    /** available credit is sum of pending + posted credit on the account */
+    // Total credits (pending + posted) that reduce debit account
     availableCredit = BigNumber(postedCredit).plus(pendingCredit).toNumber();
 
-    /** available debit is posted debit for normal debit account because we can't spend pending amount */
+    // Available debit = only posted debit (you can’t spend pending debits)
     availableDebit = postedDebit;
-    /**
-     * available amount is posted debit minus available credit
-     */
+
+    // Available balance = posted debit - total credits
     availableAmount = BigNumber(availableDebit).minus(availableCredit).toNumber();
   }
 
-  // Convert from smallest units to decimals
-  const divisor = Math.pow(10, account.currencyExponent);
+  // Convert smallest units to decimals using the currency exponent
+  const divisor = Math.pow(10, account.currencyExponent); // e.g., 100 for cents → dollars
+
   const decimalPendingCredit = pendingCredit / divisor;
   const decimalPendingDebit = pendingDebit / divisor;
   const decimalPostedCredit = postedCredit / divisor;
@@ -411,6 +431,7 @@ export const computeBalancesAmount = (
   const decimalAvailableDebit = availableDebit / divisor;
   const decimalAvailableCredit = availableCredit / divisor;
 
+  // Return structured balance breakdown
   return {
     pendingBalance: {
       credits: decimalPendingCredit,
