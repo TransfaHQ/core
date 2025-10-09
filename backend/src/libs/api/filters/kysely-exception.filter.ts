@@ -81,18 +81,25 @@ export class KyselyExceptionFilter implements ExceptionFilter {
 
 @Catch(NoResultError)
 export class KyselyNoResultErrorExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(KyselyExceptionFilter.name);
+  private readonly logger = new Logger(KyselyNoResultErrorExceptionFilter.name);
 
-  catch(exception: DatabaseError, host: ArgumentsHost) {
+  catch(exception: NoResultError, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const tableName = exception.node.from.froms[0].table.identifier.name;
+    let message = 'Resource not found';
+    try {
+      const tableName = (exception.node as any)?.from?.froms?.[0]?.table?.identifier?.name;
+      if (tableName) {
+        message = `${tableName} resource not found`;
+      }
+    } catch {
+      // pass
+    }
 
     this.logger.error(`Database Error: ${JSON.stringify(exception.node)}`, exception.stack);
 
     // Default error response
     const status = HttpStatus.NOT_FOUND;
-    const message = `${tableName} not found`;
 
     response.status(status).json({
       statusCode: status,

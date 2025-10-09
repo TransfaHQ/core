@@ -453,6 +453,7 @@ export class LedgerTransactionService {
         .where('id', 'in', Array.from(new Set(ledgerEntries.map((v) => v.ledgerId))))
         .execute();
 
+      // amount_max is a helper from tigerbeetle package that helps to post the full amount
       const amount = status === LedgerTransactionStatusEnum.ARCHIVED ? 0n : amount_max;
       // We need to post or archive here
       const tbTransfersData: Transfer[] = [];
@@ -472,7 +473,7 @@ export class LedgerTransactionService {
           user_data_128: bufferToTbId(ledgerTransaction.tigerBeetleId),
           user_data_64: 0n,
           user_data_32: 0,
-          ledger: ledgers.find((v) => v.id === entry.ledgerId)!.tigerBeetleId,
+          ledger: ledgers.find((v) => v.id === entry.ledgerId)!.tigerBeetleId, // ledgers will always has value. So it is safe here
           code: 1,
           flags:
             status === LedgerTransactionStatusEnum.POSTED
@@ -487,7 +488,8 @@ export class LedgerTransactionService {
         tbTransferIds.add(tbTransferId);
       }
 
-      // Remove linked flag from the latest transfer
+      // Remove linked flag from the latest transfer.
+      // No check here because for a transaction, there will be always at least two entries then this list won't be empty
       tbTransfersData[tbTransfersData.length - 1].flags =
         status === LedgerTransactionStatusEnum.POSTED
           ? TransferFlags.post_pending_transfer
