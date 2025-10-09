@@ -45,36 +45,32 @@ export class IdempotencyInterceptor implements NestInterceptor {
       tap(async (response) => {
         const statusCode = responseObj.statusCode;
 
-        await this.db.transaction(async (trx) => {
-          await trx
-            .insertInto('idempotencyKeys')
-            .values({
-              externalId: idempotencyKey,
-              requestPayload: request.body,
-              responsePayload: response,
-              statusCode,
-              endpoint,
-            })
-            .execute();
-        });
+        await this.db.kysely
+          .insertInto('idempotencyKeys')
+          .values({
+            externalId: idempotencyKey,
+            requestPayload: request.body,
+            responsePayload: response,
+            statusCode,
+            endpoint,
+          })
+          .execute();
       }),
 
       catchError(async (err) => {
         const statusCode = typeof err.getStatus === 'function' ? err.getStatus() : 500;
 
         if (statusCode >= 400 && statusCode < 500) {
-          await this.db.transaction(async (trx) => {
-            await trx
-              .insertInto('idempotencyKeys')
-              .values({
-                externalId: idempotencyKey,
-                requestPayload: request.body,
-                responsePayload: err.response,
-                statusCode,
-                endpoint,
-              })
-              .execute();
-          });
+          await this.db.kysely
+            .insertInto('idempotencyKeys')
+            .values({
+              externalId: idempotencyKey,
+              requestPayload: request.body,
+              responsePayload: err.response,
+              statusCode,
+              endpoint,
+            })
+            .execute();
         }
 
         throw err;

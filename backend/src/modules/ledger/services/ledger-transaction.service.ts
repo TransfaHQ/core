@@ -7,7 +7,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { CursorPaginatedResult, cursorPaginate } from '@libs/database';
 import { DatabaseService } from '@libs/database/database.service';
 import { bufferToTbId, tbIdToBuffer } from '@libs/database/utils';
-import { NormalBalanceEnum } from '@libs/enums';
+import { LedgerTransactionStatusEnum, NormalBalanceEnum } from '@libs/enums';
 import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
 import { uuidV7 } from '@libs/utils/uuid';
 
@@ -94,6 +94,7 @@ export class LedgerTransactionService {
       };
     }
 
+    const ledgerTransactionStatus = data.status ?? LedgerTransactionStatusEnum.POSTED;
     // Parse them into transfer
     const ledgerEntryData: {
       id: string;
@@ -124,7 +125,10 @@ export class LedgerTransactionService {
         user_data_32: 0,
         ledger: ledger.tigerBeetleId,
         code: 1,
-        flags: TransferFlags.linked,
+        flags:
+          ledgerTransactionStatus === LedgerTransactionStatusEnum.POSTED
+            ? TransferFlags.linked
+            : TransferFlags.pending | TransferFlags.linked,
         pending_id: 0n,
         timeout: 0,
         timestamp: 0n,
@@ -152,7 +156,8 @@ export class LedgerTransactionService {
     }
 
     // Remove linked flag from the latest transfer
-    tbTransfersData[tbTransfersData.length - 1].flags = 0;
+    tbTransfersData[tbTransfersData.length - 1].flags =
+      ledgerTransactionStatus === LedgerTransactionStatusEnum.POSTED ? 0 : TransferFlags.pending;
 
     return this.db.transaction(async (trx) => {
       // Create transaction record
@@ -163,6 +168,7 @@ export class LedgerTransactionService {
           description: data.description,
           tigerBeetleId: tbIdToBuffer(ledgerTransferTbId),
           effectiveAt: data.effectiveAt,
+          status: ledgerTransactionStatus,
         })
         .returningAll()
         .executeTakeFirstOrThrow();

@@ -6,7 +6,7 @@ import { HttpStatus } from '@nestjs/common';
 import { setupTestContext } from '@src/test/helpers';
 
 import { bufferToTbId } from '@libs/database/utils';
-import { NormalBalanceEnum } from '@libs/enums';
+import { LedgerTransactionStatusEnum, NormalBalanceEnum } from '@libs/enums';
 import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
 import { setTestBasicAuthHeader } from '@libs/utils/tests';
 import { uuidV7 } from '@libs/utils/uuid';
@@ -254,6 +254,7 @@ describe('LedgerTransactionController', () => {
             expect(response.body.description).toBe(data.description);
             expect(response.body.id).toBeDefined();
             expect(response.body.effectiveAt).toBe('2025-01-10T00:00:00.000Z');
+            expect(response.body.status).toBe(LedgerTransactionStatusEnum.POSTED);
             entries = response.body.ledgerEntries;
           });
 
@@ -350,6 +351,7 @@ describe('LedgerTransactionController', () => {
             expect(response.body.externalId).toBe(data.externalId);
             expect(response.body.description).toBe(data.description);
             expect(response.body.id).toBeDefined();
+            expect(response.body.status).toBe(LedgerTransactionStatusEnum.POSTED);
           });
 
         const sourceTbAccount = await tigerBeetleService.retrieveAccount(
@@ -403,6 +405,7 @@ describe('LedgerTransactionController', () => {
             expect(response.body.id).toBeDefined();
             expect(response.headers['x-idempotency-replayed']).toBe('false');
             expect(response.body.effectiveAt).toBe(data.effectiveAt);
+            expect(response.body.status).toBe(LedgerTransactionStatusEnum.POSTED);
           });
 
         const sourceTbAccount = await tigerBeetleService.retrieveAccount(
@@ -438,6 +441,7 @@ describe('LedgerTransactionController', () => {
             expect(response.body.externalId).toBe(data.externalId);
             expect(response.body.description).toBe(data.description);
             expect(response.body.id).toBeDefined();
+            expect(response.body.status).toBe(LedgerTransactionStatusEnum.POSTED);
           });
 
         expect(transactionId1).toBe(transactionId2);
@@ -456,6 +460,113 @@ describe('LedgerTransactionController', () => {
             .where('externalId', '=', idempotencyKey)
             .executeTakeFirst(),
         ).toBeDefined();
+      });
+
+      it('should create a transaction with pending status', async () => {
+        // fetch account and its balances
+        const eurDebitAccountResponse = await request(ctx.app.getHttpServer())
+          .get(`/v1/ledger_accounts/${eurDebitAccount.id}`)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret));
+
+        const eurCreditAccountResponse = await request(ctx.app.getHttpServer())
+          .get(`/v1/ledger_accounts/${eurCreditAccount.id}`)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret));
+
+        const data = {
+          description: 'test',
+          externalId: uuidV7(),
+          metadata: { test: 'test' },
+          effectiveAt: '2025-01-10',
+          status: LedgerTransactionStatusEnum.PENDING,
+          ledgerEntries: [
+            {
+              sourceAccountId: eurDebitAccount.id,
+              destinationAccountId: eurCreditAccount.id,
+              amount: 10,
+            },
+            {
+              sourceAccountId: usdDebitAccount.id,
+              destinationAccountId: usdCreditAccount.id,
+              amount: 10,
+            },
+          ],
+        };
+
+        await request(ctx.app.getHttpServer())
+          .post(endpoint)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .send(data)
+          .expect(HttpStatus.CREATED)
+          .expect(async (response) => {
+            expect(response.body.status).toBe(LedgerTransactionStatusEnum.PENDING);
+          });
+
+        // Fetch account and make sure that it is working as expected
+        // fetch account and its balances
+        const eurDebitAccountResponse2 = await request(ctx.app.getHttpServer())
+          .get(`/v1/ledger_accounts/${eurDebitAccount.id}`)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret));
+
+        const eurCreditAccountResponse2 = await request(ctx.app.getHttpServer())
+          .get(`/v1/ledger_accounts/${eurCreditAccount.id}`)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret));
+
+        expect(eurCreditAccountResponse.body.balances.pendingBalance.amount).toBe(0);
+        expect(eurCreditAccountResponse.body.balances.pendingBalance.credits).toBe(0);
+        expect(eurCreditAccountResponse.body.balances.pendingBalance.debits).toBe(0);
+
+        expect(eurCreditAccountResponse2.body.balances.pendingBalance.amount).toBe(
+          data.ledgerEntries[0].amount,
+        );
+        expect(eurCreditAccountResponse2.body.balances.pendingBalance.credits).toBe(
+          data.ledgerEntries[0].amount,
+        );
+        expect(eurCreditAccountResponse2.body.balances.pendingBalance.debits).toBe(0);
+
+        // Sender account
+        expect(eurDebitAccountResponse.body.balances.pendingBalance.amount).toBe(0);
+        expect(eurDebitAccountResponse.body.balances.pendingBalance.credits).toBe(0);
+        expect(eurDebitAccountResponse.body.balances.pendingBalance.debits).toBe(0);
+
+        expect(eurDebitAccountResponse2.body.balances.pendingBalance.amount).toBe(
+          data.ledgerEntries[0].amount,
+        );
+        expect(eurDebitAccountResponse2.body.balances.pendingBalance.debits).toBe(
+          data.ledgerEntries[0].amount,
+        );
+        expect(eurDebitAccountResponse2.body.balances.pendingBalance.credits).toBe(0);
+      });
+
+      it('should not allow creating transactions with archived status', async () => {
+        const data = {
+          description: 'test',
+          externalId: uuidV7(),
+          metadata: { test: 'test' },
+          effectiveAt: '2025-01-10',
+          status: LedgerTransactionStatusEnum.ARCHIVED,
+          ledgerEntries: [
+            {
+              sourceAccountId: eurDebitAccount.id,
+              destinationAccountId: eurCreditAccount.id,
+              amount: 10,
+            },
+            {
+              sourceAccountId: usdDebitAccount.id,
+              destinationAccountId: usdCreditAccount.id,
+              amount: 10,
+            },
+          ],
+        };
+        await request(ctx.app.getHttpServer())
+          .post(endpoint)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .send(data)
+          .expect(HttpStatus.BAD_REQUEST)
+          .expect(async (response) => {
+            expect(response.body.message[0]).toBe(
+              'status must be one of the following values: pending, posted',
+            );
+          });
       });
     });
   });
@@ -531,10 +642,9 @@ describe('LedgerTransactionController', () => {
 
   describe('GET /v1/ledger_transactions', () => {
     const endpoint = '/v1/ledger_transactions';
-    let createdTransactions: Array<{ id: string; externalId: string; description: string }> = [];
+    const createdTransactions: Array<{ id: string; externalId: string; description: string }> = [];
 
-    beforeEach(async () => {
-      createdTransactions = [];
+    beforeAll(async () => {
       for (let i = 0; i < 5; i++) {
         const data = {
           description: `test list transaction ${i}`,

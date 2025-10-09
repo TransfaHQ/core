@@ -1,4 +1,4 @@
-import { NormalBalanceEnum } from '@libs/enums';
+import { LedgerTransactionStatusEnum, NormalBalanceEnum } from '@libs/enums';
 
 import { CurrencyResponseDto } from '@modules/ledger/dto/currency/currency-response.dto';
 import { LedgerAccountResponseDto } from '@modules/ledger/dto/ledger-account/ledger-account-response.dto';
@@ -64,6 +64,7 @@ export const ledgerTransactionToApiV1Resposne = (
     updatedAt: entity.updatedAt,
     description: entity.description,
     externalId: entity.externalId,
+    status: entity.status as LedgerTransactionStatusEnum,
     ledgerEntries: entity.ledgerEntries.map(ledgerEntryToApiV1Response),
     effectiveAt: entity.effectiveAt,
     metadata: Object.fromEntries((entity.metadata ?? []).map((v) => [v.key, v.value])),

@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsIn,
   IsNumber,
   IsObject,
   IsOptional,
@@ -18,7 +19,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { IsValidDateOrDateTime } from '@libs/api/validators/is-date-or-datetime.validator';
 import { IsMetadata } from '@libs/api/validators/is-metadata.validator';
+import { LedgerTransactionStatusEnum } from '@libs/enums';
 import { uuidV7 } from '@libs/utils/uuid';
+
+const allowedStatuses = [LedgerTransactionStatusEnum.PENDING, LedgerTransactionStatusEnum.POSTED];
 
 export class RecordLedgerEntryDto {
   @ApiProperty({
@@ -99,4 +103,13 @@ export class RecordLedgerTransactionDto {
   @IsOptional()
   @IsValidDateOrDateTime()
   readonly effectiveAt?: string;
+
+  @ApiPropertyOptional({
+    description: 'status of the transaction',
+    enum: allowedStatuses,
+    example: LedgerTransactionStatusEnum.POSTED,
+  })
+  @IsOptional()
+  @IsIn(allowedStatuses)
+  status: LedgerTransactionStatusEnum = LedgerTransactionStatusEnum.POSTED;
 }
