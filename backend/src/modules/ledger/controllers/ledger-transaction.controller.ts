@@ -11,6 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import {
+  ApiAcceptedResponse,
   ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiHeader,
@@ -26,6 +27,7 @@ import {
 
 import { IdempotencyInterceptor } from '@libs/api/interceptors/idempotency.interceptor';
 import { CursorPaginatedResult } from '@libs/database';
+import { LedgerTransactionStatusEnum } from '@libs/enums';
 
 import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
 import { ledgerTransactionToApiV1Resposne } from '@modules/ledger/controllers/api-response';
@@ -188,7 +190,7 @@ export class LedgerTransactionController {
   }
 
   @Post(':id/:status')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.ACCEPTED)
   @UseInterceptors(IdempotencyInterceptor)
   @ApiHeader({
     name: 'idempotency-key',
@@ -200,12 +202,22 @@ export class LedgerTransactionController {
     summary: 'Post or archive a transaction',
     description: 'Post or archive a transaction',
   })
-  @ApiCreatedResponse({
+  @ApiAcceptedResponse({
     description: 'The ledger transaction has been successfully archived or posted',
     type: LedgerTransactionResponseDto,
   })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiUnauthorizedResponse({ description: 'Invalid or missing API key' })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the ledger transaction',
+    example: 'a7f68f16-9834-4a6e-9a7d-5e9f4fc1d1a2',
+  })
+  @ApiParam({
+    name: 'status',
+    enum: [LedgerTransactionStatusEnum.POSTED, LedgerTransactionStatusEnum.ARCHIVED],
+    description: 'Target status for the transaction',
+  })
   async postOrArchive(
     @Param() params: PostOrArchiveLedgerTransactionDto,
   ): Promise<LedgerTransactionResponseDto> {

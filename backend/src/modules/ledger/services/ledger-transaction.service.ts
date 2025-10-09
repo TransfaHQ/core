@@ -456,12 +456,13 @@ export class LedgerTransactionService {
       const amount = status === LedgerTransactionStatusEnum.ARCHIVED ? 0n : amount_max;
       // We need to post or archive here
       const tbTransfersData: Transfer[] = [];
-      const tbtransferIds = new Set();
+      const tbTransferIds = new Set();
 
       for (const entry of ledgerEntries) {
         const tbTransferId = bufferToTbId(entry.tigerBeetleId);
-
-        if (tbtransferIds.has(tbTransferId)) continue;
+        // Each tb transfer has 2 entries on on our end. Here we are selecting all of them.
+        // We just want to post only one time. A way to do it, might filtering on tigerbeetleId directly
+        if (tbTransferIds.has(tbTransferId)) continue;
 
         const data: Transfer = {
           id: id(),
@@ -483,7 +484,7 @@ export class LedgerTransactionService {
         };
 
         tbTransfersData.push(data);
-        tbtransferIds.add(tbTransferId);
+        tbTransferIds.add(tbTransferId);
       }
 
       // Remove linked flag from the latest transfer

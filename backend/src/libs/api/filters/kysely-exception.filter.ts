@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { NoResultError } from 'kysely';
 import { DatabaseError } from 'pg';
 
 import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Logger } from '@nestjs/common';
@@ -74,6 +75,29 @@ export class KyselyExceptionFilter implements ExceptionFilter {
       statusCode: status,
       message: detail,
       error: status < 500 ? message : undefined,
+    });
+  }
+}
+
+@Catch(NoResultError)
+export class KyselyNoResultErrorExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(KyselyExceptionFilter.name);
+
+  catch(exception: DatabaseError, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+    const tableName = exception.node.from.froms[0].table.identifier.name;
+
+    this.logger.error(`Database Error: ${JSON.stringify(exception.node)}`, exception.stack);
+
+    // Default error response
+    const status = HttpStatus.NOT_FOUND;
+    const message = `${tableName} not found`;
+
+    response.status(status).json({
+      statusCode: status,
+      message,
+      error: message,
     });
   }
 }
