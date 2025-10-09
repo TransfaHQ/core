@@ -1,5 +1,6 @@
 import { BigNumber } from 'bignumber.js';
-import { Transfer, TransferFlags, id } from 'tigerbeetle-node';
+import { Selectable } from 'kysely';
+import { Transfer, TransferFlags, amount_max, id } from 'tigerbeetle-node';
 import { validate } from 'uuid';
 
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
@@ -277,7 +278,7 @@ export class LedgerTransactionService {
           currencyCode: entry.currencyCode,
           currencyExponent: entry.currencyExponent,
           name: entry.accountName,
-        } as any,
+        } as Selectable<LedgerAccount>,
         ledgerId: entry.ledgerId,
         ledgerTransactionId: transaction.id,
         tigerBeetleId: entry.tigerBeetleId,
@@ -421,5 +422,85 @@ export class LedgerTransactionService {
       ...paginatedResult,
       data,
     };
+  }
+
+  async postOrArchiveTransaction(
+    ledgerTransactionId: string,
+    status: LedgerTransactionStatusEnum,
+  ): Promise<LedgerTransaction> {
+    await this.db.transaction(async (trx) => {
+      const ledgerTransaction = await trx
+        .selectFrom('ledgerTransactions')
+        .select(['id', 'status', 'tigerBeetleId'])
+        .where(({ eb, and }) =>
+          and([
+            eb('id', '=', ledgerTransactionId),
+            eb('status', '=', LedgerTransactionStatusEnum.PENDING),
+          ]),
+        )
+        .forUpdate() // lock transaction and make sure there is no update happening at the same time
+        .executeTakeFirstOrThrow();
+
+      const ledgerEntries = await trx
+        .selectFrom('ledgerEntries')
+        .select(['id', 'tigerBeetleId', 'ledgerId'])
+        .where('ledgerTransactionId', '=', ledgerTransactionId)
+        .execute();
+
+      const ledgers = await trx
+        .selectFrom('ledgers')
+        .select(['id', 'tigerBeetleId'])
+        .where('id', 'in', Array.from(new Set(ledgerEntries.map((v) => v.ledgerId))))
+        .execute();
+
+      const amount = status === LedgerTransactionStatusEnum.ARCHIVED ? 0n : amount_max;
+      // We need to post or archive here
+      const tbTransfersData: Transfer[] = [];
+      const tbtransferIds = new Set();
+
+      for (const entry of ledgerEntries) {
+        const tbTransferId = bufferToTbId(entry.tigerBeetleId);
+
+        if (tbtransferIds.has(tbTransferId)) continue;
+
+        const data: Transfer = {
+          id: id(),
+          credit_account_id: 0n,
+          debit_account_id: 0n,
+          amount,
+          user_data_128: bufferToTbId(ledgerTransaction.tigerBeetleId),
+          user_data_64: 0n,
+          user_data_32: 0,
+          ledger: ledgers.find((v) => v.id === entry.ledgerId)!.tigerBeetleId,
+          code: 1,
+          flags:
+            status === LedgerTransactionStatusEnum.POSTED
+              ? TransferFlags.linked | TransferFlags.post_pending_transfer
+              : TransferFlags.void_pending_transfer | TransferFlags.linked,
+          pending_id: tbTransferId,
+          timeout: 0,
+          timestamp: 0n,
+        };
+
+        tbTransfersData.push(data);
+        tbtransferIds.add(tbTransferId);
+      }
+
+      // Remove linked flag from the latest transfer
+      tbTransfersData[tbTransfersData.length - 1].flags =
+        status === LedgerTransactionStatusEnum.POSTED
+          ? TransferFlags.post_pending_transfer
+          : TransferFlags.void_pending_transfer;
+
+      await this.tigerBeetleService.createTransfers(tbTransfersData);
+
+      await trx
+        .updateTable('ledgerTransactions')
+        .set({ status })
+        .where('id', '=', ledgerTransactionId)
+        .execute();
+    });
+
+    return this.retrieve(ledgerTransactionId);
   }
 }

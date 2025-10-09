@@ -22,7 +22,14 @@ import { IsMetadata } from '@libs/api/validators/is-metadata.validator';
 import { LedgerTransactionStatusEnum } from '@libs/enums';
 import { uuidV7 } from '@libs/utils/uuid';
 
-const allowedStatuses = [LedgerTransactionStatusEnum.PENDING, LedgerTransactionStatusEnum.POSTED];
+const allowLedgerTransactionOnRecord = [
+  LedgerTransactionStatusEnum.PENDING,
+  LedgerTransactionStatusEnum.POSTED,
+];
+const allowLedgerTransactionOnPostOrArchive = [
+  LedgerTransactionStatusEnum.ARCHIVED,
+  LedgerTransactionStatusEnum.POSTED,
+];
 
 export class RecordLedgerEntryDto {
   @ApiProperty({
@@ -106,10 +113,27 @@ export class RecordLedgerTransactionDto {
 
   @ApiPropertyOptional({
     description: 'status of the transaction',
-    enum: allowedStatuses,
+    enum: allowLedgerTransactionOnRecord,
     example: LedgerTransactionStatusEnum.POSTED,
   })
   @IsOptional()
-  @IsIn(allowedStatuses)
+  @IsIn(allowLedgerTransactionOnRecord)
   status: LedgerTransactionStatusEnum = LedgerTransactionStatusEnum.POSTED;
+}
+
+export class PostOrArchiveLedgerTransactionDto {
+  @ApiProperty({
+    enum: allowLedgerTransactionOnPostOrArchive,
+    description: 'Transaction status must be either archived or posted',
+    example: LedgerTransactionStatusEnum.POSTED,
+  })
+  @IsIn(allowLedgerTransactionOnPostOrArchive)
+  status: LedgerTransactionStatusEnum;
+
+  @ApiProperty({
+    description: 'Unique identifier of the ledger transaction',
+    example: 'a7f68f16-9834-4a6e-9a7d-5e9f4fc1d1a2',
+  })
+  @IsUUID()
+  id: string;
 }
