@@ -467,8 +467,8 @@ export class LedgerTransactionService {
 
         const data: Transfer = {
           id: id(),
-          credit_account_id: 0n,
-          debit_account_id: 0n,
+          credit_account_id: 0n, // we don't need to set the account id if we set the pending_id already
+          debit_account_id: 0n, // we don't need to set the account id if we set the pending_id already
           amount,
           user_data_128: bufferToTbId(ledgerTransaction.tigerBeetleId),
           user_data_64: 0n,

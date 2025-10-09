@@ -863,7 +863,7 @@ describe('LedgerTransactionController', () => {
     it('should return 404 when transaction not found', async () => {
       const nonExistentId = uuidV7();
       await request(ctx.app.getHttpServer())
-        .get(`${endpoint}/${nonExistentId}/post`)
+        .post(`${endpoint}/${nonExistentId}/post`)
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .expect(HttpStatus.NOT_FOUND);
     });
@@ -960,7 +960,7 @@ describe('LedgerTransactionController', () => {
     it('should return 404 when transaction not found', async () => {
       const nonExistentId = uuidV7();
       await request(ctx.app.getHttpServer())
-        .get(`${endpoint}/${nonExistentId}/archive`)
+        .post(`${endpoint}/${nonExistentId}/archive`)
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .expect(HttpStatus.NOT_FOUND);
     });
