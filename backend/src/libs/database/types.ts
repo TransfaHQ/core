@@ -126,6 +126,7 @@ export interface LedgerTransactions {
   effectiveAt: Generated<Timestamp>;
   externalId: string;
   id: Generated<string>;
+  status: Generated<string>;
   tigerBeetleId: Buffer;
   updatedAt: Generated<Timestamp>;
 }

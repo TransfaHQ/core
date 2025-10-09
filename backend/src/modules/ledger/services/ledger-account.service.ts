@@ -366,28 +366,37 @@ export const computeBalancesAmount = (
 
   let availableAmount = 0;
 
-  /** Debit available is sum of pending + post on the account */
-  const availableDebit = BigNumber(postedDebit).plus(pendingDebit).toNumber();
+  let availableDebit = 0;
+  let availableCredit = 0;
 
   if (account.normalBalance === NormalBalanceEnum.CREDIT) {
+    /** available debit is sum of pending + posted debit on the account */
+    availableDebit = BigNumber(postedDebit).plus(pendingDebit).toNumber();
+
     pendingAmount = BigNumber(pendingCredit).minus(pendingDebit).toNumber();
 
     postedAmount = BigNumber(postedCredit).minus(postedDebit).toNumber();
+
+    /** available credit is posted credit for normal credit account because we can't spend pending amount */
+    availableCredit = postedCredit;
     /**
      * available amount is posted credit minus available debit
      */
-    availableAmount = BigNumber(postedCredit).minus(availableDebit).toNumber();
+    availableAmount = BigNumber(availableCredit).minus(availableDebit).toNumber();
   } else {
     pendingAmount = BigNumber(pendingDebit).minus(pendingCredit).toNumber();
 
     postedAmount = BigNumber(postedDebit).minus(postedCredit).toNumber();
 
+    /** available credit is sum of pending + posted credit on the account */
+    availableCredit = BigNumber(postedCredit).plus(pendingCredit).toNumber();
+
+    /** available debit is posted debit for normal debit account because we can't spend pending amount */
+    availableDebit = postedDebit;
     /**
-     * the available amount is posted debit minus sum of posted credit + pending credit
+     * available amount is posted debit minus available credit
      */
-    availableAmount = BigNumber(postedDebit)
-      .minus(BigNumber(postedCredit).plus(pendingCredit))
-      .toNumber();
+    availableAmount = BigNumber(availableDebit).minus(availableCredit).toNumber();
   }
 
   // Convert from smallest units to decimals
@@ -400,6 +409,7 @@ export const computeBalancesAmount = (
   const decimalPostedAmount = postedAmount / divisor;
   const decimalAvailableAmount = availableAmount / divisor;
   const decimalAvailableDebit = availableDebit / divisor;
+  const decimalAvailableCredit = availableCredit / divisor;
 
   return {
     pendingBalance: {
@@ -417,7 +427,7 @@ export const computeBalancesAmount = (
       currencyExponent: account.currencyExponent,
     },
     availableBalance: {
-      credits: decimalPostedCredit,
+      credits: decimalAvailableCredit,
       debits: decimalAvailableDebit,
       amount: decimalAvailableAmount,
       currency: account.currencyCode,

@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { NormalBalanceEnum } from '@libs/enums';
+import { LedgerTransactionStatusEnum, NormalBalanceEnum } from '@libs/enums';
 import { uuidV7 } from '@libs/utils/uuid';
 
 export class LedgerEntryResponseDto {
@@ -75,6 +75,13 @@ export class LedgerTransactionResponseDto {
     example: uuidV7(),
   })
   externalId: string;
+
+  @ApiProperty({
+    description: 'status of the transaction',
+    enum: LedgerTransactionStatusEnum,
+    example: LedgerTransactionStatusEnum.posted,
+  })
+  status: LedgerTransactionStatusEnum;
 
   @ApiProperty({
     description: 'Description or memo for the transaction',
