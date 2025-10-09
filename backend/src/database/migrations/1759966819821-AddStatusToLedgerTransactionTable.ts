@@ -4,7 +4,7 @@ export class AddStatusToLedgerTransactionTable1759966819821 implements Migration
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
         ALTER TABLE ledger_transactions
-        ADD COLUMN status varchar(8) NOT NULL
+        ADD COLUMN status varchar(10) NOT NULL
             CHECK (status IN ('pending', 'posted', 'archived'))
             DEFAULT 'pending'
             NOT NULL;
