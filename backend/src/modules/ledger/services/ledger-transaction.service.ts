@@ -1,5 +1,6 @@
 import { BigNumber } from 'bignumber.js';
 import { Selectable } from 'kysely';
+import { PinoLogger } from 'nestjs-pino';
 import { Transfer, TransferFlags, amount_max, id } from 'tigerbeetle-node';
 import { validate } from 'uuid';
 
@@ -22,6 +23,7 @@ export class LedgerTransactionService {
     private readonly db: DatabaseService,
     private readonly tigerBeetleService: TigerBeetleService,
     private readonly ledgerAccountService: LedgerAccountService,
+    private readonly logger: PinoLogger,
   ) {}
 
   async record(data: RecordLedgerTransactionDto): Promise<LedgerTransaction> {
@@ -447,6 +449,10 @@ export class LedgerTransactionService {
         .where('ledgerTransactionId', '=', ledgerTransactionId)
         .execute();
 
+      this.logger.info(
+        `${status} transaction ${ledgerTransactionId} with ${ledgerEntries.length} entries`,
+      );
+
       const ledgers = await trx
         .selectFrom('ledgers')
         .select(['id', 'tigerBeetleId'])
@@ -454,7 +460,7 @@ export class LedgerTransactionService {
         .execute();
 
       // amount_max is a helper from tigerbeetle package that helps to post the full amount
-      const amount = status === LedgerTransactionStatusEnum.ARCHIVED ? 0n : amount_max;
+      const transferAmount = status === LedgerTransactionStatusEnum.ARCHIVED ? 0n : amount_max;
       // We need to post or archive here
       const tbTransfersData: Transfer[] = [];
       const tbTransferIds = new Set();
@@ -469,7 +475,7 @@ export class LedgerTransactionService {
           id: id(),
           credit_account_id: 0n, // we don't need to set the account id if we set the pending_id already
           debit_account_id: 0n, // we don't need to set the account id if we set the pending_id already
-          amount,
+          amount: transferAmount,
           user_data_128: bufferToTbId(ledgerTransaction.tigerBeetleId),
           user_data_64: 0n,
           user_data_32: 0,
