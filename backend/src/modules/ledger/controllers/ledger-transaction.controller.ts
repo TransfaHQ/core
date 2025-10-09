@@ -237,7 +237,7 @@ export class LedgerTransactionController {
     description: 'Archive a pending transaction',
   })
   @ApiAcceptedResponse({
-    description: 'The ledger transaction has been successfully posted',
+    description: 'The ledger transaction has been successfully archived',
     type: LedgerTransactionResponseDto,
   })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
