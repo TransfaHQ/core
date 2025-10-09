@@ -426,6 +426,37 @@ export class LedgerTransactionService {
     };
   }
 
+  /**
+   * Posts or archives a pending ledger transaction in TigerBeetle and updates its status in the database.
+   *
+   * ## 🧩 TigerBeetle Two-Phase Commit
+   * This function implements TigerBeetle's **two-phase commit**:
+   * 1. First, a transfer is created with a `pending` flag (`debit_pending`/`credit_pending`) — this reserves the funds.
+   * 2. Then, this function either:
+   *    - Posts the pending transfer using `post_pending_transfer`
+   *    - Or voids it using `void_pending_transfer`
+   *
+   * This is done by referencing the original `pending_id` (from the pending transfer).
+   *
+   * ## 💰 Why `amount_max` Is Used for Posting
+   * - TigerBeetle allows using a magic constant `amount_max` to indicate:
+   *   > "Use the full pending amount from the original transfer"
+   * - This avoids having to duplicate the amount exactly in the posting phase.
+   * - For archival (voiding), the amount is set to `0n`, meaning "cancel the pending transfer."
+   *
+   * ## 🔗 Purpose of `linked` Flags
+   * - TigerBeetle allows linking multiple transfers as a batch using the `linked` flag.
+   * - This ensures that **either all transfers succeed together or all fail**, enabling atomic multi-entry transactions.
+   * - The `linked` flag is set on **all but the last transfer**.
+   * - The **last transfer clears `linked`** to signal "this is the end of the batch."
+   *
+   * @param ledgerTransactionId - The UUID of the transaction to post or archive
+   * @param status - The new status to apply (`POSTED` or `ARCHIVED`)
+   * @returns The updated `LedgerTransaction` after status change
+   *
+   * @throws {NotFoundException} If the transaction doesn't exist or isn't pending
+   * @throws {Error} If TigerBeetle transfer creation fails
+   */
   async postOrArchiveTransaction(
     ledgerTransactionId: string,
     status: LedgerTransactionStatusEnum,
