@@ -1,9 +1,9 @@
 import BigNumber from 'bignumber.js';
 import { Selectable } from 'kysely';
-import { AccountFlags, Account as TigerBeetleAccount, id } from 'tigerbeetle-node';
+import { Account, AccountFlags, Account as TigerBeetleAccount, id } from 'tigerbeetle-node';
 import { validate } from 'uuid';
 
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { CursorPaginatedResult, cursorPaginate } from '@libs/database';
 import { DatabaseService } from '@libs/database/database.service';
@@ -11,6 +11,7 @@ import { LedgerAccounts } from '@libs/database/types';
 import { bufferToTbId, tbIdToBuffer } from '@libs/database/utils';
 import { NormalBalanceEnum } from '@libs/enums';
 import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
+import { generateDeterministicId } from '@libs/utils/id';
 
 import { CreateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/create-ledger-account.dto';
 import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/update-ledger-account.dto';
@@ -252,11 +253,13 @@ export class LedgerAccountService {
   }
 
   async update(id: string, data: UpdateLedgerAccountDto): Promise<LedgerAccount> {
-    return await this.db.transaction(async (trx) => {
+    const updatedAccount = await this.db.transaction(async (trx) => {
       // Update ledger account basic information
       const updatePayload = {
         ...(data.name && { name: data.name }),
         ...(data.description !== undefined && { description: data.description }),
+        ...(data.maxBalanceLimit === null && { maxBalanceLimit: data.maxBalanceLimit }),
+        ...(data.minBalanceLimit === null && { minBalanceLimit: data.minBalanceLimit }),
       };
 
       if (Object.keys(updatePayload).length > 0) {
@@ -316,16 +319,24 @@ export class LedgerAccountService {
         .where('ledgerAccountId', '=', id)
         .execute();
 
-      // Get TigerBeetle account for balance calculation
-      const tbAccount = await this.tigerBeetleService.retrieveAccount(updatedAccount.tigerBeetleId);
-      const balances = this.parseAccountBalanceFromTBAccount(updatedAccount, tbAccount);
-
-      return {
-        ...updatedAccount,
-        metadata,
-        balances,
-      };
+      return { ...updatedAccount, metadata };
     });
+
+    if (data.minBalanceLimit != null || data.maxBalanceLimit != null) {
+      await this.setBalanceLimits(id, data.maxBalanceLimit, data.minBalanceLimit);
+      updatedAccount.minBalanceLimit =
+        data.minBalanceLimit?.toString() ?? updatedAccount.minBalanceLimit;
+      updatedAccount.maxBalanceLimit =
+        data.maxBalanceLimit?.toString() ?? updatedAccount.maxBalanceLimit;
+    }
+
+    // Get TigerBeetle account for balance calculation
+    const tbAccount = await this.tigerBeetleService.retrieveAccount(updatedAccount.tigerBeetleId);
+    const balances = this.parseAccountBalanceFromTBAccount(updatedAccount, tbAccount);
+    return {
+      ...updatedAccount,
+      balances,
+    };
   }
 
   public parseAccountBalanceFromTBAccount(
@@ -346,6 +357,158 @@ export class LedgerAccountService {
       postedCredit,
       postedDebit,
     });
+  }
+
+  /**
+   * Sets balance limits (minimum and/or maximum) on a given ledger account.
+   *
+   * If either `minBalanceLimit` or `maxBalanceLimit` is defined (non-null), this method:
+   * - Fetches the ledger account and its associated ledger and currency metadata.
+   * - Calculates and assigns deterministic TigerBeetle IDs for the control (check) and funding accounts.
+   * - Checks if those TigerBeetle accounts already exist.
+   * - Creates them if they do not exist, ensuring correct configuration and flags based on the ledger's normal balance.
+   * - Updates the ledger account in the database with the new limits and TigerBeetle account IDs.
+   *
+   * Notes:
+   * - This operation is **idempotent**. The TigerBeetle account IDs are deterministically derived,
+   *   so repeated calls with the same `ledgerAccountId` will not create conflicting state.
+   * - Throws an exception if the provided `ledgerAccountId` does not correspond to an existing ledger account.
+   *
+   * @param {string} ledgerAccountId - The unique identifier of the ledger account to update.
+   * @param {number | null} maxBalanceLimit - The optional maximum balance limit to enforce (null if no max).
+   * @param {number | null} minBalanceLimit - The optional minimum balance limit to enforce (null if no min).
+   *
+   * @throws {NotFoundException} If the ledger account does not exist in the database.
+   *
+   * @returns {Promise<void>} Resolves once the balance limits and related TigerBeetle accounts are updated.
+   */
+  private async setBalanceLimits(
+    ledgerAccountId: string,
+    maxBalanceLimit: number | null,
+    minBalanceLimit: number | null,
+  ): Promise<void> {
+    if (minBalanceLimit == null && maxBalanceLimit == null) return;
+
+    const ledgerAccount = await this.db.kysely
+      .selectFrom('ledgerAccounts as la')
+      .innerJoin('ledgers as l', 'l.id', 'la.ledgerId')
+      .innerJoin('currencies as c', 'c.code', 'la.currencyCode')
+      .select([
+        'la.id as ledgerAccountId',
+        'l.tigerBeetleId as ledgerTigerBeetleId',
+        'c.id as currencyId',
+        'la.boundCheckAccountTigerBeetleId',
+        'la.boundFundingAccountTigerBeetleId',
+        'la.maxBalanceLimit',
+        'la.minBalanceLimit',
+        'la.normalBalance',
+        'la.tigerBeetleId as ledgerAccountTigerBeetleId',
+      ])
+      .where('la.id', '=', ledgerAccountId)
+      .executeTakeFirst();
+
+    if (!ledgerAccount) throw new NotFoundException('Ledger account does not exist.');
+
+    const minLimit = minBalanceLimit ?? ledgerAccount.minBalanceLimit;
+    const maxLimit = maxBalanceLimit ?? ledgerAccount.maxBalanceLimit;
+
+    if (minLimit != null && maxLimit != null && minLimit > maxLimit) {
+      throw new BadRequestException('minBalanceLimit should lower than equal to maxBalanceLimit.');
+    }
+
+    // We need to create control & operator account
+    // This ensure to have ids for same account.
+    // Id is idempotent then inserting the same won't work in case of collision.
+    // Update won't work
+    const boundCheckAccountTigerBeetleId = generateDeterministicId(
+      'control',
+      bufferToTbId(ledgerAccount.ledgerAccountTigerBeetleId).toString(),
+    );
+    const boundFundingAccountTigerBeetleId = generateDeterministicId(
+      'funding',
+      bufferToTbId(ledgerAccount.ledgerAccountTigerBeetleId).toString(),
+    );
+
+    ledgerAccount.boundCheckAccountTigerBeetleId = tbIdToBuffer(boundCheckAccountTigerBeetleId);
+    ledgerAccount.boundFundingAccountTigerBeetleId = tbIdToBuffer(boundFundingAccountTigerBeetleId);
+
+    const existingTbAccountIds = await this.tigerBeetleService.retrieveAccounts([
+      ledgerAccount.boundCheckAccountTigerBeetleId,
+      ledgerAccount.boundFundingAccountTigerBeetleId,
+    ]);
+
+    const tbAccountsData: Account[] = [];
+
+    const boundCheckAcountNormalBalance =
+      ledgerAccount.normalBalance === NormalBalanceEnum.CREDIT
+        ? AccountFlags.credits_must_not_exceed_debits
+        : AccountFlags.debits_must_not_exceed_credits;
+
+    const isBoundCheckAccountExists = existingTbAccountIds.some((tbAccount) => {
+      return (
+        tbAccount.id === boundCheckAccountTigerBeetleId &&
+        tbAccount.flags === boundCheckAcountNormalBalance &&
+        tbAccount.ledger === ledgerAccount.ledgerTigerBeetleId &&
+        tbAccount.code === ledgerAccount.currencyId
+      );
+    });
+
+    if (!isBoundCheckAccountExists) {
+      tbAccountsData.push({
+        id: boundCheckAccountTigerBeetleId, // Control account (opposite limit of target)
+        debits_pending: 0n,
+        debits_posted: 0n,
+        credits_pending: 0n,
+        credits_posted: 0n,
+        user_data_128: 0n,
+        user_data_64: 0n,
+        user_data_32: 0,
+        reserved: 0,
+        ledger: ledgerAccount.ledgerTigerBeetleId,
+        code: ledgerAccount.currencyId,
+        flags: boundCheckAcountNormalBalance,
+        timestamp: 0n,
+      });
+    }
+
+    const isBoundFundingAccountExists = existingTbAccountIds.some((tbAccount) => {
+      return (
+        tbAccount.id === boundFundingAccountTigerBeetleId &&
+        tbAccount.ledger === ledgerAccount.ledgerTigerBeetleId &&
+        tbAccount.code === ledgerAccount.currencyId
+      );
+    });
+
+    if (!isBoundFundingAccountExists) {
+      tbAccountsData.push({
+        id: boundFundingAccountTigerBeetleId, // Operator account (funds the control account)
+        debits_pending: 0n,
+        debits_posted: 0n,
+        credits_pending: 0n,
+        credits_posted: 0n,
+        user_data_128: 0n,
+        user_data_64: 0n,
+        user_data_32: 0,
+        reserved: 0,
+        ledger: ledgerAccount.ledgerTigerBeetleId,
+        code: ledgerAccount.currencyId,
+        flags: 0,
+        timestamp: 0n,
+      });
+    }
+    // If this fails no update will happen
+    if (tbAccountsData.length > 0) await this.tigerBeetleService.createAccounts(tbAccountsData);
+
+    await this.db.kysely
+      .updateTable('ledgerAccounts')
+      .set({
+        boundCheckAccountTigerBeetleId: ledgerAccount.boundCheckAccountTigerBeetleId,
+        boundFundingAccountTigerBeetleId: ledgerAccount.boundFundingAccountTigerBeetleId,
+        maxBalanceLimit,
+        minBalanceLimit,
+      })
+      .where('id', '=', ledgerAccountId)
+      .execute();
   }
 }
 

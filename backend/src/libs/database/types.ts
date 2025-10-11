@@ -62,6 +62,8 @@ export interface LedgerAccountMetadata {
 }
 
 export interface LedgerAccounts {
+  boundCheckAccountTigerBeetleId: Buffer | null;
+  boundFundingAccountTigerBeetleId: Buffer | null;
   createdAt: Generated<Timestamp>;
   currencyCode: string;
   currencyExponent: number;
@@ -70,6 +72,8 @@ export interface LedgerAccounts {
   externalId: string | null;
   id: Generated<string>;
   ledgerId: string;
+  maxBalanceLimit: Numeric | null;
+  minBalanceLimit: Numeric | null;
   name: string;
   normalBalance: string;
   tigerBeetleId: Buffer;

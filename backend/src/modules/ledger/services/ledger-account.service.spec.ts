@@ -26,6 +26,10 @@ describe('computeBalancesAmount', () => {
       name: normalBalance,
       tigerBeetleId: tbIdToBuffer(id()),
       deletedAt: null,
+      maxBalanceLimit: null,
+      minBalanceLimit: null,
+      boundCheckAccountTigerBeetleId: null,
+      boundFundingAccountTigerBeetleId: null,
     };
   }
 

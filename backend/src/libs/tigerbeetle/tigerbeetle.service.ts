@@ -1,8 +1,13 @@
-import assert from 'assert';
 import { PinoLogger } from 'nestjs-pino';
 import { Account, CreateAccountError, Transfer, createClient } from 'tigerbeetle-node';
 
-import { Injectable, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 
 import { bufferToTbId, tbIdToBuffer } from '@libs/database/utils';
 import { TigerBeetleTransferException } from '@libs/exceptions';
@@ -33,8 +38,31 @@ export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
         `Batch account at ${error.index} failed to create: ${CreateAccountError[error.result]}.`,
       );
     }
-    assert.strictEqual(errors.length, 0, 'Unable to create account');
+
+    if (errors.length > 0) {
+      throw new BadRequestException(
+        `Failed to create ${errors.length} account(s): ${errors.map((e) => CreateAccountError[e.result]).join(', ')}`,
+      );
+    }
+
     return this.retrieveAccount(tbIdToBuffer(data.id));
+  }
+
+  async createAccounts(data: Account[]): Promise<Account[]> {
+    const errors = await this.client.createAccounts(data);
+    for (const error of errors) {
+      this.logger.error(
+        `Batch account at ${error.index} failed to create: ${CreateAccountError[error.result]}.`,
+      );
+    }
+
+    if (errors.length > 0) {
+      throw new BadRequestException(
+        `Failed to create ${errors.length} account(s): ${errors.map((e) => CreateAccountError[e.result]).join(', ')}`,
+      );
+    }
+
+    return this.retrieveAccounts(data.map((a) => tbIdToBuffer(a.id)));
   }
 
   async createTransfers(data: Transfer[]): Promise<Transfer[]> {

@@ -5,8 +5,10 @@ import { HttpStatus } from '@nestjs/common';
 
 import { setupTestContext } from '@src/test/helpers';
 
+import { bufferToTbId } from '@libs/database/utils';
 import { NormalBalanceEnum } from '@libs/enums';
 import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
+import { generateDeterministicId } from '@libs/utils/id';
 import { setTestBasicAuthHeader } from '@libs/utils/tests';
 import { uuidV7 } from '@libs/utils/uuid';
 
@@ -68,6 +70,9 @@ describe('LedgerAccountController', () => {
           expect(response.body.ledgerId).toBe(ledger.id);
           expect(response.body.createdAt).toBeDefined();
           expect(response.body.updatedAt).toBeDefined();
+          expect(response.body.maxBalanceLimit).toBeNull();
+          expect(response.body.minBalanceLimit).toBeNull();
+
           expect(response.body.balances.pendingBalance).toMatchObject({
             credits: 0,
             debits: 0,
@@ -144,6 +149,9 @@ describe('LedgerAccountController', () => {
           expect(response.body.createdAt).toBeDefined();
           expect(response.body.updatedAt).toBeDefined();
           expect(response.body.externalId).toBe(externalId);
+          expect(response.body.maxBalanceLimit).toBeNull();
+          expect(response.body.minBalanceLimit).toBeNull();
+
           expect(response.body.balances.pendingBalance).toMatchObject({
             credits: 0,
             debits: 0,
@@ -1076,6 +1084,8 @@ describe('LedgerAccountController', () => {
           expect(response.body.id).toBe(account.id);
           expect(response.body.name).toBe('credit account');
           expect(response.body.description).toBe('test');
+          expect(response.body.maxBalanceLimit).toBeNull();
+          expect(response.body.minBalanceLimit).toBeNull();
         });
     });
 
@@ -1212,6 +1222,232 @@ describe('LedgerAccountController', () => {
           .selectAll()
           .executeTakeFirst(),
       ).not.toBeDefined();
+    });
+
+    it('should set minBalanceLimit', async () => {
+      const data = { minBalanceLimit: 100 };
+      const ledgerAccountBeforePatch = (await ctx.trx
+        .selectFrom('ledgerAccounts')
+        .where('id', '=', account.id)
+        .selectAll()
+        .executeTakeFirstOrThrow())!;
+      expect(ledgerAccountBeforePatch.minBalanceLimit).toBeNull();
+      expect(ledgerAccountBeforePatch.maxBalanceLimit).toBeNull();
+      expect(ledgerAccountBeforePatch.boundCheckAccountTigerBeetleId).toBeNull();
+      expect(ledgerAccountBeforePatch.boundFundingAccountTigerBeetleId).toBeNull();
+
+      const boundCheckAccountTigerBeetleId = generateDeterministicId(
+        'control',
+        bufferToTbId(ledgerAccountBeforePatch.tigerBeetleId).toString(),
+      );
+      const boundFundingAccountTigerBeetleId = generateDeterministicId(
+        'funding',
+        bufferToTbId(ledgerAccountBeforePatch.tigerBeetleId).toString(),
+      );
+
+      await request(ctx.app.getHttpServer())
+        .patch(`/v1/ledger_accounts/${account.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send(data)
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.minBalanceLimit).toBe(data.minBalanceLimit);
+          expect(response.body.maxBalanceLimit).toBeNull();
+        });
+
+      const ledgerAccountAfterPatch = (await ctx.trx
+        .selectFrom('ledgerAccounts')
+        .where('id', '=', account.id)
+        .selectAll()
+        .executeTakeFirstOrThrow())!;
+
+      expect(ledgerAccountAfterPatch.minBalanceLimit).toBe(data.minBalanceLimit.toString());
+      expect(ledgerAccountAfterPatch.maxBalanceLimit).toBeNull();
+      expect(bufferToTbId(ledgerAccountAfterPatch.boundCheckAccountTigerBeetleId!)).toBe(
+        boundCheckAccountTigerBeetleId,
+      );
+      expect(bufferToTbId(ledgerAccountAfterPatch.boundFundingAccountTigerBeetleId!)).toBe(
+        boundFundingAccountTigerBeetleId,
+      );
+    });
+
+    it('should not set negative minBalanceLimit', async () => {
+      const data = { minBalanceLimit: -100 };
+
+      await request(ctx.app.getHttpServer())
+        .patch(`/v1/ledger_accounts/${account.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send(data)
+        .expect(HttpStatus.BAD_REQUEST)
+        .expect((response) => {
+          expect(response.body.message[0]).toBe('minBalanceLimit must not be less than 0');
+        });
+    });
+
+    it('should not set minBalanceLimit greater than maxBalanceLimit', async () => {
+      const data = { minBalanceLimit: 100, maxBalanceLimit: 10 };
+
+      await request(ctx.app.getHttpServer())
+        .patch(`/v1/ledger_accounts/${account.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send(data)
+        .expect(HttpStatus.BAD_REQUEST)
+        .expect((response) => {
+          expect(response.body.message).toBe(
+            'minBalanceLimit should lower than equal to maxBalanceLimit.',
+          );
+        });
+    });
+
+    it('should not set negative maxBalanceLimit', async () => {
+      const data = { maxBalanceLimit: -100 };
+
+      await request(ctx.app.getHttpServer())
+        .patch(`/v1/ledger_accounts/${account.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send(data)
+        .expect(HttpStatus.BAD_REQUEST)
+        .expect((response) => {
+          expect(response.body.message[0]).toBe('maxBalanceLimit must not be less than 0');
+        });
+    });
+
+    it('should set maxBalanceLimit', async () => {
+      const data = { maxBalanceLimit: 100 };
+      const ledgerAccountBeforePatch = (await ctx.trx
+        .selectFrom('ledgerAccounts')
+        .where('id', '=', account.id)
+        .selectAll()
+        .executeTakeFirstOrThrow())!;
+      expect(ledgerAccountBeforePatch.minBalanceLimit).toBeNull();
+      expect(ledgerAccountBeforePatch.maxBalanceLimit).toBeNull();
+      expect(ledgerAccountBeforePatch.boundCheckAccountTigerBeetleId).toBeNull();
+      expect(ledgerAccountBeforePatch.boundFundingAccountTigerBeetleId).toBeNull();
+
+      const boundCheckAccountTigerBeetleId = generateDeterministicId(
+        'control',
+        bufferToTbId(ledgerAccountBeforePatch.tigerBeetleId).toString(),
+      );
+      const boundFundingAccountTigerBeetleId = generateDeterministicId(
+        'funding',
+        bufferToTbId(ledgerAccountBeforePatch.tigerBeetleId).toString(),
+      );
+
+      await request(ctx.app.getHttpServer())
+        .patch(`/v1/ledger_accounts/${account.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send(data)
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.maxBalanceLimit).toBe(data.maxBalanceLimit);
+          expect(response.body.minBalanceLimit).toBeNull();
+        });
+
+      const ledgerAccountAfterPatch = (await ctx.trx
+        .selectFrom('ledgerAccounts')
+        .where('id', '=', account.id)
+        .selectAll()
+        .executeTakeFirstOrThrow())!;
+
+      expect(ledgerAccountAfterPatch.maxBalanceLimit).toBe(data.maxBalanceLimit.toString());
+      expect(ledgerAccountAfterPatch.minBalanceLimit).toBeNull();
+      expect(bufferToTbId(ledgerAccountAfterPatch.boundCheckAccountTigerBeetleId!)).toBe(
+        boundCheckAccountTigerBeetleId,
+      );
+      expect(bufferToTbId(ledgerAccountAfterPatch.boundFundingAccountTigerBeetleId!)).toBe(
+        boundFundingAccountTigerBeetleId,
+      );
+    });
+
+    it('should set minBalanceLimit & maxBalanceLimit', async () => {
+      const data = { minBalanceLimit: 100, maxBalanceLimit: 1000 };
+      const ledgerAccountBeforePatch = (await ctx.trx
+        .selectFrom('ledgerAccounts')
+        .where('id', '=', account.id)
+        .selectAll()
+        .executeTakeFirstOrThrow())!;
+      expect(ledgerAccountBeforePatch.minBalanceLimit).toBeNull();
+      expect(ledgerAccountBeforePatch.maxBalanceLimit).toBeNull();
+      expect(ledgerAccountBeforePatch.boundCheckAccountTigerBeetleId).toBeNull();
+      expect(ledgerAccountBeforePatch.boundFundingAccountTigerBeetleId).toBeNull();
+
+      const boundCheckAccountTigerBeetleId = generateDeterministicId(
+        'control',
+        bufferToTbId(ledgerAccountBeforePatch.tigerBeetleId).toString(),
+      );
+      const boundFundingAccountTigerBeetleId = generateDeterministicId(
+        'funding',
+        bufferToTbId(ledgerAccountBeforePatch.tigerBeetleId).toString(),
+      );
+
+      await request(ctx.app.getHttpServer())
+        .patch(`/v1/ledger_accounts/${account.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send(data)
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.maxBalanceLimit).toBe(data.maxBalanceLimit);
+          expect(response.body.minBalanceLimit).toBe(data.minBalanceLimit);
+        });
+
+      const ledgerAccountAfterPatch = (await ctx.trx
+        .selectFrom('ledgerAccounts')
+        .where('id', '=', account.id)
+        .selectAll()
+        .executeTakeFirstOrThrow())!;
+
+      expect(ledgerAccountAfterPatch.maxBalanceLimit).toBe(data.maxBalanceLimit.toString());
+      expect(ledgerAccountAfterPatch.minBalanceLimit).toBe(data.minBalanceLimit.toString());
+      expect(bufferToTbId(ledgerAccountAfterPatch.boundCheckAccountTigerBeetleId!)).toBe(
+        boundCheckAccountTigerBeetleId,
+      );
+      expect(bufferToTbId(ledgerAccountAfterPatch.boundFundingAccountTigerBeetleId!)).toBe(
+        boundFundingAccountTigerBeetleId,
+      );
+
+      expect(
+        tigerBeetleService.retrieveAccount(
+          ledgerAccountAfterPatch.boundFundingAccountTigerBeetleId!,
+        ),
+      ).not.toBeNull();
+      expect(
+        tigerBeetleService.retrieveAccount(ledgerAccountAfterPatch.boundCheckAccountTigerBeetleId!),
+      ).not.toBeNull();
+    });
+
+    it('should unset minBalanceLimit & maxBalanceLimit', async () => {
+      const data = { minBalanceLimit: 100, maxBalanceLimit: 1000 };
+
+      await request(ctx.app.getHttpServer())
+        .patch(`/v1/ledger_accounts/${account.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send(data)
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.maxBalanceLimit).toBe(data.maxBalanceLimit);
+          expect(response.body.minBalanceLimit).toBe(data.minBalanceLimit);
+        });
+
+      await request(ctx.app.getHttpServer())
+        .patch(`/v1/ledger_accounts/${account.id}`)
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send({ minBalanceLimit: null, maxBalanceLimit: null })
+        .expect(HttpStatus.OK)
+        .expect(async (response) => {
+          expect(response.body.maxBalanceLimit).toBeNull();
+          expect(response.body.minBalanceLimit).toBeNull();
+        });
+
+      const ledgerAccountAfterPatch = (await ctx.trx
+        .selectFrom('ledgerAccounts')
+        .where('id', '=', account.id)
+        .selectAll()
+        .executeTakeFirstOrThrow())!;
+
+      expect(ledgerAccountAfterPatch.maxBalanceLimit).toBeNull();
+      expect(ledgerAccountAfterPatch.minBalanceLimit).toBeNull();
+      expect(ledgerAccountAfterPatch.boundCheckAccountTigerBeetleId!).not.toBeNull();
+      expect(ledgerAccountAfterPatch.boundFundingAccountTigerBeetleId!).not.toBeNull();
     });
   });
 });

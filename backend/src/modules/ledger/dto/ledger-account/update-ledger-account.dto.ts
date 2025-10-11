@@ -1,4 +1,12 @@
-import { IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -40,4 +48,16 @@ export class UpdateLedgerAccountDto {
   @IsObject()
   @IsMetadata({ message: 'metadata must have string keys/values max length 255' })
   metadata?: Record<string, string>;
+
+  @ApiPropertyOptional({ description: 'Max available balance on the account.', example: 1_000_000 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  maxBalanceLimit: number | null;
+
+  @ApiPropertyOptional({ description: 'Min available balance on the account.', example: 100_000 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minBalanceLimit: number | null;
 }
