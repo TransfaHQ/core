@@ -3,7 +3,7 @@ import { Selectable } from 'kysely';
 import { Account, AccountFlags, Account as TigerBeetleAccount, id } from 'tigerbeetle-node';
 import { validate } from 'uuid';
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { CursorPaginatedResult, cursorPaginate } from '@libs/database';
 import { DatabaseService } from '@libs/database/database.service';
@@ -11,6 +11,7 @@ import { LedgerAccounts } from '@libs/database/types';
 import { bufferToTbId, tbIdToBuffer } from '@libs/database/utils';
 import { NormalBalanceEnum } from '@libs/enums';
 import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
+import { generateDeterministicId } from '@libs/utils/id';
 
 import { CreateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/create-ledger-account.dto';
 import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/update-ledger-account.dto';
@@ -359,31 +360,27 @@ export class LedgerAccountService {
   }
 
   /**
-   * Sets a balance limit on a ledger account by creating a pair of linked TigerBeetle accounts
-   * (control + operator) that enforce the limit through account flags.
+   * Sets balance limits (minimum and/or maximum) on a given ledger account.
    *
-   * This uses the TigerBeetle "balance bounds" pattern by creating:
-   * - a **control account**: enforces limits using balance bound flags
-   * - an **operator account**: used to fund the control account if needed
+   * If either `minBalanceLimit` or `maxBalanceLimit` is defined (non-null), this method:
+   * - Fetches the ledger account and its associated ledger and currency metadata.
+   * - Calculates and assigns deterministic TigerBeetle IDs for the control (check) and funding accounts.
+   * - Checks if those TigerBeetle accounts already exist.
+   * - Creates them if they do not exist, ensuring correct configuration and flags based on the ledger's normal balance.
+   * - Updates the ledger account in the database with the new limits and TigerBeetle account IDs.
    *
-   * ⚠️ **TigerBeetle accounts are immutable** — they cannot be deleted or updated.
-   * Because of this, we **must not recreate accounts** with the same ID.
+   * Notes:
+   * - This operation is **idempotent**. The TigerBeetle account IDs are deterministically derived,
+   *   so repeated calls with the same `ledgerAccountId` will not create conflicting state.
+   * - Throws an exception if the provided `ledgerAccountId` does not correspond to an existing ledger account.
    *
-   * ✅ To make this operation idempotent and deterministic:
-   * - We **derive the control and operator account IDs** based on the main account ID:
-   *    - `controlAccountId = mainAccountId + 1n`
-   *    - `operatorAccountId = mainAccountId + 2n`
-   * - This ensures that for a given ledger account, the corresponding TB accounts
-   *   are predictable and unique without needing to store state externally.
+   * @param {string} ledgerAccountId - The unique identifier of the ledger account to update.
+   * @param {number | null} maxBalanceLimit - The optional maximum balance limit to enforce (null if no max).
+   * @param {number | null} minBalanceLimit - The optional minimum balance limit to enforce (null if no min).
    *
-   * The logic checks if the accounts already exist in TigerBeetle before attempting creation.
-   * If they do not exist, it creates them with appropriate flags based on the
-   * normal balance of the ledger account.
+   * @throws {NotFoundException} If the ledger account does not exist in the database.
    *
-   * @param ledgerAccountId - UUID of the ledger account in the application's DB
-   * @param maxBalanceLimit - The balance limit to enforce (in smallest currency units, e.g., cents)
-   *
-   * @throws NotFoundException - If the ledger account doesn't exist in the DB
+   * @returns {Promise<void>} Resolves once the balance limits and related TigerBeetle accounts are updated.
    */
   private async setBalanceLimits(
     ledgerAccountId: string,
@@ -412,14 +409,26 @@ export class LedgerAccountService {
 
     if (!ledgerAccount) throw new NotFoundException('Ledger account does not exist.');
 
+    const minLimit = minBalanceLimit ?? ledgerAccount.minBalanceLimit;
+    const maxLimit = maxBalanceLimit ?? ledgerAccount.maxBalanceLimit;
+
+    if (minLimit != null && maxLimit != null && minLimit > maxLimit) {
+      throw new BadRequestException('minBalanceLimit should lower than equal to maxBalanceLimit.');
+    }
+
     // We need to create control & operator account
     // This ensure to have ids for same account.
     // Id is idempotent then inserting the same won't work in case of collision.
     // Update won't work
-    const boundCheckAccountTigerBeetleId =
-      bufferToTbId(ledgerAccount.ledgerAccountTigerBeetleId) + 1n;
-    const boundFundingAccountTigerBeetleId =
-      bufferToTbId(ledgerAccount.ledgerAccountTigerBeetleId) + 2n;
+    const boundCheckAccountTigerBeetleId = generateDeterministicId(
+      'control',
+      bufferToTbId(ledgerAccount.ledgerAccountTigerBeetleId).toString(),
+    );
+    const boundFundingAccountTigerBeetleId = generateDeterministicId(
+      'funding',
+      bufferToTbId(ledgerAccount.ledgerAccountTigerBeetleId).toString(),
+    );
+
     ledgerAccount.boundCheckAccountTigerBeetleId = tbIdToBuffer(boundCheckAccountTigerBeetleId);
     ledgerAccount.boundFundingAccountTigerBeetleId = tbIdToBuffer(boundFundingAccountTigerBeetleId);
 
@@ -464,7 +473,7 @@ export class LedgerAccountService {
 
     const isBoundFundingAccountExists = existingTbAccountIds.some((tbAccount) => {
       return (
-        tbAccount.id === boundCheckAccountTigerBeetleId &&
+        tbAccount.id === boundFundingAccountTigerBeetleId &&
         tbAccount.ledger === ledgerAccount.ledgerTigerBeetleId &&
         tbAccount.code === ledgerAccount.currencyId
       );
