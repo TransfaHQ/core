@@ -53,5 +53,11 @@ export class UpdateLedgerAccountDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  balanceLimit?: number;
+  maxBalanceLimit: number | null;
+
+  @ApiPropertyOptional({ description: 'Min available balance on the account.', example: 100_000 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minBalanceLimit: number | null;
 }

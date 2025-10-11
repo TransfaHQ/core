@@ -257,6 +257,8 @@ export class LedgerAccountService {
       const updatePayload = {
         ...(data.name && { name: data.name }),
         ...(data.description !== undefined && { description: data.description }),
+        ...(data.maxBalanceLimit === null && { maxBalanceLimit: data.maxBalanceLimit }),
+        ...(data.minBalanceLimit === null && { minBalanceLimit: data.minBalanceLimit }),
       };
 
       if (Object.keys(updatePayload).length > 0) {
@@ -319,9 +321,12 @@ export class LedgerAccountService {
       return { ...updatedAccount, metadata };
     });
 
-    if (data.balanceLimit && typeof data.balanceLimit === 'number') {
-      await this.setBalanceLimit(id, data.balanceLimit);
-      updatedAccount.balanceLimit = data.balanceLimit.toString();
+    if (data.minBalanceLimit != null || data.maxBalanceLimit != null) {
+      await this.setBalanceLimits(id, data.maxBalanceLimit, data.minBalanceLimit);
+      updatedAccount.minBalanceLimit =
+        data.minBalanceLimit?.toString() ?? updatedAccount.minBalanceLimit;
+      updatedAccount.maxBalanceLimit =
+        data.maxBalanceLimit?.toString() ?? updatedAccount.maxBalanceLimit;
     }
 
     // Get TigerBeetle account for balance calculation
@@ -376,11 +381,17 @@ export class LedgerAccountService {
    * normal balance of the ledger account.
    *
    * @param ledgerAccountId - UUID of the ledger account in the application's DB
-   * @param balanceLimit - The balance limit to enforce (in smallest currency units, e.g., cents)
+   * @param maxBalanceLimit - The balance limit to enforce (in smallest currency units, e.g., cents)
    *
    * @throws NotFoundException - If the ledger account doesn't exist in the DB
    */
-  private async setBalanceLimit(ledgerAccountId: string, balanceLimit: number): Promise<void> {
+  private async setBalanceLimits(
+    ledgerAccountId: string,
+    maxBalanceLimit: number | null,
+    minBalanceLimit: number | null,
+  ): Promise<void> {
+    if (minBalanceLimit == null && maxBalanceLimit == null) return;
+
     const ledgerAccount = await this.db.kysely
       .selectFrom('ledgerAccounts as la')
       .innerJoin('ledgers as l', 'l.id', 'la.ledgerId')
@@ -389,9 +400,10 @@ export class LedgerAccountService {
         'la.id as ledgerAccountId',
         'l.tigerBeetleId as ledgerTigerBeetleId',
         'c.id as currencyId',
-        'la.controlAccountTigerBeetleId',
-        'la.operatorAccountTigerBeetleId',
-        'la.balanceLimit',
+        'la.boundCheckAccountTigerBeetleId',
+        'la.boundFundingAccountTigerBeetleId',
+        'la.maxBalanceLimit',
+        'la.minBalanceLimit',
         'la.normalBalance',
         'la.tigerBeetleId as ledgerAccountTigerBeetleId',
       ])
@@ -404,28 +416,37 @@ export class LedgerAccountService {
     // This ensure to have ids for same account.
     // Id is idempotent then inserting the same won't work in case of collision.
     // Update won't work
-    const controlAccountTbId = bufferToTbId(ledgerAccount.ledgerAccountTigerBeetleId) + 1n;
-    const operatorAccountTbId = bufferToTbId(ledgerAccount.ledgerAccountTigerBeetleId) + 2n;
-    ledgerAccount.controlAccountTigerBeetleId = tbIdToBuffer(controlAccountTbId);
-    ledgerAccount.operatorAccountTigerBeetleId = tbIdToBuffer(operatorAccountTbId);
+    const boundCheckAccountTigerBeetleId =
+      bufferToTbId(ledgerAccount.ledgerAccountTigerBeetleId) + 1n;
+    const boundFundingAccountTigerBeetleId =
+      bufferToTbId(ledgerAccount.ledgerAccountTigerBeetleId) + 2n;
+    ledgerAccount.boundCheckAccountTigerBeetleId = tbIdToBuffer(boundCheckAccountTigerBeetleId);
+    ledgerAccount.boundFundingAccountTigerBeetleId = tbIdToBuffer(boundFundingAccountTigerBeetleId);
 
-    const existingTbAccountIds = (
-      await this.tigerBeetleService.retrieveAccounts([
-        ledgerAccount.controlAccountTigerBeetleId,
-        ledgerAccount.operatorAccountTigerBeetleId,
-      ])
-    ).map((t) => t.id);
+    const existingTbAccountIds = await this.tigerBeetleService.retrieveAccounts([
+      ledgerAccount.boundCheckAccountTigerBeetleId,
+      ledgerAccount.boundFundingAccountTigerBeetleId,
+    ]);
 
     const tbAccountsData: Account[] = [];
 
-    if (!existingTbAccountIds.includes(controlAccountTbId)) {
-      const controlAccountNormalBalance =
-        ledgerAccount.normalBalance === NormalBalanceEnum.CREDIT
-          ? AccountFlags.credits_must_not_exceed_debits
-          : AccountFlags.debits_must_not_exceed_credits;
+    const boundCheckAcountNormalBalance =
+      ledgerAccount.normalBalance === NormalBalanceEnum.CREDIT
+        ? AccountFlags.credits_must_not_exceed_debits
+        : AccountFlags.debits_must_not_exceed_credits;
 
+    const isBoundCheckAccountExists = existingTbAccountIds.some((tbAccount) => {
+      return (
+        tbAccount.id === boundCheckAccountTigerBeetleId &&
+        tbAccount.flags === boundCheckAcountNormalBalance &&
+        tbAccount.ledger === ledgerAccount.ledgerTigerBeetleId &&
+        tbAccount.code === ledgerAccount.currencyId
+      );
+    });
+
+    if (!isBoundCheckAccountExists) {
       tbAccountsData.push({
-        id: controlAccountTbId, // Control account (opposite limit of target)
+        id: boundCheckAccountTigerBeetleId, // Control account (opposite limit of target)
         debits_pending: 0n,
         debits_posted: 0n,
         credits_pending: 0n,
@@ -436,14 +457,22 @@ export class LedgerAccountService {
         reserved: 0,
         ledger: ledgerAccount.ledgerTigerBeetleId,
         code: ledgerAccount.currencyId,
-        flags: controlAccountNormalBalance,
+        flags: boundCheckAcountNormalBalance,
         timestamp: 0n,
       });
     }
 
-    if (!existingTbAccountIds.includes(operatorAccountTbId)) {
+    const isBoundFundingAccountExists = existingTbAccountIds.some((tbAccount) => {
+      return (
+        tbAccount.id === boundCheckAccountTigerBeetleId &&
+        tbAccount.ledger === ledgerAccount.ledgerTigerBeetleId &&
+        tbAccount.code === ledgerAccount.currencyId
+      );
+    });
+
+    if (!isBoundFundingAccountExists) {
       tbAccountsData.push({
-        id: operatorAccountTbId, // Operator account (funds the control account)
+        id: boundFundingAccountTigerBeetleId, // Operator account (funds the control account)
         debits_pending: 0n,
         debits_posted: 0n,
         credits_pending: 0n,
@@ -464,9 +493,10 @@ export class LedgerAccountService {
     await this.db.kysely
       .updateTable('ledgerAccounts')
       .set({
-        operatorAccountTigerBeetleId: ledgerAccount.operatorAccountTigerBeetleId,
-        controlAccountTigerBeetleId: ledgerAccount.controlAccountTigerBeetleId,
-        balanceLimit,
+        boundCheckAccountTigerBeetleId: ledgerAccount.boundCheckAccountTigerBeetleId,
+        boundFundingAccountTigerBeetleId: ledgerAccount.boundFundingAccountTigerBeetleId,
+        maxBalanceLimit,
+        minBalanceLimit,
       })
       .where('id', '=', ledgerAccountId)
       .execute();
