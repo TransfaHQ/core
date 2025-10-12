@@ -679,11 +679,10 @@ export class LedgerTransactionService {
    * Implements max balance limit checking using TigerBeetle's control account pattern.
    *
    * This creates a 4-transfer sequence:
-   * 1. Transfer to check
-   * 2. Set control account balance to limit
-   * 3. Create pending balancing transfer to check if limit would be exceeded
-   * 4. Void the pending transfer (cleanup)
-   * 5. Reset control account to zero (cleanup)
+   * 1. Set control account balance to limit
+   * 2. Create pending balancing transfer to check if limit would be exceeded
+   * 3. Void the pending transfer (cleanup)
+   * 4. Reset control account to zero (cleanup)
    *
    * If transfer #2 fails due to insufficient balance, the entire transaction is rejected,
    * preventing the account from exceeding its max balance limit.
@@ -820,11 +819,10 @@ export class LedgerTransactionService {
    * This creates a 4-transfer sequence:
    * 1. Set control account balance to limit
    * 2. Create pending balancing transfer to check if limit would be exceeded
-   * 3. Transfer to check
-   * 4. Void the pending transfer (cleanup)
-   * 5. Reset control account to zero (cleanup)
+   * 3. Void the pending transfer (cleanup)
+   * 4. Reset control account to zero (cleanup)
    *
-   * If transfer #3 fails due to insufficient balance, the entire transaction is rejected,
+   * If transfer #4 fails due to insufficient balance, the entire transaction is rejected,
    * preventing the account from exceeding its max balance limit.
    *
    * @param account - The account with max balance limit
