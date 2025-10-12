@@ -520,7 +520,12 @@ export class LedgerTransactionService {
           'minBalanceLimit',
           'tigerBeetleId',
         ])
-        .where('id', 'in', Array.from(new Set(ledgerEntries.map((v) => v.ledgerAccountId))))
+        .where(({ eb, and, or }) =>
+          and([
+            eb('id', '=', ledgerTransactionId),
+            or([eb('minBalanceLimit', 'is not', null), eb('maxBalanceLimit', 'is not', null)]),
+          ]),
+        )
         .execute();
 
       // amount_max is a helper from tigerbeetle package that helps to post the full amount
@@ -566,7 +571,20 @@ export class LedgerTransactionService {
           ledgerAccount.normalBalance === NormalBalanceEnum.CREDIT
         ) {
           this.transferWithMaxBalanceBoundOnCreditAccount(
-            ledgerAccount!,
+            ledgerAccount,
+            status,
+            data,
+            tbTransfersData,
+          );
+        }
+
+        if (
+          entry.direction === NormalBalanceEnum.DEBIT &&
+          ledgerAccount &&
+          ledgerAccount.normalBalance === NormalBalanceEnum.DEBIT
+        ) {
+          this.transferWithMaxBalanceBoundOnDebitAccount(
+            ledgerAccount,
             status,
             data,
             tbTransfersData,
@@ -633,7 +651,7 @@ export class LedgerTransactionService {
         id: id(),
         debit_account_id: boundCheckAccountTigerBeetleId,
         credit_account_id: boundFundingAccountTigerBeetleId,
-        amount: maxBalanceLimit, // AMOUNT_MAX (u64 max value)
+        amount: maxBalanceLimit, // LIMIT
         flags: TransferFlags.linked,
       },
       // Transfer 2: Check if destination balance would exceed limit (PENDING)
@@ -661,7 +679,7 @@ export class LedgerTransactionService {
         id: id(),
         debit_account_id: boundFundingAccountTigerBeetleId,
         credit_account_id: boundCheckAccountTigerBeetleId,
-        amount: maxBalanceLimit, // AMOUNT_MAX
+        amount: maxBalanceLimit, // LIMIT
         flags: TransferFlags.balancing_debit | TransferFlags.linked,
       },
     ].forEach((data) => response.push(data));
@@ -707,7 +725,7 @@ export class LedgerTransactionService {
         id: id(),
         debit_account_id: boundFundingAccountTigerBeetleId,
         credit_account_id: boundCheckAccountTigerBeetleId,
-        amount: maxBalanceLimit, // AMOUNT_MAX (u64 max value)
+        amount: maxBalanceLimit, // Limit
         flags: TransferFlags.linked,
       },
       // Transfer 2: Check if destination balance would exceed limit (PENDING)
@@ -736,7 +754,7 @@ export class LedgerTransactionService {
         debit_account_id: boundCheckAccountTigerBeetleId,
         credit_account_id: boundFundingAccountTigerBeetleId,
         amount: maxBalanceLimit, // AMOUNT_MAX
-        flags: TransferFlags.balancing_debit | TransferFlags.linked,
+        flags: TransferFlags.balancing_credit | TransferFlags.linked,
       },
     ].forEach((data) => response.push(data));
   }
