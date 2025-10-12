@@ -11,7 +11,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import {
-  ApiAcceptedResponse,
   ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiHeader,
@@ -190,7 +189,7 @@ export class LedgerTransactionController {
   }
 
   @Post(':id/post')
-  @HttpCode(HttpStatus.ACCEPTED)
+  @HttpCode(HttpStatus.OK)
   @UseInterceptors(IdempotencyInterceptor)
   @ApiHeader({
     name: 'idempotency-key',
@@ -202,7 +201,7 @@ export class LedgerTransactionController {
     summary: 'Post a pending transaction',
     description: 'Post a pending transaction',
   })
-  @ApiAcceptedResponse({
+  @ApiOkResponse({
     description: 'The ledger transaction has been successfully posted',
     type: LedgerTransactionResponseDto,
   })
@@ -224,7 +223,7 @@ export class LedgerTransactionController {
   }
 
   @Post(':id/archive')
-  @HttpCode(HttpStatus.ACCEPTED)
+  @HttpCode(HttpStatus.OK)
   @UseInterceptors(IdempotencyInterceptor)
   @ApiHeader({
     name: 'idempotency-key',
@@ -236,7 +235,7 @@ export class LedgerTransactionController {
     summary: 'Archive a pending transaction',
     description: 'Archive a pending transaction',
   })
-  @ApiAcceptedResponse({
+  @ApiOkResponse({
     description: 'The ledger transaction has been successfully archived',
     type: LedgerTransactionResponseDto,
   })

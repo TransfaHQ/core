@@ -1226,6 +1226,9 @@ describe('LedgerAccountController', () => {
 
     it('should set minBalanceLimit', async () => {
       const data = { minBalanceLimit: 100 };
+      const minBalanceLimitWithPrecision =
+        data.minBalanceLimit * Math.pow(10, account.currencyExponent);
+
       const ledgerAccountBeforePatch = (await ctx.trx
         .selectFrom('ledgerAccounts')
         .where('id', '=', account.id)
@@ -1261,7 +1264,7 @@ describe('LedgerAccountController', () => {
         .selectAll()
         .executeTakeFirstOrThrow())!;
 
-      expect(ledgerAccountAfterPatch.minBalanceLimit).toBe(data.minBalanceLimit.toString());
+      expect(ledgerAccountAfterPatch.minBalanceLimit).toBe(minBalanceLimitWithPrecision.toString());
       expect(ledgerAccountAfterPatch.maxBalanceLimit).toBeNull();
       expect(bufferToTbId(ledgerAccountAfterPatch.boundCheckAccountTigerBeetleId!)).toBe(
         boundCheckAccountTigerBeetleId,
@@ -1333,6 +1336,9 @@ describe('LedgerAccountController', () => {
         bufferToTbId(ledgerAccountBeforePatch.tigerBeetleId).toString(),
       );
 
+      const maxBalanceLimitWithPrecision =
+        data.maxBalanceLimit * Math.pow(10, account.currencyExponent);
+
       await request(ctx.app.getHttpServer())
         .patch(`/v1/ledger_accounts/${account.id}`)
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -1349,7 +1355,7 @@ describe('LedgerAccountController', () => {
         .selectAll()
         .executeTakeFirstOrThrow())!;
 
-      expect(ledgerAccountAfterPatch.maxBalanceLimit).toBe(data.maxBalanceLimit.toString());
+      expect(ledgerAccountAfterPatch.maxBalanceLimit).toBe(maxBalanceLimitWithPrecision.toString());
       expect(ledgerAccountAfterPatch.minBalanceLimit).toBeNull();
       expect(bufferToTbId(ledgerAccountAfterPatch.boundCheckAccountTigerBeetleId!)).toBe(
         boundCheckAccountTigerBeetleId,
@@ -1380,6 +1386,12 @@ describe('LedgerAccountController', () => {
         bufferToTbId(ledgerAccountBeforePatch.tigerBeetleId).toString(),
       );
 
+      const maxBalanceLimitWithPrecision =
+        data.maxBalanceLimit * Math.pow(10, account.currencyExponent);
+
+      const minBalanceLimitWithPrecision =
+        data.minBalanceLimit * Math.pow(10, account.currencyExponent);
+
       await request(ctx.app.getHttpServer())
         .patch(`/v1/ledger_accounts/${account.id}`)
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -1396,8 +1408,8 @@ describe('LedgerAccountController', () => {
         .selectAll()
         .executeTakeFirstOrThrow())!;
 
-      expect(ledgerAccountAfterPatch.maxBalanceLimit).toBe(data.maxBalanceLimit.toString());
-      expect(ledgerAccountAfterPatch.minBalanceLimit).toBe(data.minBalanceLimit.toString());
+      expect(ledgerAccountAfterPatch.maxBalanceLimit).toBe(maxBalanceLimitWithPrecision.toString());
+      expect(ledgerAccountAfterPatch.minBalanceLimit).toBe(minBalanceLimitWithPrecision.toString());
       expect(bufferToTbId(ledgerAccountAfterPatch.boundCheckAccountTigerBeetleId!)).toBe(
         boundCheckAccountTigerBeetleId,
       );

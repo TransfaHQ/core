@@ -1,3 +1,5 @@
+import { BigNumber } from 'bignumber.js';
+
 import { LedgerTransactionStatusEnum, NormalBalanceEnum } from '@libs/enums';
 
 import { CurrencyResponseDto } from '@modules/ledger/dto/currency/currency-response.dto';
@@ -13,6 +15,7 @@ import { LedgerEntryWithAccount } from '@modules/ledger/services/ledger-entry.se
 import { Currency, Ledger, LedgerAccount, LedgerEntry, LedgerTransaction } from '../types';
 
 export const ledgerAccountToApiV1Response = (entity: LedgerAccount): LedgerAccountResponseDto => {
+  const currencyExponentMultiplier = BigNumber(10).pow(entity.currencyExponent);
   return {
     id: entity.id,
     name: entity.name,
@@ -20,8 +23,12 @@ export const ledgerAccountToApiV1Response = (entity: LedgerAccount): LedgerAccou
     normalBalance: entity.normalBalance,
     ledgerId: entity.ledgerId,
     externalId: entity.externalId,
-    maxBalanceLimit: entity.maxBalanceLimit ? Number(entity.maxBalanceLimit) : null,
-    minBalanceLimit: entity.minBalanceLimit ? Number(entity.minBalanceLimit) : null,
+    maxBalanceLimit: entity.maxBalanceLimit
+      ? BigNumber(entity.maxBalanceLimit).dividedBy(currencyExponentMultiplier).toNumber()
+      : null,
+    minBalanceLimit: entity.minBalanceLimit
+      ? BigNumber(entity.minBalanceLimit).dividedBy(currencyExponentMultiplier).toNumber()
+      : null,
     balances: entity.balances,
     metadata: Object.fromEntries((entity.metadata ?? []).map((v) => [v.key, v.value])),
     createdAt: entity.createdAt,

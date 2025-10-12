@@ -253,7 +253,7 @@ export class LedgerAccountService {
   }
 
   async update(id: string, data: UpdateLedgerAccountDto): Promise<LedgerAccount> {
-    const updatedAccount = await this.db.transaction(async (trx) => {
+    await this.db.transaction(async (trx) => {
       // Update ledger account basic information
       const updatePayload = {
         ...(data.name && { name: data.name }),
@@ -305,38 +305,13 @@ export class LedgerAccountService {
             .execute();
         }
       }
-
-      // Fetch the updated ledger account with metadata
-      const updatedAccount = await trx
-        .selectFrom('ledgerAccounts')
-        .where('id', '=', id)
-        .selectAll()
-        .executeTakeFirstOrThrow();
-
-      const metadata = await trx
-        .selectFrom('ledgerAccountMetadata')
-        .select(['key', 'value'])
-        .where('ledgerAccountId', '=', id)
-        .execute();
-
-      return { ...updatedAccount, metadata };
     });
 
     if (data.minBalanceLimit != null || data.maxBalanceLimit != null) {
       await this.setBalanceLimits(id, data.maxBalanceLimit, data.minBalanceLimit);
-      updatedAccount.minBalanceLimit =
-        data.minBalanceLimit?.toString() ?? updatedAccount.minBalanceLimit;
-      updatedAccount.maxBalanceLimit =
-        data.maxBalanceLimit?.toString() ?? updatedAccount.maxBalanceLimit;
     }
 
-    // Get TigerBeetle account for balance calculation
-    const tbAccount = await this.tigerBeetleService.retrieveAccount(updatedAccount.tigerBeetleId);
-    const balances = this.parseAccountBalanceFromTBAccount(updatedAccount, tbAccount);
-    return {
-      ...updatedAccount,
-      balances,
-    };
+    return this.retrieveLedgerAccount(id);
   }
 
   public parseAccountBalanceFromTBAccount(
@@ -403,14 +378,24 @@ export class LedgerAccountService {
         'la.minBalanceLimit',
         'la.normalBalance',
         'la.tigerBeetleId as ledgerAccountTigerBeetleId',
+        'la.currencyExponent',
       ])
       .where('la.id', '=', ledgerAccountId)
       .executeTakeFirst();
 
     if (!ledgerAccount) throw new NotFoundException('Ledger account does not exist.');
 
-    const minLimit = minBalanceLimit ?? ledgerAccount.minBalanceLimit;
-    const maxLimit = maxBalanceLimit ?? ledgerAccount.maxBalanceLimit;
+    let minLimit = ledgerAccount.minBalanceLimit;
+    let maxLimit = ledgerAccount.maxBalanceLimit;
+    const currencyExponentMultiplier = BigNumber(10).pow(ledgerAccount.currencyExponent);
+
+    if (minBalanceLimit != null) {
+      minLimit = BigNumber(minBalanceLimit).multipliedBy(currencyExponentMultiplier).toString();
+    }
+
+    if (maxBalanceLimit != null) {
+      maxLimit = BigNumber(maxBalanceLimit).multipliedBy(currencyExponentMultiplier).toString();
+    }
 
     if (minLimit != null && maxLimit != null && minLimit > maxLimit) {
       throw new BadRequestException('minBalanceLimit should lower than equal to maxBalanceLimit.');
@@ -504,8 +489,8 @@ export class LedgerAccountService {
       .set({
         boundCheckAccountTigerBeetleId: ledgerAccount.boundCheckAccountTigerBeetleId,
         boundFundingAccountTigerBeetleId: ledgerAccount.boundFundingAccountTigerBeetleId,
-        maxBalanceLimit,
-        minBalanceLimit,
+        maxBalanceLimit: maxLimit,
+        minBalanceLimit: minLimit,
       })
       .where('id', '=', ledgerAccountId)
       .execute();
