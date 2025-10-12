@@ -13,6 +13,7 @@ import { uuidV7 } from '@libs/utils/uuid';
 
 import { AuthService } from '@modules/auth/auth.service';
 import { KeyResponseDto } from '@modules/auth/dto';
+import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/update-ledger-account.dto';
 import { CurrencyService } from '@modules/ledger/services/currency.service';
 import { LedgerAccountService } from '@modules/ledger/services/ledger-account.service';
 import { LedgerService } from '@modules/ledger/services/ledger.service';
@@ -821,7 +822,7 @@ describe('LedgerTransactionController', () => {
       await request(ctx.app.getHttpServer())
         .post(`${endpoint}/${transactionId}/post`)
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
-        .expect(HttpStatus.ACCEPTED)
+        .expect(HttpStatus.OK)
         .expect(async (response) => {
           expect(response.headers['x-idempotency-replayed']).toBe('false');
 
@@ -851,7 +852,7 @@ describe('LedgerTransactionController', () => {
       await request(ctx.app.getHttpServer())
         .post(`${endpoint}/${transactionId}/post`)
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
-        .expect(HttpStatus.ACCEPTED)
+        .expect(HttpStatus.OK)
         .expect(async (response) => {
           expect(response.headers['x-idempotency-replayed']).toBe('true');
           expect(response.body.id).toBe(transactionId);
@@ -918,7 +919,7 @@ describe('LedgerTransactionController', () => {
       await request(ctx.app.getHttpServer())
         .post(`${endpoint}/${transactionId}/archive`)
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
-        .expect(HttpStatus.ACCEPTED)
+        .expect(HttpStatus.OK)
         .expect(async (response) => {
           expect(response.headers['x-idempotency-replayed']).toBe('false');
 
@@ -948,7 +949,7 @@ describe('LedgerTransactionController', () => {
       await request(ctx.app.getHttpServer())
         .post(`${endpoint}/${transactionId}/archive`)
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
-        .expect(HttpStatus.ACCEPTED)
+        .expect(HttpStatus.OK)
         .expect(async (response) => {
           expect(response.headers['x-idempotency-replayed']).toBe('true');
           expect(response.body.id).toBe(transactionId);
@@ -963,6 +964,195 @@ describe('LedgerTransactionController', () => {
         .post(`${endpoint}/${nonExistentId}/archive`)
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .expect(HttpStatus.NOT_FOUND);
+    });
+
+    describe('Max Balance Limit', () => {
+      let debitAccount: LedgerAccount;
+      let creditAccount: LedgerAccount;
+      let debitAccount2: LedgerAccount;
+
+      beforeEach(async () => {
+        debitAccount = await ledgerAccountService.createLedgerAccount({
+          ledgerId: ledger.id,
+          name: 'usd debit',
+          description: '',
+          currency: 'USD',
+          normalBalance: NormalBalanceEnum.DEBIT,
+        });
+
+        await ledgerAccountService.update(debitAccount.id, {
+          maxBalanceLimit: 100,
+        } as UpdateLedgerAccountDto);
+
+        creditAccount = await ledgerAccountService.createLedgerAccount({
+          ledgerId: ledger.id,
+          name: 'usd credit',
+          description: '',
+          currency: 'USD',
+          normalBalance: NormalBalanceEnum.CREDIT,
+        });
+
+        await ledgerAccountService.update(creditAccount.id, {
+          maxBalanceLimit: 100,
+        } as UpdateLedgerAccountDto);
+
+        debitAccount2 = await ledgerAccountService.createLedgerAccount({
+          ledgerId: ledger.id,
+          name: 'usd debit',
+          description: '',
+          currency: 'USD',
+          normalBalance: NormalBalanceEnum.DEBIT,
+        });
+      });
+
+      it('should not accept more than max balance limit on credit account', async () => {
+        externalId = uuidV7();
+        const data = {
+          description: 'test retrieve transaction',
+          externalId,
+          metadata: { test: 'retrieve' },
+          status: 'posted',
+          ledgerEntries: [
+            {
+              sourceAccountId: debitAccount2.id,
+              destinationAccountId: creditAccount.id,
+              amount: 50,
+            },
+          ],
+        };
+
+        await request(ctx.app.getHttpServer())
+          .post(`${endpoint}`)
+          .send(data)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.CREATED);
+
+        data.ledgerEntries[0].amount = 500;
+        data.externalId = uuidV7();
+        await request(ctx.app.getHttpServer())
+          .post(`${endpoint}`)
+          .send(data)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.BAD_REQUEST);
+      });
+
+      it('should not accept more than max balance limit on debit account', async () => {
+        externalId = uuidV7();
+        const data = {
+          description: 'test retrieve transaction',
+          externalId,
+          metadata: { test: 'retrieve' },
+          status: 'posted',
+          ledgerEntries: [
+            {
+              sourceAccountId: debitAccount.id,
+              destinationAccountId: creditAccount.id,
+              amount: 50,
+            },
+          ],
+        };
+
+        await request(ctx.app.getHttpServer())
+          .post(`${endpoint}`)
+          .send(data)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.CREATED);
+
+        data.ledgerEntries[0].amount = 500;
+        data.externalId = uuidV7();
+        await request(ctx.app.getHttpServer())
+          .post(`${endpoint}`)
+          .send(data)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.BAD_REQUEST);
+      });
+
+      it('should not validate balance limit when creating pending transaction', async () => {
+        externalId = uuidV7();
+        const data = {
+          description: 'test retrieve transaction',
+          externalId,
+          metadata: { test: 'retrieve' },
+          status: 'pending',
+          ledgerEntries: [
+            {
+              sourceAccountId: debitAccount.id,
+              destinationAccountId: creditAccount.id,
+              amount: 500,
+            },
+          ],
+        };
+
+        await request(ctx.app.getHttpServer())
+          .post(`${endpoint}`)
+          .send(data)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.CREATED);
+      });
+
+      it('should not validate balance limit when archiving pending transaction', async () => {
+        externalId = uuidV7();
+        const data = {
+          description: 'test retrieve transaction',
+          externalId,
+          metadata: { test: 'retrieve' },
+          status: 'pending',
+          ledgerEntries: [
+            {
+              sourceAccountId: debitAccount.id,
+              destinationAccountId: creditAccount.id,
+              amount: 500,
+            },
+          ],
+        };
+        let transactionId = '';
+        await request(ctx.app.getHttpServer())
+          .post(`${endpoint}`)
+          .send(data)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.CREATED)
+          .expect((response) => {
+            transactionId = response.body.id;
+          });
+
+        await request(ctx.app.getHttpServer())
+          .post(`${endpoint}/${transactionId}/archive`)
+          .send(data)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.OK);
+      });
+
+      it('should validate balance limit when posting pending transaction', async () => {
+        externalId = uuidV7();
+        const data = {
+          description: 'test retrieve transaction',
+          externalId,
+          metadata: { test: 'retrieve' },
+          status: 'pending',
+          ledgerEntries: [
+            {
+              sourceAccountId: debitAccount.id,
+              destinationAccountId: creditAccount.id,
+              amount: 500,
+            },
+          ],
+        };
+        let transactionId = '';
+        await request(ctx.app.getHttpServer())
+          .post(`${endpoint}`)
+          .send(data)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.CREATED)
+          .expect((response) => {
+            transactionId = response.body.id;
+          });
+
+        await request(ctx.app.getHttpServer())
+          .post(`${endpoint}/${transactionId}/post`)
+          .send(data)
+          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+          .expect(HttpStatus.BAD_REQUEST);
+      });
     });
   });
 });

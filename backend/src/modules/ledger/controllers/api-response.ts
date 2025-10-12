@@ -1,3 +1,5 @@
+import { BigNumber } from 'bignumber.js';
+
 import { LedgerTransactionStatusEnum, NormalBalanceEnum } from '@libs/enums';
 
 import { CurrencyResponseDto } from '@modules/ledger/dto/currency/currency-response.dto';
