@@ -159,20 +159,22 @@ export class LedgerTransactionService {
       tbTransfersData.push(data);
 
       if (sourceAccount.normalBalance === NormalBalanceEnum.DEBIT) {
-        this.transferWithMaxBalanceBoundOnDebitAccount(
+        this.transferWithMaxBalanceBound(
           sourceAccount,
           ledgerTransactionStatus,
           data,
           tbTransfersData,
+          true,
         );
       }
 
       if (destinationAccount.normalBalance === NormalBalanceEnum.CREDIT) {
-        this.transferWithMaxBalanceBoundOnCreditAccount(
+        this.transferWithMaxBalanceBound(
           destinationAccount,
           ledgerTransactionStatus,
           data,
           tbTransfersData,
+          false,
         );
       }
     }
@@ -522,7 +524,7 @@ export class LedgerTransactionService {
         ])
         .where(({ eb, and, or }) =>
           and([
-            eb('id', '=', ledgerTransactionId),
+            eb('id', 'in', Array.from(new Set(ledgerEntries.map((e) => e.ledgerAccountId)))),
             or([eb('minBalanceLimit', 'is not', null), eb('maxBalanceLimit', 'is not', null)]),
           ]),
         )
@@ -570,12 +572,7 @@ export class LedgerTransactionService {
           ledgerAccount &&
           ledgerAccount.normalBalance === NormalBalanceEnum.CREDIT
         ) {
-          this.transferWithMaxBalanceBoundOnCreditAccount(
-            ledgerAccount,
-            status,
-            data,
-            tbTransfersData,
-          );
+          this.transferWithMaxBalanceBound(ledgerAccount, status, data, tbTransfersData, false);
         }
 
         if (
@@ -583,12 +580,7 @@ export class LedgerTransactionService {
           ledgerAccount &&
           ledgerAccount.normalBalance === NormalBalanceEnum.DEBIT
         ) {
-          this.transferWithMaxBalanceBoundOnDebitAccount(
-            ledgerAccount,
-            status,
-            data,
-            tbTransfersData,
-          );
+          this.transferWithMaxBalanceBound(ledgerAccount, status, data, tbTransfersData, true);
         }
       }
 
@@ -611,24 +603,54 @@ export class LedgerTransactionService {
     return this.retrieve(ledgerTransactionId);
   }
 
-  private transferWithMaxBalanceBoundOnCreditAccount(
+  private transferWithMaxBalanceBound(
     account: Partial<Selectable<LedgerAccounts>>,
     status: LedgerTransactionStatusEnum,
     intendedTransfer: Transfer,
     response: Transfer[],
+    isDebitAccount: boolean,
   ): void {
-    if (account.normalBalance !== NormalBalanceEnum.CREDIT) return;
-
     if (account.maxBalanceLimit == null) return;
 
     if (status !== LedgerTransactionStatusEnum.POSTED) return;
 
-    const boundFundingAccountTigerBeetleId = bufferToTbId(
-      account.boundFundingAccountTigerBeetleId!,
-    );
+    if (!account.boundCheckAccountTigerBeetleId || !account.boundFundingAccountTigerBeetleId) {
+      this.logger.error(
+        `Account ${account.id} missing bound accounts despite having maxBalanceLimit`,
+      );
+      throw new BadRequestException(
+        `Account ${account.id} missing bound accounts despite having maxBalanceLimit`,
+      );
+    }
 
-    const boundCheckAccountTigerBeetleId = bufferToTbId(account.boundCheckAccountTigerBeetleId!);
+    const boundFundingAccountTigerBeetleId = bufferToTbId(account.boundFundingAccountTigerBeetleId);
+
+    const boundCheckAccountTigerBeetleId = bufferToTbId(account.boundCheckAccountTigerBeetleId);
     const maxBalanceLimit = BigInt(account.maxBalanceLimit!);
+
+    const checkAccountTransfer = isDebitAccount
+      ? {
+          debit_account_id: boundCheckAccountTigerBeetleId,
+          credit_account_id: bufferToTbId(account.tigerBeetleId!),
+        }
+      : {
+          debit_account_id: bufferToTbId(account.tigerBeetleId!),
+          credit_account_id: boundCheckAccountTigerBeetleId,
+        };
+
+    const controlAccountTransfer = isDebitAccount
+      ? {
+          debit_account_id: boundFundingAccountTigerBeetleId,
+          credit_account_id: boundCheckAccountTigerBeetleId,
+        }
+      : {
+          debit_account_id: boundCheckAccountTigerBeetleId,
+          credit_account_id: boundFundingAccountTigerBeetleId,
+        };
+
+    const balancingFlag = isDebitAccount
+      ? TransferFlags.balancing_credit
+      : TransferFlags.balancing_debit;
 
     const common = {
       user_data_128: intendedTransfer.user_data_128,
@@ -649,82 +671,7 @@ export class LedgerTransactionService {
       {
         ...common,
         id: id(),
-        debit_account_id: boundCheckAccountTigerBeetleId,
-        credit_account_id: boundFundingAccountTigerBeetleId,
-        amount: maxBalanceLimit, // LIMIT
-        flags: TransferFlags.linked,
-      },
-      // Transfer 2: Check if destination balance would exceed limit (PENDING)
-      {
-        ...common,
-        id: pendingTransferId,
-        debit_account_id: bufferToTbId(account.tigerBeetleId!),
-        credit_account_id: boundCheckAccountTigerBeetleId,
-        amount: amount_max,
-        flags: TransferFlags.linked | TransferFlags.balancing_debit | TransferFlags.pending,
-      },
-      // Transfer 3: Void the pending transfer (cleanup)
-      {
-        ...common,
-        id: id(),
-        debit_account_id: 0n,
-        credit_account_id: 0n,
-        amount: 0n,
-        pending_id: pendingTransferId, // References the pending transfer
-        flags: TransferFlags.linked | TransferFlags.void_pending_transfer,
-      },
-      // Transfer 4: Reset control account balance to zero (cleanup)
-      {
-        ...common,
-        id: id(),
-        debit_account_id: boundFundingAccountTigerBeetleId,
-        credit_account_id: boundCheckAccountTigerBeetleId,
-        amount: maxBalanceLimit, // LIMIT
-        flags: TransferFlags.balancing_debit | TransferFlags.linked,
-      },
-    ].forEach((data) => response.push(data));
-  }
-
-  private transferWithMaxBalanceBoundOnDebitAccount(
-    account: Partial<Selectable<LedgerAccounts>>,
-    status: LedgerTransactionStatusEnum,
-    intendedTransfer: Transfer,
-    response: Transfer[],
-  ): void {
-    if (account.normalBalance !== NormalBalanceEnum.DEBIT) return;
-
-    if (account.maxBalanceLimit == null) return;
-
-    if (status !== LedgerTransactionStatusEnum.POSTED) return;
-
-    const boundFundingAccountTigerBeetleId = bufferToTbId(
-      account.boundFundingAccountTigerBeetleId!,
-    );
-
-    const boundCheckAccountTigerBeetleId = bufferToTbId(account.boundCheckAccountTigerBeetleId!);
-    const maxBalanceLimit = BigInt(account.maxBalanceLimit!);
-
-    const common = {
-      user_data_128: intendedTransfer.user_data_128,
-      user_data_64: 0n,
-      user_data_32: 0,
-      ledger: intendedTransfer.ledger,
-      code: intendedTransfer.code,
-      pending_id: 0n,
-      timeout: 0,
-      timestamp: 0n,
-      flags: TransferFlags.linked,
-    };
-
-    const pendingTransferId = id();
-
-    [
-      // Transfer 1: Set control account's balance to the limit
-      {
-        ...common,
-        id: id(),
-        debit_account_id: boundFundingAccountTigerBeetleId,
-        credit_account_id: boundCheckAccountTigerBeetleId,
+        ...controlAccountTransfer,
         amount: maxBalanceLimit, // Limit
         flags: TransferFlags.linked,
       },
@@ -732,10 +679,9 @@ export class LedgerTransactionService {
       {
         ...common,
         id: pendingTransferId,
-        debit_account_id: boundCheckAccountTigerBeetleId,
-        credit_account_id: bufferToTbId(account.tigerBeetleId!),
+        ...checkAccountTransfer,
         amount: amount_max,
-        flags: TransferFlags.linked | TransferFlags.balancing_credit | TransferFlags.pending,
+        flags: TransferFlags.linked | balancingFlag | TransferFlags.pending,
       },
       // Transfer 3: Void the pending transfer (cleanup)
       {
@@ -754,7 +700,7 @@ export class LedgerTransactionService {
         debit_account_id: boundCheckAccountTigerBeetleId,
         credit_account_id: boundFundingAccountTigerBeetleId,
         amount: maxBalanceLimit, // AMOUNT_MAX
-        flags: TransferFlags.balancing_credit | TransferFlags.linked,
+        flags: balancingFlag | TransferFlags.linked,
       },
     ].forEach((data) => response.push(data));
   }
