@@ -29,31 +29,70 @@ export class LedgerTransactionService {
     private readonly logger: PinoLogger,
   ) {}
 
+  /**
+   * Record a ledger transaction (multi-entry) and create the corresponding
+   * TigerBeetle transfers.
+   *
+   * Behavior (high level):
+   * 1. Validate the provided ledger entries (accounts exist, not the same,
+   *    belong to the same ledger, same currency).
+   * 2. Load ledgers and TigerBeetle account state required for balance parsing.
+   * 3. Build TigerBeetle Transfer objects for each entry pair and enforce
+   *    balance bounds (min/max) by appending additional TB transfers when needed.
+   * 4. Store DB-side records (ledgerTransactions, ledgerTransactionMetadata, ledgerEntries)
+   *    inside a DB transaction and then submit the TigerBeetle transfers.
+   *
+   * Important notes:
+   * - Amounts are converted to the smallest currency unit using the account's currencyExponent.
+   * - A `user_data_128` TB id is used to group TB transfers for this ledger transaction.
+   * - When status is POSTED, transfers are created as non-pending (flags differ).
+   *
+   * @param data - DTO containing transaction-level fields and ledgerEntries (pairs)
+   * @returns The created LedgerTransaction (DB record) with metadata and ledgerEntries populated
+   * @throws BadRequestException on input validation errors
+   */
   async record(data: RecordLedgerTransactionDto): Promise<LedgerTransaction> {
-    const ledgerAccountIds: Set<string> = new Set([]);
-
+    // ----------------------------
+    // 1) Collect unique ledger account IDs from the request entries
+    // ----------------------------
+    const ledgerAccountIds: Set<string> = new Set();
     for (const entry of data.ledgerEntries) {
       ledgerAccountIds.add(entry.sourceAccountId);
       ledgerAccountIds.add(entry.destinationAccountId);
     }
 
+    // ----------------------------
+    // 2) Fetch ledger account records from DB
+    // ----------------------------
     const ledgerAccounts = await this.db.kysely
       .selectFrom('ledgerAccounts')
       .selectAll()
       .where('id', 'in', Array.from(ledgerAccountIds))
       .execute();
 
+    // Build a map for fast lookup by id
     const ledgerAccountMap = ledgerAccounts.reduce(
-      (result, account) => {
-        result[account.id] = account;
-        return result;
+      (acc, account) => {
+        acc[account.id] = account;
+        return acc;
       },
       {} as Record<string, (typeof ledgerAccounts)[0]>,
     );
 
-    for (const entryData of data.ledgerEntries) {
-      const sourceAccount = ledgerAccountMap[entryData.sourceAccountId];
-      const destinationAccount = ledgerAccountMap[entryData.destinationAccountId];
+    // ----------------------------
+    // 3) Validate each entry pair for basic invariants
+    //    - source != destination
+    //    - same ledger
+    //    - same currency code
+    // ----------------------------
+    for (const entry of data.ledgerEntries) {
+      const sourceAccount = ledgerAccountMap[entry.sourceAccountId];
+      const destinationAccount = ledgerAccountMap[entry.destinationAccountId];
+
+      // Defensive checks: accounts must exist (if your DB guarantees presence this can be omitted)
+      if (!sourceAccount || !destinationAccount) {
+        throw new BadRequestException(['one or more ledger accounts not found']);
+      }
 
       if (sourceAccount.id === destinationAccount.id) {
         throw new BadRequestException([
@@ -67,26 +106,31 @@ export class LedgerTransactionService {
         ]);
       }
 
-      // Make sure that we have the same currency for ledger accounts
-      if (destinationAccount.currencyCode !== sourceAccount.currencyCode) {
+      if (sourceAccount.currencyCode !== destinationAccount.currencyCode) {
         throw new BadRequestException([
           'sourceAccountId & destinationAccountId should have the same currency code',
         ]);
       }
     }
 
+    // ----------------------------
+    // 4) Load ledgers involved in the transaction
+    // ----------------------------
+    const ledgerIdsSet = new Set(ledgerAccounts.map((v) => v.ledgerId));
     const ledgers = await this.db.kysely
       .selectFrom('ledgers')
       .selectAll()
-      .where('id', 'in', Array.from(new Set(ledgerAccounts.map((v) => v.ledgerId))))
+      .where('id', 'in', Array.from(ledgerIdsSet))
       .execute();
 
-    const tbAccounts = await this.tigerBeetleService.retrieveAccounts(
-      ledgerAccounts.map((v) => v.tigerBeetleId),
-    );
+    // ----------------------------
+    // 5) Retrieve TigerBeetle accounts for each ledgerAccount to parse balances
+    // ----------------------------
+    const tbAccountBuffers = ledgerAccounts.map((v) => v.tigerBeetleId);
+    const tbAccounts = await this.tigerBeetleService.retrieveAccounts(tbAccountBuffers);
 
+    // Parse ledger account balances from TB accounts for the response returned later
     const parsedLedgerAccounts: Record<string, LedgerAccount> = {};
-
     for (const ledgerAccount of ledgerAccounts) {
       const tbAccount = tbAccounts.find(
         (account) => account.id === bufferToTbId(ledgerAccount.tigerBeetleId),
@@ -95,35 +139,48 @@ export class LedgerTransactionService {
         ...ledgerAccount,
         balances: this.ledgerAccountService.parseAccountBalanceFromTBAccount(
           ledgerAccount,
-          tbAccount!,
+          tbAccount!, // safe because mapping is 1:1 in normal operation
         ),
       };
     }
 
+    // ----------------------------
+    // 6) Prepare TB transfers and ledger entry DB objects
+    // ----------------------------
     const ledgerTransactionStatus = data.status ?? LedgerTransactionStatusEnum.POSTED;
-    // Parse them into transfer
+
+    // A single TB user_data_128 groups all TB transfers belonging to this ledger transaction
+    const ledgerTransferTbId = id();
+
+    // Array of TB transfers to send to TigerBeetle
+    const tbTransfersData: Transfer[] = [];
+
+    // Map to deduplicate TB transfers by TB transfer id (Transfer.id is TB id)
+    const tbTransferMap: TBTransferMap = new Map();
+
+    // DB-level ledger entries to insert (we push two entries per ledger entry pair: credit + debit)
     const ledgerEntryData: {
       id: string;
       ledgerId: string;
       direction: string;
       ledgerAccountId: string;
-      amount: string;
+      amount: string; // string representation in smallest unit
       tigerBeetleId: bigint;
     }[] = [];
-
-    const ledgerTransferTbId = id();
-    const tbTransfersData: Transfer[] = [];
-    const tbTransferMap: TBTransferMap = new Map();
 
     for (const entry of data.ledgerEntries) {
       const sourceAccount = ledgerAccountMap[entry.sourceAccountId];
       const destinationAccount = ledgerAccountMap[entry.destinationAccountId];
+
+      // Convert human amount to smallest currency unit (e.g., cents) using currencyExponent
       const currencyExponentMultiplier = BigNumber(10).pow(sourceAccount.currencyExponent);
-
-      const ledger = ledgers.find((v) => v.id === sourceAccount.ledgerId)!;
-
       const amount = BigNumber(entry.amount).multipliedBy(currencyExponentMultiplier).toFixed();
-      const data: Transfer = {
+
+      // Find ledger record for this pair (they share ledgerId due to earlier validation)
+      const ledger = ledgers.find((l) => l.id === sourceAccount.ledgerId)!;
+
+      // Build the TB transfer (debit: source, credit: destination)
+      const tbTransfer: Transfer = {
         id: id(),
         credit_account_id: bufferToTbId(destinationAccount.tigerBeetleId),
         debit_account_id: bufferToTbId(sourceAccount.tigerBeetleId),
@@ -133,6 +190,8 @@ export class LedgerTransactionService {
         user_data_32: 0,
         ledger: ledger.tigerBeetleId,
         code: 1,
+        // If the outer ledgerTransaction is POSTED we don't create pending transfers.
+        // If it's PENDING we mark the transfer as pending so it can be posted/voided later.
         flags:
           ledgerTransactionStatus === LedgerTransactionStatusEnum.POSTED
             ? TransferFlags.linked
@@ -142,44 +201,61 @@ export class LedgerTransactionService {
         timestamp: 0n,
       };
 
+      // Two DB ledger entries: one credit (destination) and one debit (source)
       ledgerEntryData.push({
         id: uuidV7(),
         ledgerAccountId: entry.destinationAccountId,
+        ledgerId: destinationAccount.ledgerId,
         amount,
-        tigerBeetleId: data.id,
+        tigerBeetleId: tbTransfer.id,
         direction: NormalBalanceEnum.CREDIT,
-        ledgerId: ledgerAccountMap[entry.destinationAccountId].ledgerId,
       });
 
       ledgerEntryData.push({
         id: uuidV7(),
         ledgerAccountId: entry.sourceAccountId,
+        ledgerId: sourceAccount.ledgerId,
         amount,
-        tigerBeetleId: data.id,
+        tigerBeetleId: tbTransfer.id,
         direction: NormalBalanceEnum.DEBIT,
-        ledgerId: ledgerAccountMap[entry.sourceAccountId].ledgerId,
       });
+
+      // Apply account balance limit checks (min/max) which may append extra TB transfers
+      // The helper `checkBalanceLimits` will add required balancing/checking transfers into
+      // tbTransfersData and will use tbTransferMap to deduplicate.
       this.checkBalanceLimits(
         sourceAccount,
         destinationAccount,
-        data,
+        tbTransfer,
         ledgerTransactionStatus,
         tbTransfersData,
         tbTransferMap,
       );
     }
 
-    // Remove linked flag from the latest transfer
-    tbTransfersData[tbTransfersData.length - 1].flags =
+    // ----------------------------
+    // 7) Finalize TB transfer flags for the batch:
+    //    - TigerBeetle uses `linked` to group transfers.
+    //    - The last transfer in the batch must not have `linked` set to indicate the end.
+    //    - For POSTED transactions, last transfer should clear the linked flag entirely (0).
+    //    - For PENDING transactions, the last transfer should be `pending` (not linked-only).
+    // ----------------------------
+    // Safety: tbTransfersData must have at least one item (there is at least one ledger entry pair).
+    const lastIndex = tbTransfersData.length - 1;
+    tbTransfersData[lastIndex].flags =
       ledgerTransactionStatus === LedgerTransactionStatusEnum.POSTED ? 0 : TransferFlags.pending;
 
+    // ----------------------------
+    // 8) Persist DB objects and create TB transfers inside a DB transaction
+    // ----------------------------
     return this.db.transaction(async (trx) => {
-      // Create transaction record
+      // 8.a Insert ledger transaction master record
       const ledgerTransaction = await trx
         .insertInto('ledgerTransactions')
         .values({
           externalId: data.externalId as string,
           description: data.description,
+          // Store TB group id as buffer in DB
           tigerBeetleId: tbIdToBuffer(ledgerTransferTbId),
           effectiveAt: data.effectiveAt,
           status: ledgerTransactionStatus,
@@ -187,50 +263,49 @@ export class LedgerTransactionService {
         .returningAll()
         .executeTakeFirstOrThrow();
 
-      const ledgerTransactionMetadata = Object.entries(data.metadata ?? {}).map(([key, value]) => {
-        return {
-          ledgerTransactionId: ledgerTransaction.id,
-          key,
-          value,
-        };
-      });
+      // 8.b Insert metadata (if provided)
+      const ledgerTransactionMetadata = Object.entries(data.metadata ?? {}).map(([key, value]) => ({
+        ledgerTransactionId: ledgerTransaction.id,
+        key,
+        value,
+      }));
 
-      if (ledgerTransactionMetadata.length > 0)
+      if (ledgerTransactionMetadata.length > 0) {
         await trx
           .insertInto('ledgerTransactionMetadata')
           .values(ledgerTransactionMetadata)
           .execute();
+      }
 
-      // Insert all the entries
-      const entries = await trx
+      // 8.c Insert ledger entries (credit + debit rows)
+      const insertedEntries = await trx
         .insertInto('ledgerEntries')
         .values(
-          ledgerEntryData.map((v) => {
-            return {
-              id: v.id,
-              ledgerAccountId: v.ledgerAccountId,
-              ledgerId: v.ledgerId,
-              ledgerTransactionId: ledgerTransaction.id,
-              amount: v.amount,
-              tigerBeetleId: tbIdToBuffer(v.tigerBeetleId),
-              direction: v.direction,
-            };
-          }),
+          ledgerEntryData.map((v) => ({
+            id: v.id,
+            ledgerAccountId: v.ledgerAccountId,
+            ledgerId: v.ledgerId,
+            ledgerTransactionId: ledgerTransaction.id,
+            amount: v.amount,
+            tigerBeetleId: tbIdToBuffer(v.tigerBeetleId),
+            direction: v.direction,
+          })),
         )
         .returningAll()
         .execute();
 
+      // 8.d Create all TigerBeetle transfers prepared earlier
+      //      (this is done after DB inserts so the DB state and TB transfers stay consistent)
       await this.tigerBeetleService.createTransfers(tbTransfersData);
 
+      // 8.e Return the composed LedgerTransaction including metadata and populated ledgerEntries
       return {
         ...ledgerTransaction,
         metadata: ledgerTransactionMetadata,
-        ledgerEntries: entries.map((entry) => {
-          return {
-            ...entry,
-            ledgerAccount: parsedLedgerAccounts[entry.ledgerAccountId],
-          };
-        }),
+        ledgerEntries: insertedEntries.map((entry) => ({
+          ...entry,
+          ledgerAccount: parsedLedgerAccounts[entry.ledgerAccountId],
+        })),
       };
     });
   }
@@ -547,6 +622,11 @@ export class LedgerTransactionService {
         const destinationAccount = ledgerAccounts.find(
           (a) => a.id === destinationEntry.ledgerAccountId,
         );
+
+        if (!sourceEntry || !destinationEntry) {
+          throw new BadRequestException('Invalid entry structure');
+        }
+
         const data = {
           id: id(),
           credit_account_id: 0n, // we don't need to set the account id if we set the pending_id already
@@ -599,10 +679,11 @@ export class LedgerTransactionService {
    * Implements max balance limit checking using TigerBeetle's control account pattern.
    *
    * This creates a 4-transfer sequence:
-   * 1. Set control account balance to limit
-   * 2. Create pending balancing transfer to check if limit would be exceeded
-   * 3. Void the pending transfer (cleanup)
-   * 4. Reset control account to zero (cleanup)
+   * 1. Transfer to check
+   * 2. Set control account balance to limit
+   * 3. Create pending balancing transfer to check if limit would be exceeded
+   * 4. Void the pending transfer (cleanup)
+   * 5. Reset control account to zero (cleanup)
    *
    * If transfer #2 fails due to insufficient balance, the entire transaction is rejected,
    * preventing the account from exceeding its max balance limit.
@@ -724,15 +805,26 @@ export class LedgerTransactionService {
   }
 
   /**
-   * Implements max balance limit checking using TigerBeetle's control account pattern.
+   * This function prevents an account’s balance from dropping below a specified
+   * minimum (minBalance).
+   *
+   * TigerBeetle itself doesn’t provide “minimum balance” enforcement directly.
+   * Instead, we implement a **control transfer** pattern using an internal
+   * “control account” that represents the boundary condition.
+   *
+   * The logic mirrors the `transferWithMaxBalanceBound()` method but operates
+   * in the opposite direction:
+   * - It “reserves” the amount that would bring the balance *below* the minimum,
+   *   effectively preventing the account from going under its defined floor.
    *
    * This creates a 4-transfer sequence:
    * 1. Set control account balance to limit
    * 2. Create pending balancing transfer to check if limit would be exceeded
-   * 3. Void the pending transfer (cleanup)
-   * 4. Reset control account to zero (cleanup)
+   * 3. Transfer to check
+   * 4. Void the pending transfer (cleanup)
+   * 5. Reset control account to zero (cleanup)
    *
-   * If transfer #2 fails due to insufficient balance, the entire transaction is rejected,
+   * If transfer #3 fails due to insufficient balance, the entire transaction is rejected,
    * preventing the account from exceeding its max balance limit.
    *
    * @param account - The account with max balance limit
@@ -824,7 +916,7 @@ export class LedgerTransactionService {
         flags: TransferFlags.linked | balancingFlag | TransferFlags.pending,
       },
       transferToPerform,
-      // Transfer 3: Void the pending transfer (cleanup)
+      // Transfer 4: Void the pending transfer (cleanup)
       {
         ...common,
         id: id(),
@@ -852,6 +944,60 @@ export class LedgerTransactionService {
     tbTransferMap.set(transferToPerform.id, transferToPerform);
   }
 
+  /**
+   * 🔍 Enforces account balance limits during a ledger transaction.
+   *
+   * This method applies **minimum** and **maximum** balance constraints
+   * for both the source and destination accounts involved in a TigerBeetle transfer.
+   *
+   * It integrates with TigerBeetle’s “control account” pattern to simulate
+   * soft limits on balances that TigerBeetle itself doesn’t directly enforce.
+   *
+   * ---
+   * ## 🧠 How It Works
+   *
+   * Each ledger transaction consists of paired entries:
+   * - **Source account** (debit)
+   * - **Destination account** (credit)
+   *
+   * Depending on the account’s **normal balance type** (`DEBIT` or `CREDIT`),
+   * certain constraints apply:
+   *
+   * | Account Type | Possible Limit | Enforcement Direction |
+   * |---------------|----------------|------------------------|
+   * | CREDIT normal | Min balance (avoid going negative) | Check on **source account** |
+   * | DEBIT normal  | Min balance (avoid going below floor) | Check on **destination account** |
+   * | DEBIT normal  | Max balance (avoid exceeding cap) | Check on **source account** |
+   * | CREDIT normal | Max balance (avoid exceeding cap) | Check on **destination account** |
+   *
+   * ---
+   * ## ⚙️ Order of Enforcement
+   *
+   * 1. **Min balance checks** first — ensures no overdraft-like situations.
+   * 2. **Max balance checks** second — ensures accounts don’t exceed credit caps.
+   *
+   * This ordering ensures that **debit-side limits** (insufficient funds)
+   * are validated before **credit-side capacity** (overflow) checks.
+   *
+   * ---
+   * ## 🧩 Linked Transfer Chain Logic
+   *
+   * Each enforcement may append one or more “control” transfers to the TigerBeetle
+   * transfer batch (`tbTransfersData`), using `linked` flags.
+   *
+   * The order of transfers is critical because TigerBeetle executes them atomically:
+   * - Min balance transfers run **before** max balance transfers.
+   * - Control-account transfers are linked so that failure of any one check
+   *   cancels the entire batch.
+   *
+   * ---
+   * @param sourceAccount - The debit-side ledger account for this transfer.
+   * @param destinationAccount - The credit-side ledger account for this transfer.
+   * @param data - The TigerBeetle `Transfer` object being constructed.
+   * @param status - The transaction status (`POSTED` or `PENDING`).
+   * @param tbTransfersData - Array collecting all TigerBeetle transfers to be created.
+   * @param tbTransferMap - Map of already-added transfers (prevents duplicates).
+   */
   private checkBalanceLimits(
     sourceAccount: Partial<Selectable<LedgerAccounts>>,
     destinationAccount: Partial<Selectable<LedgerAccounts>>,
@@ -860,11 +1006,17 @@ export class LedgerTransactionService {
     tbTransfersData: Transfer[],
     tbTransferMap: TBTransferMap,
   ): void {
-    // Check min limit first
+    // ---------------------------------------------
+    // 1️⃣ Enforce MIN BALANCE limits first
+    // ---------------------------------------------
+    // CREDIT-normal source accounts can drop below zero,
+    // so enforce min balance on the *source*.
     if (sourceAccount && sourceAccount.normalBalance === NormalBalanceEnum.CREDIT) {
       this.transferWithMinBalanceBound(sourceAccount, status, data, tbTransfersData, tbTransferMap);
     }
 
+    // DEBIT-normal destination accounts might go below allowed minimum
+    // when receiving a debit transfer — enforce lower bound.
     if (destinationAccount && destinationAccount.normalBalance === NormalBalanceEnum.DEBIT) {
       this.transferWithMinBalanceBound(
         destinationAccount,
@@ -875,11 +1027,15 @@ export class LedgerTransactionService {
       );
     }
 
-    // check max limit after
+    // ---------------------------------------------
+    // 2️⃣ Enforce MAX BALANCE limits next
+    // ---------------------------------------------
+    // DEBIT-normal source accounts may exceed their upper balance limit after a debit.
     if (sourceAccount && sourceAccount.normalBalance === NormalBalanceEnum.DEBIT) {
       this.transferWithMaxBalanceBound(sourceAccount, status, data, tbTransfersData, tbTransferMap);
     }
 
+    // CREDIT-normal destination accounts may exceed their limit after crediting.
     if (destinationAccount && destinationAccount.normalBalance === NormalBalanceEnum.CREDIT) {
       this.transferWithMaxBalanceBound(
         destinationAccount,
@@ -890,6 +1046,11 @@ export class LedgerTransactionService {
       );
     }
 
+    // ---------------------------------------------
+    // 3️⃣ Append original transfer if not already added
+    // ---------------------------------------------
+    // If no additional bound-transfer logic handled this one,
+    // ensure the main transaction transfer itself is queued.
     if (!tbTransferMap.has(data.id)) tbTransfersData.push(data);
   }
 }
