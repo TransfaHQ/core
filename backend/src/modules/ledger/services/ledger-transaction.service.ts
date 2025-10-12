@@ -18,6 +18,8 @@ import { RecordLedgerTransactionDto } from '@modules/ledger/dto/ledger-transacti
 import { LedgerAccountService } from '@modules/ledger/services/ledger-account.service';
 import { LedgerAccount, LedgerTransaction } from '@modules/ledger/types';
 
+type TBTransferMap = Map<bigint, Transfer>;
+
 @Injectable()
 export class LedgerTransactionService {
   constructor(
@@ -111,6 +113,8 @@ export class LedgerTransactionService {
 
     const ledgerTransferTbId = id();
     const tbTransfersData: Transfer[] = [];
+    const tbTransferMap: TBTransferMap = new Map();
+
     for (const entry of data.ledgerEntries) {
       const sourceAccount = ledgerAccountMap[entry.sourceAccountId];
       const destinationAccount = ledgerAccountMap[entry.destinationAccountId];
@@ -155,26 +159,14 @@ export class LedgerTransactionService {
         direction: NormalBalanceEnum.DEBIT,
         ledgerId: ledgerAccountMap[entry.sourceAccountId].ledgerId,
       });
-
-      tbTransfersData.push(data);
-
-      if (sourceAccount.normalBalance === NormalBalanceEnum.DEBIT) {
-        this.transferWithMaxBalanceBound(
-          sourceAccount,
-          ledgerTransactionStatus,
-          data,
-          tbTransfersData,
-        );
-      }
-
-      if (destinationAccount.normalBalance === NormalBalanceEnum.CREDIT) {
-        this.transferWithMaxBalanceBound(
-          destinationAccount,
-          ledgerTransactionStatus,
-          data,
-          tbTransfersData,
-        );
-      }
+      this.checkBalanceLimits(
+        sourceAccount,
+        destinationAccount,
+        data,
+        ledgerTransactionStatus,
+        tbTransfersData,
+        tbTransferMap,
+      );
     }
 
     // Remove linked flag from the latest transfer
@@ -532,54 +524,56 @@ export class LedgerTransactionService {
       const transferAmount = status === LedgerTransactionStatusEnum.ARCHIVED ? 0n : amount_max;
       // We need to post or archive here
       const tbTransfersData: Transfer[] = [];
-      const tbTransferIds: Map<bigint, Transfer> = new Map();
+      const tbTransferMap: Map<bigint, Transfer> = new Map();
 
-      for (const entry of ledgerEntries) {
-        const tbTransferId = bufferToTbId(entry.tigerBeetleId);
-        // Each tb transfer has 2 entries on on our end. Here we are selecting all of them.
-        // We just want to post only one time. A way to do it, might filtering on tigerbeetleId directly
-        let data = tbTransferIds.get(tbTransferId);
+      // Each tb transfer has 2 entries on on our end. Here we are grouping them together
+      const entriesPerTbTransferId = ledgerEntries.reduce(
+        (res, value) => {
+          const tbId = bufferToTbId(value.tigerBeetleId);
+          const values = res.get(tbId) ?? [];
+          values.push(value);
+          res.set(tbId, values);
+          return res;
+        },
 
-        if (!data) {
-          data = {
-            id: id(),
-            credit_account_id: 0n, // we don't need to set the account id if we set the pending_id already
-            debit_account_id: 0n, // we don't need to set the account id if we set the pending_id already
-            amount: transferAmount,
-            user_data_128: bufferToTbId(ledgerTransaction.tigerBeetleId),
-            user_data_64: 0n,
-            user_data_32: 0,
-            ledger: ledgers.find((v) => v.id === entry.ledgerId)!.tigerBeetleId, // ledgers will always has value. So it is safe here
-            code: 1,
-            flags:
-              status === LedgerTransactionStatusEnum.POSTED
-                ? TransferFlags.linked | TransferFlags.post_pending_transfer
-                : TransferFlags.void_pending_transfer | TransferFlags.linked,
-            pending_id: tbTransferId,
-            timeout: 0,
-            timestamp: 0n,
-          };
-          tbTransfersData.push(data);
-          tbTransferIds.set(tbTransferId, data);
-        }
+        new Map() as Map<bigint, (typeof ledgerEntries)[0][]>,
+      );
 
-        const ledgerAccount = ledgerAccounts.find((a) => a.id === entry.ledgerAccountId);
+      for (const [tbTransferId, entries] of entriesPerTbTransferId) {
+        const sourceEntry = entries.find((e) => e.direction === NormalBalanceEnum.DEBIT)!;
+        const destinationEntry = entries.find((e) => e.direction === NormalBalanceEnum.CREDIT)!;
 
-        if (
-          entry.direction === NormalBalanceEnum.CREDIT &&
-          ledgerAccount &&
-          ledgerAccount.normalBalance === NormalBalanceEnum.CREDIT
-        ) {
-          this.transferWithMaxBalanceBound(ledgerAccount, status, data, tbTransfersData);
-        }
+        const sourceAccount = ledgerAccounts.find((a) => a.id === sourceEntry.ledgerAccountId);
+        const destinationAccount = ledgerAccounts.find(
+          (a) => a.id === destinationEntry.ledgerAccountId,
+        );
+        const data = {
+          id: id(),
+          credit_account_id: 0n, // we don't need to set the account id if we set the pending_id already
+          debit_account_id: 0n, // we don't need to set the account id if we set the pending_id already
+          amount: transferAmount,
+          user_data_128: bufferToTbId(ledgerTransaction.tigerBeetleId),
+          user_data_64: 0n,
+          user_data_32: 0,
+          ledger: ledgers.find((v) => v.id === sourceEntry.ledgerId)!.tigerBeetleId, // ledgers will always has value. So it is safe here
+          code: 1,
+          flags:
+            status === LedgerTransactionStatusEnum.POSTED
+              ? TransferFlags.linked | TransferFlags.post_pending_transfer
+              : TransferFlags.void_pending_transfer | TransferFlags.linked,
+          pending_id: tbTransferId,
+          timeout: 0,
+          timestamp: 0n,
+        };
 
-        if (
-          entry.direction === NormalBalanceEnum.DEBIT &&
-          ledgerAccount &&
-          ledgerAccount.normalBalance === NormalBalanceEnum.DEBIT
-        ) {
-          this.transferWithMaxBalanceBound(ledgerAccount, status, data, tbTransfersData);
-        }
+        this.checkBalanceLimits(
+          sourceAccount!,
+          destinationAccount!,
+          data,
+          status,
+          tbTransfersData,
+          tbTransferMap,
+        );
       }
 
       // Remove linked flag from the latest transfer.
@@ -615,14 +609,15 @@ export class LedgerTransactionService {
    *
    * @param account - The account with max balance limit
    * @param status - Transaction status (only enforced for POSTED)
-   * @param intendedTransfer - The original transfer to validate
+   * @param transferToPerform - The original transfer to validate
    * @param response - Array to append validation transfers to
    */
   private transferWithMaxBalanceBound(
     account: Partial<Selectable<LedgerAccounts>>,
     status: LedgerTransactionStatusEnum,
-    intendedTransfer: Transfer,
+    transferToPerform: Transfer,
     response: Transfer[],
+    tbTransferMap: TBTransferMap,
   ): void {
     if (account.maxBalanceLimit == null) return;
 
@@ -669,11 +664,11 @@ export class LedgerTransactionService {
       : TransferFlags.balancing_debit;
 
     const common = {
-      user_data_128: intendedTransfer.user_data_128,
+      user_data_128: transferToPerform.user_data_128,
       user_data_64: 0n,
       user_data_32: 0,
-      ledger: intendedTransfer.ledger,
-      code: intendedTransfer.code,
+      ledger: transferToPerform.ledger,
+      code: transferToPerform.code,
       pending_id: 0n,
       timeout: 0,
       timestamp: 0n,
@@ -683,6 +678,7 @@ export class LedgerTransactionService {
     const pendingTransferId = id();
 
     [
+      transferToPerform,
       // Transfer 1: Set control account's balance to the limit
       {
         ...common,
@@ -718,6 +714,182 @@ export class LedgerTransactionService {
         amount: maxBalanceLimit, // AMOUNT_MAX
         flags: balancingFlag | TransferFlags.linked,
       },
-    ].forEach((data) => response.push(data));
+    ].forEach((data) => {
+      if (!tbTransferMap.has(data.id)) {
+        response.push(data);
+      }
+    });
+
+    tbTransferMap.set(transferToPerform.id, transferToPerform);
+  }
+
+  /**
+   * Implements max balance limit checking using TigerBeetle's control account pattern.
+   *
+   * This creates a 4-transfer sequence:
+   * 1. Set control account balance to limit
+   * 2. Create pending balancing transfer to check if limit would be exceeded
+   * 3. Void the pending transfer (cleanup)
+   * 4. Reset control account to zero (cleanup)
+   *
+   * If transfer #2 fails due to insufficient balance, the entire transaction is rejected,
+   * preventing the account from exceeding its max balance limit.
+   *
+   * @param account - The account with max balance limit
+   * @param status - Transaction status (only enforced for POSTED)
+   * @param transferToPerform - The original transfer to validate
+   * @param response - Array to append validation transfers to
+   */
+  private transferWithMinBalanceBound(
+    account: Partial<Selectable<LedgerAccounts>>,
+    status: LedgerTransactionStatusEnum,
+    transferToPerform: Transfer,
+    response: Transfer[],
+    tbTransferMap: TBTransferMap,
+  ): void {
+    if (account.minBalanceLimit == null) return;
+
+    if (status !== LedgerTransactionStatusEnum.POSTED) return;
+
+    if (!account.boundCheckAccountTigerBeetleId || !account.boundFundingAccountTigerBeetleId) {
+      this.logger.error(
+        `Account ${account.id} missing bound accounts despite having minBalanceLimit`,
+      );
+      throw new BadRequestException(
+        `Account ${account.id} missing bound accounts despite having minBalanceLimit`,
+      );
+    }
+
+    const boundFundingAccountTigerBeetleId = bufferToTbId(account.boundFundingAccountTigerBeetleId);
+
+    const boundCheckAccountTigerBeetleId = bufferToTbId(account.boundCheckAccountTigerBeetleId);
+
+    const limit = BigInt(account.minBalanceLimit);
+
+    const isDebitAccount = account.normalBalance === NormalBalanceEnum.DEBIT;
+
+    const checkAccountTransfer = isDebitAccount
+      ? {
+          debit_account_id: boundCheckAccountTigerBeetleId,
+          credit_account_id: bufferToTbId(account.tigerBeetleId!),
+        }
+      : {
+          debit_account_id: bufferToTbId(account.tigerBeetleId!),
+          credit_account_id: boundCheckAccountTigerBeetleId,
+        };
+
+    const controlAccountTransfer = isDebitAccount
+      ? {
+          debit_account_id: boundFundingAccountTigerBeetleId,
+          credit_account_id: boundCheckAccountTigerBeetleId,
+        }
+      : {
+          debit_account_id: boundCheckAccountTigerBeetleId,
+          credit_account_id: boundFundingAccountTigerBeetleId,
+        };
+
+    const balancingFlag = isDebitAccount
+      ? TransferFlags.balancing_credit
+      : TransferFlags.balancing_debit;
+
+    const common = {
+      user_data_128: transferToPerform.user_data_128,
+      user_data_64: 0n,
+      user_data_32: 0,
+      ledger: transferToPerform.ledger,
+      code: transferToPerform.code,
+      pending_id: 0n,
+      timeout: 0,
+      timestamp: 0n,
+      flags: TransferFlags.linked,
+    };
+
+    const pendingTransferId = id();
+
+    [
+      // Transfer 1: Set control account's balance to the limit
+      {
+        ...common,
+        id: id(),
+        ...controlAccountTransfer,
+        amount: limit, // Limit
+        flags: TransferFlags.linked,
+      },
+      // Transfer 2: Check if destination balance would exceed limit (PENDING)
+      {
+        ...common,
+        id: pendingTransferId,
+        ...checkAccountTransfer,
+        amount: limit,
+        flags: TransferFlags.linked | balancingFlag | TransferFlags.pending,
+      },
+      transferToPerform,
+      // Transfer 3: Void the pending transfer (cleanup)
+      {
+        ...common,
+        id: id(),
+        debit_account_id: 0n,
+        credit_account_id: 0n,
+        amount: 0n,
+        pending_id: pendingTransferId, // References the pending transfer
+        flags: TransferFlags.linked | TransferFlags.void_pending_transfer,
+      },
+      // Transfer 4: Reset control account balance to zero (cleanup)
+      {
+        ...common,
+        id: id(),
+        debit_account_id: boundCheckAccountTigerBeetleId,
+        credit_account_id: boundFundingAccountTigerBeetleId,
+        amount: limit,
+        flags: balancingFlag | TransferFlags.linked,
+      },
+    ].forEach((data) => {
+      if (!tbTransferMap.has(data.id)) {
+        response.push(data);
+      }
+    });
+
+    tbTransferMap.set(transferToPerform.id, transferToPerform);
+  }
+
+  private checkBalanceLimits(
+    sourceAccount: Partial<Selectable<LedgerAccounts>>,
+    destinationAccount: Partial<Selectable<LedgerAccounts>>,
+    data: Transfer,
+    status: LedgerTransactionStatusEnum,
+    tbTransfersData: Transfer[],
+    tbTransferMap: TBTransferMap,
+  ): void {
+    // Check min limit first
+    if (sourceAccount && sourceAccount.normalBalance === NormalBalanceEnum.CREDIT) {
+      this.transferWithMinBalanceBound(sourceAccount, status, data, tbTransfersData, tbTransferMap);
+    }
+
+    if (destinationAccount && destinationAccount.normalBalance === NormalBalanceEnum.DEBIT) {
+      this.transferWithMinBalanceBound(
+        destinationAccount,
+        status,
+        data,
+        tbTransfersData,
+        tbTransferMap,
+      );
+    }
+
+    // check max limit after
+    if (sourceAccount && sourceAccount.normalBalance === NormalBalanceEnum.DEBIT) {
+      this.transferWithMaxBalanceBound(sourceAccount, status, data, tbTransfersData, tbTransferMap);
+    }
+
+    if (destinationAccount && destinationAccount.normalBalance === NormalBalanceEnum.CREDIT) {
+      this.transferWithMaxBalanceBound(
+        destinationAccount,
+        status,
+        data,
+        tbTransfersData,
+        tbTransferMap,
+      );
+    }
+
+    if (!tbTransferMap.has(data.id)) tbTransfersData.push(data);
   }
 }
