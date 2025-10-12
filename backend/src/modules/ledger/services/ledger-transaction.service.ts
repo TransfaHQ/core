@@ -164,7 +164,6 @@ export class LedgerTransactionService {
           ledgerTransactionStatus,
           data,
           tbTransfersData,
-          true,
         );
       }
 
@@ -174,7 +173,6 @@ export class LedgerTransactionService {
           ledgerTransactionStatus,
           data,
           tbTransfersData,
-          false,
         );
       }
     }
@@ -572,7 +570,7 @@ export class LedgerTransactionService {
           ledgerAccount &&
           ledgerAccount.normalBalance === NormalBalanceEnum.CREDIT
         ) {
-          this.transferWithMaxBalanceBound(ledgerAccount, status, data, tbTransfersData, false);
+          this.transferWithMaxBalanceBound(ledgerAccount, status, data, tbTransfersData);
         }
 
         if (
@@ -580,7 +578,7 @@ export class LedgerTransactionService {
           ledgerAccount &&
           ledgerAccount.normalBalance === NormalBalanceEnum.DEBIT
         ) {
-          this.transferWithMaxBalanceBound(ledgerAccount, status, data, tbTransfersData, true);
+          this.transferWithMaxBalanceBound(ledgerAccount, status, data, tbTransfersData);
         }
       }
 
@@ -603,12 +601,28 @@ export class LedgerTransactionService {
     return this.retrieve(ledgerTransactionId);
   }
 
+  /**
+   * Implements max balance limit checking using TigerBeetle's control account pattern.
+   *
+   * This creates a 4-transfer sequence:
+   * 1. Set control account balance to limit
+   * 2. Create pending balancing transfer to check if limit would be exceeded
+   * 3. Void the pending transfer (cleanup)
+   * 4. Reset control account to zero (cleanup)
+   *
+   * If transfer #2 fails due to insufficient balance, the entire transaction is rejected,
+   * preventing the account from exceeding its max balance limit.
+   *
+   * @param account - The account with max balance limit
+   * @param status - Transaction status (only enforced for POSTED)
+   * @param intendedTransfer - The original transfer to validate
+   * @param response - Array to append validation transfers to
+   */
   private transferWithMaxBalanceBound(
     account: Partial<Selectable<LedgerAccounts>>,
     status: LedgerTransactionStatusEnum,
     intendedTransfer: Transfer,
     response: Transfer[],
-    isDebitAccount: boolean,
   ): void {
     if (account.maxBalanceLimit == null) return;
 
@@ -623,10 +637,12 @@ export class LedgerTransactionService {
       );
     }
 
+    const isDebitAccount = account.normalBalance === NormalBalanceEnum.DEBIT;
+
     const boundFundingAccountTigerBeetleId = bufferToTbId(account.boundFundingAccountTigerBeetleId);
 
     const boundCheckAccountTigerBeetleId = bufferToTbId(account.boundCheckAccountTigerBeetleId);
-    const maxBalanceLimit = BigInt(account.maxBalanceLimit!);
+    const maxBalanceLimit = BigInt(account.maxBalanceLimit);
 
     const checkAccountTransfer = isDebitAccount
       ? {

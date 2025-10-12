@@ -13,6 +13,7 @@ import { LedgerEntryWithAccount } from '@modules/ledger/services/ledger-entry.se
 import { Currency, Ledger, LedgerAccount, LedgerEntry, LedgerTransaction } from '../types';
 
 export const ledgerAccountToApiV1Response = (entity: LedgerAccount): LedgerAccountResponseDto => {
+  const currencyExponentMultiplier = BigNumber(10).pow(entity.currencyExponent);
   return {
     id: entity.id,
     name: entity.name,
@@ -21,10 +22,10 @@ export const ledgerAccountToApiV1Response = (entity: LedgerAccount): LedgerAccou
     ledgerId: entity.ledgerId,
     externalId: entity.externalId,
     maxBalanceLimit: entity.maxBalanceLimit
-      ? Number(entity.maxBalanceLimit) / Math.pow(10, entity.currencyExponent)
+      ? BigNumber(entity.maxBalanceLimit).dividedBy(currencyExponentMultiplier).toNumber()
       : null,
     minBalanceLimit: entity.minBalanceLimit
-      ? Number(entity.minBalanceLimit) / Math.pow(10, entity.currencyExponent)
+      ? BigNumber(entity.minBalanceLimit).dividedBy(currencyExponentMultiplier).toNumber()
       : null,
     balances: entity.balances,
     metadata: Object.fromEntries((entity.metadata ?? []).map((v) => [v.key, v.value])),
