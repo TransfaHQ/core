@@ -397,7 +397,7 @@ export class LedgerAccountService {
       maxLimit = BigNumber(maxBalanceLimit).multipliedBy(currencyExponentMultiplier).toString();
     }
 
-    if (minLimit != null && maxLimit != null && minLimit > maxLimit) {
+    if (minLimit != null && maxLimit != null && BigNumber(minLimit).gt(BigNumber(maxLimit))) {
       throw new BadRequestException('minBalanceLimit should lower than equal to maxBalanceLimit.');
     }
 
