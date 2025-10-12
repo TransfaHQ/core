@@ -20,8 +20,12 @@ export const ledgerAccountToApiV1Response = (entity: LedgerAccount): LedgerAccou
     normalBalance: entity.normalBalance,
     ledgerId: entity.ledgerId,
     externalId: entity.externalId,
-    maxBalanceLimit: entity.maxBalanceLimit ? Number(entity.maxBalanceLimit) : null,
-    minBalanceLimit: entity.minBalanceLimit ? Number(entity.minBalanceLimit) : null,
+    maxBalanceLimit: entity.maxBalanceLimit
+      ? Number(entity.maxBalanceLimit) / Math.pow(10, entity.currencyExponent)
+      : null,
+    minBalanceLimit: entity.minBalanceLimit
+      ? Number(entity.minBalanceLimit) / Math.pow(10, entity.currencyExponent)
+      : null,
     balances: entity.balances,
     metadata: Object.fromEntries((entity.metadata ?? []).map((v) => [v.key, v.value])),
     createdAt: entity.createdAt,
