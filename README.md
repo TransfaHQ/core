@@ -427,7 +427,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](./LICE
 
 <div align="center">
 
-**Built with ❤️ by the Transfa community**
+**Built with ❤️ by the Transfa team**
 
 [transfa.com](https://transfa.com)
 
