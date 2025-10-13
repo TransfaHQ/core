@@ -184,7 +184,7 @@ The frontend and backend are **completely independent** and can be deployed sepa
 
 - **NestJS** - Node.js framework
 - **TypeScript** - Type safety
-- **TypeORM** - Database ORM
+- **Kysely** - SQL query builder
 - **PostgreSQL** - Primary database
 - **TigerBeetle** - High-performance accounting engine
 - **Swagger/OpenAPI** - API documentation
@@ -240,26 +240,6 @@ The backend API is fully documented using OpenAPI/Swagger:
 - **Interactive Documentation**: http://localhost:3000/api-reference (when running)
 - **OpenAPI JSON**: http://localhost:3000/apidocs-json
 
-### Example API Usage
-
-```typescript
-// Create a ledger account
-POST /api/accounts
-{
-  "name": "Customer Deposits",
-  "code": "CUST_DEP_001",
-  "type": "asset"
-}
-
-// Create a transaction
-POST /api/transactions
-{
-  "entries": [
-    { "accountId": "...", "debit": "100.00" },
-    { "accountId": "...", "credit": "100.00" }
-  ]
-}
-```
 
 ## Testing
 
