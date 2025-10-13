@@ -2,3 +2,11 @@ apidocs/*
 node_modules/
 .pnpm-debug.log*
 mise.toml
+
+# Docker
+.env
+docker-compose.override.yml
+
+# Docker volumes (if running locally)
+postgres_data/
+tigerbeetle_data/

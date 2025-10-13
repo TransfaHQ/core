@@ -3,8 +3,10 @@ import createFetchClient from "openapi-fetch";
 import createClient from "openapi-react-query";
 import type { paths } from "./generated/api-types";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL
+
 const apiClient = axios.create({
-  baseURL: window.location.origin,
+  baseURL: API_BASE_URL,
   timeout: 10000,
   withCredentials: true,
   headers: {
@@ -27,7 +29,7 @@ apiClient.interceptors.response.use(
 );
 
 const fetchClient = createFetchClient<paths>({
-  baseUrl: window.location.origin,
+  baseUrl: API_BASE_URL,
   credentials: "include",
   headers: {
     "Content-Type": "application/json",

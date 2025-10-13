@@ -1,9 +1,7 @@
 import { LoggerModule } from 'nestjs-pino';
-import { join } from 'path';
 
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
-import { ServeStaticModule } from '@nestjs/serve-static';
 
 import {
   KyselyExceptionFilter,
@@ -31,10 +29,6 @@ const filters = [
 
 @Module({
   imports: [
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'client'),
-      exclude: ['/api/*api', '/v1/*v1'],
-    }),
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({

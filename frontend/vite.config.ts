@@ -12,7 +12,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: "../backend/client",
+    outDir: "dist",
     emptyOutDir: true,
   },
   server: {

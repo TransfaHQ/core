@@ -65,7 +65,6 @@ export function SearchableCombobox({
     }
   };
 
-  console.log("items", items);
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
