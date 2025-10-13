@@ -1,8 +1,9 @@
 <div align="center">
+<img width="auto" height="36" alt="Group 5" src="https://github.com/user-attachments/assets/6be00fca-aa64-447d-b416-4f4b6a87746b" />
 
-# Transfa
 
 **Open-Source Ledger Infrastructure for Financial Applications**
+
 
 [Website](https://transfa.com) • [Documentation](#documentation) • [Contributing](#contributing)
 
@@ -407,71 +408,6 @@ We welcome contributions! Here's how you can help:
 - Update documentation as needed
 - Ensure all tests pass before submitting PR
 
-## Troubleshooting
-
-### TigerBeetle Issues
-
-**Problem**: TigerBeetle binary not found
-
-```bash
-# Solution: Download TigerBeetle manually
-cd backend
-npm run tb:download
-```
-
-**Problem**: TigerBeetle port already in use
-
-```bash
-# Solution: Kill existing TigerBeetle process
-pkill tigerbeetle
-npm run tb:start:dev
-```
-
-### Database Issues
-
-**Problem**: Database connection refused
-
-```bash
-# Solution: Ensure PostgreSQL is running
-# macOS
-brew services start postgresql
-
-# Linux
-sudo systemctl start postgresql
-
-# Or use Docker
-docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=transfa2025 postgres:14
-```
-
-**Problem**: Migration fails
-
-```bash
-# Solution: Reset database and re-run migrations
-npm run db:revert
-npm run db:migrate
-```
-
-### Docker Issues
-
-**Problem**: Port already in use
-
-```bash
-# Solution: Stop conflicting services or change ports in docker-compose.yml
-docker-compose down
-# Edit docker-compose.yml to use different ports
-docker-compose up -d
-```
-
-**Problem**: Docker build fails
-
-```bash
-# Solution: Clean Docker cache and rebuild
-docker-compose down
-docker system prune -a
-docker-compose build --no-cache
-docker-compose up -d
-```
-
 ## Documentation
 
 - [Website](https://transfa.com)
@@ -480,8 +416,8 @@ docker-compose up -d
 
 ## Community
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/transfa-core/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/transfa-core/discussions)
+- **Issues**: [GitHub Issues](https://github.com/transfahq/core/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/transfahq/core/discussions)
 
 ## License
 
