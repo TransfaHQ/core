@@ -1,7 +1,7 @@
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:14-alpine
+    image: postgres:17-alpine
     container_name: transfa-postgres
     environment:
       POSTGRES_DB: ${DB_NAME:-transfa}
@@ -31,7 +31,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    container_name: transfa-backend
+    container_name: transfa-api
     environment:
       # Database
       DB_HOST: postgres
@@ -80,11 +80,11 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
-    container_name: transfa-frontend
+    container_name: transfa-web
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
     ports:
-      - "5173:80"
+      - "5173:8080"
     depends_on:
       - backend
     networks:
@@ -98,7 +98,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost/",
+          "http://localhost:8080/",
         ]
       interval: 30s
       timeout: 10s
