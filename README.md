@@ -51,8 +51,8 @@ The fastest way to get Transfa up and running:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/transfa-core.git
-cd transfa-core
+git clone https://github.com/transfahq/core.git
+cd core
 
 # Start all services with Docker Compose
 docker-compose up -d
@@ -85,8 +85,8 @@ You can find the full docker setup guide [here](./guides/DOCKER_SETUP.md).
 1. **Clone and Install Dependencies**
 
 ```bash
-git clone https://github.com/yourusername/transfa-core.git
-cd transfa-core
+git clone https://github.com/transfahq/core.git
+cd core
 pnpm install
 ```
 
@@ -145,7 +145,7 @@ The application will be available at:
 Transfa uses a modern monorepo structure with **independent frontend and backend deployments**:
 
 ```
-transfa-core/
+core/
 ├── frontend/          # React + Vite frontend application
 │   ├── src/
 │   ├── public/
