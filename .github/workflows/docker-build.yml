@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - ci/docker-image
   workflow_dispatch:
 
 env:
@@ -141,6 +140,20 @@ jobs:
           cat > release_notes.md <<EOF
           ## Release v${{ steps.calver.outputs.version }}
 
+          ### Docker Images
+
+          Pull the images using:
+
+          \`\`\`bash
+          # API (Backend)
+          docker pull ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_API }}:${{ steps.calver.outputs.version }}
+
+          # Web (Frontend)
+          docker pull ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_WEB }}:${{ steps.calver.outputs.version }}
+          \`\`\`
+
+          ### What's Changed
+
           ${CHANGELOG}
 
           **Full Changelog**: https://github.com/${{ github.repository }}/compare/${LATEST_TAG}...v${{ steps.calver.outputs.version }}
@@ -157,7 +170,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.calver.outputs.version }}
-          name: Release v${{ steps.calver.outputs.version }}
+          name: v${{ steps.calver.outputs.version }}
           body_path: release_notes.md
           draft: false
           prerelease: false
