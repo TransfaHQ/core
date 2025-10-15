@@ -39,7 +39,7 @@ jobs:
           git fetch --tags --force
 
           TAG_PREFIX="v${YEAR}.${MONTH}."
-          EXISTING_TAGS=$( )
+          EXISTING_TAGS=$(git tag -l "${TAG_PREFIX}*" | wc -l)
 
           MICRO=$((EXISTING_TAGS + 1))
 
@@ -193,4 +193,64 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    needs: [build-and-push, create-release]
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Trivy vulnerability scanner on API image
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_API }}:latest
+          format: "sarif"
+          output: "trivy-api-results.sarif"
+          severity: "CRITICAL,HIGH"
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Trivy results for API to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-api-results.sarif"
+          category: "trivy-api"
+
+      - name: Run Trivy vulnerability scanner on Web image
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_WEB }}:latest
+          format: "sarif"
+          output: "trivy-web-results.sarif"
+          severity: "CRITICAL,HIGH"
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Trivy results for Web to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-web-results.sarif"
+          category: "trivy-web"
+
+      - name: Output security summary
+        if: always()
+        run: |
+          echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Vulnerability scans completed for version ${{ needs.build-and-push.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View detailed results in the Security tab." >> $GITHUB_STEP_SUMMARY
