@@ -17,8 +17,8 @@ export class AddLedgerEntryMetadataTable1760487223664 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE INDEX USING HASH idx_ledger_entry_metadata_ledger_entry_id 
-      ON ledger_entry_metadata(ledger_entry_id)
+      CREATE INDEX idx_ledger_entry_metadata_ledger_entry_id 
+      ON ledger_entry_metadata USING HASH (ledger_entry_id)
     `);
   }
 
