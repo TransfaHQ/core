@@ -1,63 +1,29 @@
-# Stage 1: Build stage
-FROM node:22-alpine AS builder
-
-# Install build dependencies
+FROM node:22-alpine
 RUN apk add --no-cache curl unzip bash
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY pnpm-lock.yaml* ./
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 
-# Install pnpm
+COPY backend/package.json ./backend/
+
 RUN npm install -g pnpm
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --filter backend  
 
-# Copy source code
-COPY . .
+COPY backend/ ./backend/
 
-# Build the application
+WORKDIR /app/backend
+
 RUN pnpm build
 
-# Stage 2: Production stage
-FROM node:22-alpine AS production
+RUN chmod +x docker-entrypoint.sh
 
-# Install runtime dependencies
-RUN apk add --no-cache bash curl
 
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install pnpm
-RUN npm install -g pnpm
-
-# Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
-
-# Copy built application from builder
-COPY --from=builder /app/dist ./dist
-
-# Copy scripts for database migrations
-COPY --from=builder /app/scripts/db ./scripts/db
-
-# Copy necessary configuration files
-COPY .env.example .env.example
-
-# Expose backend port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:3000/api || exit 1
-
-# Start script that runs database migrations
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
 ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]

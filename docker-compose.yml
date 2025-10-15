@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:14-alpine
+    image: postgres:17-alpine
     container_name: transfa-postgres
     environment:
       POSTGRES_DB: ${DB_NAME:-transfa}
@@ -14,7 +12,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-transfa} -d ${DB_NAME:-transfa}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USERNAME:-transfa} -d ${DB_NAME:-transfa}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,9 +29,9 @@ services:
   # See guides/TIGERBEETLE.md for deployment guidance
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: transfa-backend
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: transfa-api
     environment:
       # Database
       DB_HOST: postgres
@@ -76,20 +78,28 @@ services:
   # Frontend
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
-    container_name: transfa-frontend
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: transfa-web
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
     ports:
-      - "5173:80"
+      - "5173:8080"
     depends_on:
       - backend
     networks:
       - transfa-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3

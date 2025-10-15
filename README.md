@@ -10,6 +10,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./backend/LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![Docker Build](https://github.com/TransfaHQ/core/actions/workflows/docker-build.yml/badge.svg)](https://github.com/TransfaHQ/core/actions/workflows/docker-build.yml)
 
 </div>
 

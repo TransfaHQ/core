@@ -1,0 +1,7 @@
+node_modules/
+frontend/dist/
+**/node_modules/
+**/*.tigerbeetle
+.git
+.husky
+.github
