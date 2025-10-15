@@ -336,7 +336,7 @@ export class LedgerTransactionService {
         metadata: ledgerTransactionMetadata,
         ledgerEntries: insertedEntries.map((entry) => ({
           ...entry,
-          metadata: ledgerEntryMetadata.filter((metadata) => (metadata.ledgerEntryId = entry.id)),
+          metadata: ledgerEntryMetadata.filter((metadata) => metadata.ledgerEntryId == entry.id),
           ledgerAccount: parsedLedgerAccounts[entry.ledgerAccountId],
         })),
       };
