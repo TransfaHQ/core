@@ -52,6 +52,18 @@ export class LedgerEntryResponseDto {
     example: 'Cash Account',
   })
   ledgerAccountName: string;
+
+  @ApiPropertyOptional({
+    description: 'Additional metadata as key-value pairs. Both keys and values must be strings.',
+    type: 'object',
+    example: { source: 'api', tag: 'invoice' },
+    additionalProperties: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 255,
+    },
+  })
+  metadata?: Record<string, string>;
 }
 
 export class LedgerTransactionResponseDto {

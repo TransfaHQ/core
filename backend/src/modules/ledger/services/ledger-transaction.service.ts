@@ -168,6 +168,12 @@ export class LedgerTransactionService {
       tigerBeetleId: bigint;
     }[] = [];
 
+    const ledgerEntryMetadata: {
+      ledgerEntryId: string;
+      key: string;
+      value: string;
+    }[] = [];
+
     for (const entry of data.ledgerEntries) {
       const sourceAccount = ledgerAccountMap[entry.sourceAccountId];
       const destinationAccount = ledgerAccountMap[entry.destinationAccountId];
@@ -201,9 +207,12 @@ export class LedgerTransactionService {
         timestamp: 0n,
       };
 
+      const sourceEntryId = uuidV7();
+      const destinationEntryId = uuidV7();
+
       // Two DB ledger entries: one credit (destination) and one debit (source)
       ledgerEntryData.push({
-        id: uuidV7(),
+        id: destinationEntryId,
         ledgerAccountId: entry.destinationAccountId,
         ledgerId: destinationAccount.ledgerId,
         amount,
@@ -212,7 +221,7 @@ export class LedgerTransactionService {
       });
 
       ledgerEntryData.push({
-        id: uuidV7(),
+        id: sourceEntryId,
         ledgerAccountId: entry.sourceAccountId,
         ledgerId: sourceAccount.ledgerId,
         amount,
@@ -231,6 +240,24 @@ export class LedgerTransactionService {
         tbTransfersData,
         tbTransferMap,
       );
+
+      // Process ledger entry metadata
+
+      Object.entries(entry.sourceMetadata ?? {}).forEach(([key, value]) => {
+        ledgerEntryMetadata.push({
+          ledgerEntryId: sourceEntryId,
+          key,
+          value,
+        });
+      });
+
+      Object.entries(entry.destinationMetadata ?? {}).forEach(([key, value]) => {
+        ledgerEntryMetadata.push({
+          ledgerEntryId: destinationEntryId,
+          key,
+          value,
+        });
+      });
     }
 
     // ----------------------------
@@ -294,16 +321,22 @@ export class LedgerTransactionService {
         .returningAll()
         .execute();
 
-      // 8.d Create all TigerBeetle transfers prepared earlier
+      // 8.d Insert all  ledger entry metdata
+      if (ledgerEntryMetadata.length > 0) {
+        await trx.insertInto('ledgerEntryMetadata').values(ledgerEntryMetadata).execute();
+      }
+
+      // 8.e Create all TigerBeetle transfers prepared earlier
       //      (this is done after DB inserts so the DB state and TB transfers stay consistent)
       await this.tigerBeetleService.createTransfers(tbTransfersData);
 
-      // 8.e Return the composed LedgerTransaction including metadata and populated ledgerEntries
+      // 8.f Return the composed LedgerTransaction including metadata and populated ledgerEntries
       return {
         ...ledgerTransaction,
         metadata: ledgerTransactionMetadata,
         ledgerEntries: insertedEntries.map((entry) => ({
           ...entry,
+          metadata: ledgerEntryMetadata.filter((metadata) => (metadata.ledgerEntryId = entry.id)),
           ledgerAccount: parsedLedgerAccounts[entry.ledgerAccountId],
         })),
       };
@@ -352,6 +385,27 @@ export class LedgerTransactionService {
       .where('le.ledgerTransactionId', '=', transaction.id)
       .execute();
 
+    const entryIds = Array.from(new Set(entries.map((entry) => entry.id)));
+
+    // Fetch metadata for accounts (if needed in the future)
+    const metadataResults = await this.db.kysely
+      .selectFrom('ledgerEntryMetadata')
+      .select(['ledgerEntryId', 'key', 'value'])
+      .where('ledgerEntryId', 'in', entryIds)
+      .execute();
+
+    // Group metadata by account ID
+    const metadataByEntryId = metadataResults.reduce(
+      (acc, meta) => {
+        if (!acc[meta.ledgerEntryId]) {
+          acc[meta.ledgerEntryId] = [];
+        }
+        acc[meta.ledgerEntryId].push({ key: meta.key, value: meta.value });
+        return acc;
+      },
+      {} as Record<string, Array<{ key: string; value: string }>>,
+    );
+
     return {
       ...transaction,
       metadata,
@@ -371,6 +425,7 @@ export class LedgerTransactionService {
         ledgerTransactionId: transaction.id,
         tigerBeetleId: entry.tigerBeetleId,
         deletedAt: entry.deletedAt,
+        metadata: metadataByEntryId[entry.id] || [],
       })),
     };
   }
