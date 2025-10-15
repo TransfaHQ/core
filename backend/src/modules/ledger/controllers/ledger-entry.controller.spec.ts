@@ -4,7 +4,7 @@ import { HttpStatus } from '@nestjs/common';
 
 import { setupTestContext } from '@src/test/helpers';
 
-import { NormalBalanceEnum } from '@libs/enums';
+import { LedgerTransactionStatusEnum, NormalBalanceEnum } from '@libs/enums';
 import { setTestBasicAuthHeader } from '@libs/utils/tests';
 import { uuidV7 } from '@libs/utils/uuid';
 
@@ -115,6 +115,7 @@ describe('LedgerEntryController', () => {
     const txn1 = await transactionService.record({
       description: 'USD Transaction 1',
       externalId: uuidV7(),
+      status: LedgerTransactionStatusEnum.POSTED,
       metadata: { category: 'test', type: 'payment' },
       ledgerEntries: [
         {
@@ -129,6 +130,7 @@ describe('LedgerEntryController', () => {
     // Transaction 2: EUR on ledger1
     const txn2 = await transactionService.record({
       description: 'EUR Transaction 1',
+      status: LedgerTransactionStatusEnum.POSTED,
       externalId: uuidV7(),
       metadata: { category: 'test', type: 'transfer' },
       ledgerEntries: [
@@ -144,6 +146,7 @@ describe('LedgerEntryController', () => {
     // Transaction 3: USD on ledger2
     const txn3 = await transactionService.record({
       description: 'USD Transaction 2',
+      status: LedgerTransactionStatusEnum.POSTED,
       externalId: uuidV7(),
       metadata: { category: 'test', type: 'payment' },
       ledgerEntries: [
@@ -161,6 +164,7 @@ describe('LedgerEntryController', () => {
       description: 'Multi-entry Transaction',
       externalId: uuidV7(),
       metadata: { category: 'bulk', type: 'batch' },
+      status: LedgerTransactionStatusEnum.POSTED,
       ledgerEntries: [
         {
           sourceAccountId: usdDebitAccount1.id,
@@ -181,6 +185,7 @@ describe('LedgerEntryController', () => {
       description: 'USD Transaction 3',
       externalId: uuidV7(),
       metadata: { category: 'test', type: 'refund' },
+      status: LedgerTransactionStatusEnum.POSTED,
       ledgerEntries: [
         {
           sourceAccountId: usdCreditAccount1.id,
@@ -218,10 +223,10 @@ describe('LedgerEntryController', () => {
             expect(entry.amount).toBeDefined();
             expect(entry.direction).toBeDefined();
             expect(entry.ledgerId).toBeDefined();
-            expect(entry.ledgerTransactionId).toBeDefined();
-            expect(entry.ledgerAccountId).toBeDefined();
-            expect(entry.ledgerAccountCurrency).toBeDefined();
-            expect(entry.ledgerAccountCurrencyExponent).toBeDefined();
+            expect(entry.ledgerTransaction.id).toBeDefined();
+            expect(entry.ledgerAccount.id).toBeDefined();
+            expect(entry.currency.code).toBeDefined();
+            expect(entry.currency.exponent).toBeDefined();
             expect(entry.createdAt).toBeDefined();
             expect(entry.updatedAt).toBeDefined();
           });
@@ -307,7 +312,7 @@ describe('LedgerEntryController', () => {
             .expect((response) => {
               expect(response.body.data.length).toBe(2); // Should have 2 entries (debit and credit)
               response.body.data.forEach((entry: any) => {
-                expect(entry.ledgerTransactionId).toBe(targetTransaction.id);
+                expect(entry.ledgerTransaction.id).toBe(targetTransaction.id);
               });
             });
         });
@@ -336,7 +341,7 @@ describe('LedgerEntryController', () => {
             .expect((response) => {
               expect(response.body.data.length).toBe(2); // Should have 2 entries
               response.body.data.forEach((entry: any) => {
-                expect(entry.ledgerTransactionId).toBe(targetTransaction.id);
+                expect(entry.ledgerTransaction.id).toBe(targetTransaction.id);
               });
             });
         });
@@ -364,7 +369,7 @@ describe('LedgerEntryController', () => {
             .expect((response) => {
               expect(response.body.data.length).toBeGreaterThan(0);
               response.body.data.forEach((entry: any) => {
-                expect(entry.ledgerAccountId).toBe(usdCreditAccount1.id);
+                expect(entry.ledgerAccount.id).toBe(usdCreditAccount1.id);
               });
             });
         });
@@ -392,7 +397,7 @@ describe('LedgerEntryController', () => {
             .expect((response) => {
               expect(response.body.data.length).toBeGreaterThan(0);
               response.body.data.forEach((entry: any) => {
-                expect(entry.ledgerAccountId).toBe(usdDebitAccount1.id);
+                expect(entry.ledgerAccount.id).toBe(usdDebitAccount1.id);
               });
             });
         });
@@ -471,8 +476,8 @@ describe('LedgerEntryController', () => {
             .expect(HttpStatus.OK)
             .expect((response) => {
               expect(response.body.data.length).toBe(1);
-              expect(response.body.data[0].ledgerAccountId).toBe(usdCreditAccount1.id);
-              expect(response.body.data[0].ledgerTransactionId).toBe(targetTransaction.id);
+              expect(response.body.data[0].ledgerAccount.id).toBe(usdCreditAccount1.id);
+              expect(response.body.data[0].ledgerTransaction.id).toBe(targetTransaction.id);
             });
         });
 
@@ -490,7 +495,7 @@ describe('LedgerEntryController', () => {
               expect(response.body.data.length).toBeGreaterThan(0);
               response.body.data.forEach((entry: any) => {
                 expect(entry.ledgerId).toBe(ledger2.id);
-                expect(entry.ledgerAccountId).toBe(usdDebitAccount2.id);
+                expect(entry.ledgerAccount.id).toBe(usdDebitAccount2.id);
                 expect(entry.direction).toBe(NormalBalanceEnum.DEBIT);
               });
             });
