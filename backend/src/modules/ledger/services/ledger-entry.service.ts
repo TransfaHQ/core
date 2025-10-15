@@ -1,24 +1,27 @@
+import { Selectable } from 'kysely';
+
 import { Injectable } from '@nestjs/common';
 
 import { CursorPaginatedResult, cursorPaginate } from '@libs/database';
 import { DatabaseService } from '@libs/database/database.service';
+import { LedgerAccounts, LedgerTransactions } from '@libs/database/types';
 import { NormalBalanceEnum } from '@libs/enums';
 
 import { Metadata } from '@modules/ledger/types';
 
-export type LedgerEntryWithAccount = {
+export type LedgerEntryResponse = {
   id: string;
   createdAt: Date;
   updatedAt: Date;
   amount: string;
   direction: string;
   ledgerId: string;
-  ledgerTransactionId: string;
-  ledgerAccountId: string;
-  currencyCode: string;
-  currencyExponent: number;
-  accountName: string;
-  transactionExternalId: string;
+  ledgerAccount: Selectable<LedgerAccounts>;
+  ledgerTransaction: Selectable<LedgerTransactions>;
+  currency: {
+    code: string;
+    exponent: number;
+  };
   deletedAt: Date | null;
   metadata: Metadata[];
 };
@@ -40,7 +43,7 @@ export class LedgerEntryService {
       direction?: NormalBalanceEnum;
     };
     order?: 'asc' | 'desc';
-  }): Promise<CursorPaginatedResult<LedgerEntryWithAccount>> {
+  }): Promise<CursorPaginatedResult<LedgerEntryResponse>> {
     const { limit = 15, cursor, direction = 'next', order = 'desc' } = options;
     const {
       ledgerId,
@@ -103,26 +106,21 @@ export class LedgerEntryService {
 
     const entryIds = Array.from(new Set(paginatedResult.data.map((entry) => entry.id)));
 
-    // Fetch account information (currency and name)
     const accountIds = Array.from(
       new Set(paginatedResult.data.map((entry) => entry.ledgerAccountId)),
     );
     const accounts = await this.db.kysely
       .selectFrom('ledgerAccounts')
-      .select(['id', 'currencyCode', 'currencyExponent', 'name'])
+      .selectAll()
       .where('id', 'in', accountIds)
       .execute();
 
     const accountMap = accounts.reduce(
       (acc, account) => {
-        acc[account.id] = {
-          currencyCode: account.currencyCode,
-          currencyExponent: account.currencyExponent,
-          name: account.name,
-        };
+        acc[account.id] = account;
         return acc;
       },
-      {} as Record<string, { currencyCode: string; currencyExponent: number; name: string }>,
+      {} as Record<string, Selectable<LedgerAccounts>>,
     );
 
     // Fetch transaction external IDs
@@ -131,16 +129,16 @@ export class LedgerEntryService {
     );
     const transactions = await this.db.kysely
       .selectFrom('ledgerTransactions')
-      .select(['id', 'externalId'])
+      .selectAll()
       .where('id', 'in', transactionIds)
       .execute();
 
     const transactionMap = transactions.reduce(
       (acc, transaction) => {
-        acc[transaction.id] = transaction.externalId;
+        acc[transaction.id] = transaction;
         return acc;
       },
-      {} as Record<string, string>,
+      {} as Record<string, Selectable<LedgerTransactions>>,
     );
 
     // Fetch metadata for entries (if needed in the future)
@@ -162,20 +160,20 @@ export class LedgerEntryService {
       {} as Record<string, Array<{ key: string; value: string }>>,
     );
 
-    const data: LedgerEntryWithAccount[] = paginatedResult.data.map((entry) => ({
+    const data: LedgerEntryResponse[] = paginatedResult.data.map((entry) => ({
       id: entry.id,
       createdAt: entry.createdAt,
       updatedAt: entry.updatedAt,
       amount: entry.amount,
       direction: entry.direction,
       ledgerId: entry.ledgerId,
-      ledgerTransactionId: entry.ledgerTransactionId,
-      ledgerAccountId: entry.ledgerAccountId,
+      ledgerAccount: accountMap[entry.ledgerAccountId],
+      ledgerTransaction: transactionMap[entry.ledgerTransactionId],
       deletedAt: entry.deletedAt,
-      currencyCode: accountMap[entry.ledgerAccountId].currencyCode,
-      currencyExponent: accountMap[entry.ledgerAccountId].currencyExponent,
-      accountName: accountMap[entry.ledgerAccountId].name,
-      transactionExternalId: transactionMap[entry.ledgerTransactionId],
+      currency: {
+        code: accountMap[entry.ledgerAccountId].currencyCode,
+        exponent: accountMap[entry.ledgerAccountId].currencyExponent,
+      },
       metadata: metadataByEntryId[entry.id] || [],
     }));
 

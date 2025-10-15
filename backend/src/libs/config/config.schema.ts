@@ -18,6 +18,7 @@ export const ConfigSchema = DBConfigSchema.extend({
   JWT_EXPIRES_IN: z.string().default('24h'),
   LOG_LEVEL: z.string().default('info'),
   TIGER_BEETLE_CLUSTER_ID: z.string().transform(BigInt),
+  CORS_ALLOWED_ORIGINS: z.string(),
   TIGER_BEETLE_REPLICAS_ADDRESSES: z
     .string()
     .transform((v) => v.split(',').map((s) => s.trim()))

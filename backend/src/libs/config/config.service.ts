@@ -58,6 +58,10 @@ export class ConfigService {
     return this.envConfig.LOG_LEVEL;
   }
 
+  get corsAllowedOrigins(): string[] {
+    return this.envConfig.CORS_ALLOWED_ORIGINS.split(',');
+  }
+
   get dbConfig() {
     return {
       host: this.envConfig.DB_HOST,
