@@ -213,10 +213,10 @@ jobs:
       - name: Run Trivy vulnerability scanner on API image
         uses: aquasecurity/trivy-action@0.33.1
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_API }}:${{ needs.build-and-push.outputs.version }}
-          format: 'sarif'
-          output: 'trivy-api-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_API }}:latest
+          format: "sarif"
+          output: "trivy-api-results.sarif"
+          severity: "CRITICAL,HIGH"
         env:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
@@ -225,16 +225,16 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-api-results.sarif'
-          category: 'trivy-api'
+          sarif_file: "trivy-api-results.sarif"
+          category: "trivy-api"
 
       - name: Run Trivy vulnerability scanner on Web image
         uses: aquasecurity/trivy-action@0.33.1
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_WEB }}:${{ needs.build-and-push.outputs.version }}
-          format: 'sarif'
-          output: 'trivy-web-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_WEB }}:latest
+          format: "sarif"
+          output: "trivy-web-results.sarif"
+          severity: "CRITICAL,HIGH"
         env:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
@@ -243,8 +243,8 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-web-results.sarif'
-          category: 'trivy-web'
+          sarif_file: "trivy-web-results.sarif"
+          category: "trivy-web"
 
       - name: Output security summary
         if: always()
