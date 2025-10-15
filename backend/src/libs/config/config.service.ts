@@ -59,7 +59,9 @@ export class ConfigService {
   }
 
   get corsAllowedOrigins(): string[] {
-    return this.envConfig.CORS_ALLOWED_ORIGINS.split(',');
+    return this.envConfig.CORS_ALLOWED_ORIGINS.split(',')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
   }
 
   get dbConfig() {
