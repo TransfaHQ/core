@@ -49,6 +49,30 @@ export class RecordLedgerEntryDto {
   @IsNumber()
   @IsPositive()
   amount: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Additional data associated with source entry represented as key-value pairs. Keys and values must be strings, max length 255.',
+    type: 'object',
+    example: { currency: 'USD', region: 'US' },
+    additionalProperties: { type: 'string', maxLength: 255, minLength: 3 },
+  })
+  @IsOptional()
+  @IsObject()
+  @IsMetadata({ message: 'metadata must have string keys/values max length 255' })
+  sourceMetadata?: Record<string, string>;
+
+  @ApiPropertyOptional({
+    description:
+      'Additional data associated with destination entry represented as key-value pairs. Keys and values must be strings, max length 255.',
+    type: 'object',
+    example: { currency: 'USD', region: 'US' },
+    additionalProperties: { type: 'string', maxLength: 255, minLength: 3 },
+  })
+  @IsOptional()
+  @IsObject()
+  @IsMetadata({ message: 'metadata must have string keys/values max length 255' })
+  destinationMetadata?: Record<string, string>;
 }
 
 export class RecordLedgerTransactionDto {

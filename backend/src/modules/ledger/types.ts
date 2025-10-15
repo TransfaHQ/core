@@ -35,6 +35,7 @@ export type LedgerAccount = Selectable<LedgerAccounts> & {
 
 export type LedgerEntry = Selectable<LedgerEntries> & {
   ledgerAccount: LedgerAccount;
+  metadata?: Metadata[];
 };
 
 export type LedgerTransaction = Selectable<LedgerTransactions> & {

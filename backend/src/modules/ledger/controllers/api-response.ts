@@ -61,6 +61,7 @@ export const ledgerEntryToApiV1Response = (entity: LedgerEntry): LedgerEntryResp
     ledgerAccountCurrency: entity.ledgerAccount!.currencyCode,
     ledgerAccountCurrencyExponent: currencyExponent,
     ledgerAccountName: entity.ledgerAccount!.name,
+    metadata: Object.fromEntries((entity.metadata ?? []).map((v) => [v.key, v.value])),
   };
 };
 
@@ -109,5 +110,6 @@ export const ledgerEntryStandaloneToApiV1Response = (
     ledgerAccountCurrencyExponent: entity.currencyExponent,
     ledgerAccountName: entity.accountName,
     ledgerTransactionExternalId: entity.transactionExternalId,
+    metadata: Object.fromEntries((entity.metadata ?? []).map((v) => [v.key, v.value])),
   };
 };

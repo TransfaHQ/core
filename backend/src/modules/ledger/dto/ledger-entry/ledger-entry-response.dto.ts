@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { NormalBalanceEnum } from '@libs/enums';
 import { uuidV7 } from '@libs/utils/uuid';
@@ -70,4 +70,16 @@ export class LedgerEntryStandaloneResponseDto {
     example: 'tx_external_123',
   })
   ledgerTransactionExternalId: string;
+
+  @ApiPropertyOptional({
+    description: 'Additional metadata as key-value pairs. Both keys and values must be strings.',
+    type: 'object',
+    example: { source: 'api', tag: 'invoice' },
+    additionalProperties: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 255,
+    },
+  })
+  metadata?: Record<string, string>;
 }
