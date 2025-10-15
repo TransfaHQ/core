@@ -25,45 +25,6 @@ export type Numeric = ColumnType<string, number | string, number | string>;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
-export interface CdcNormalizedLedgerEntries {
-  ledgerAccountCreatedAt: Timestamp;
-  ledgerAccountCurrencyCode: string;
-  ledgerAccountCurrencyExponent: number;
-  ledgerAccountDeletedAt: Timestamp | null;
-  ledgerAccountDescription: string | null;
-  ledgerAccountExternalId: string | null;
-  ledgerAccountId: string;
-  ledgerAccountMetadata: Json | null;
-  ledgerAccountName: string;
-  ledgerAccountNormalBalance: string;
-  ledgerAccountTigerBeetleId: Buffer;
-  ledgerAccountUpdatedAt: Timestamp;
-  ledgerCreatedAt: Timestamp;
-  ledgerDeletedAt: Timestamp | null;
-  ledgerDescription: string | null;
-  ledgerEntryAmount: Numeric;
-  ledgerEntryCreatedAt: Timestamp;
-  ledgerEntryDeletedAt: Timestamp | null;
-  ledgerEntryDirection: string;
-  ledgerEntryId: string;
-  ledgerEntryMetadata: Json | null;
-  ledgerEntryTigerBeetleId: Buffer;
-  ledgerEntryUpdatedAt: Timestamp;
-  ledgerId: string;
-  ledgerMetadata: Json | null;
-  ledgerName: string;
-  ledgerTigerBeetleId: number;
-  ledgerTransactionCreatedAt: Timestamp;
-  ledgerTransactionDeletedAt: Timestamp | null;
-  ledgerTransactionDescription: string;
-  ledgerTransactionExternalId: string;
-  ledgerTransactionId: string;
-  ledgerTransactionMetadata: Json | null;
-  ledgerTransactionTigerBeetleId: Buffer;
-  ledgerTransactionUpdatedAt: Timestamp;
-  ledgerUpdatedAt: Timestamp;
-}
-
 export interface Currencies {
   code: string;
   createdAt: Generated<Timestamp | null>;
@@ -208,7 +169,6 @@ export interface Users {
 }
 
 export interface DB {
-  cdcNormalizedLedgerEntries: CdcNormalizedLedgerEntries;
   currencies: Currencies;
   externalTransactions: ExternalTransactions;
   idempotencyKeys: IdempotencyKeys;
