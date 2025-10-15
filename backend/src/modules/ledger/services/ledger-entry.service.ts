@@ -4,6 +4,8 @@ import { CursorPaginatedResult, cursorPaginate } from '@libs/database';
 import { DatabaseService } from '@libs/database/database.service';
 import { NormalBalanceEnum } from '@libs/enums';
 
+import { Metadata } from '@modules/ledger/types';
+
 export type LedgerEntryWithAccount = {
   id: string;
   createdAt: Date;
@@ -18,6 +20,7 @@ export type LedgerEntryWithAccount = {
   accountName: string;
   transactionExternalId: string;
   deletedAt: Date | null;
+  metadata: Metadata[];
 };
 
 @Injectable()
@@ -98,6 +101,8 @@ export class LedgerEntryService {
       };
     }
 
+    const entryIds = Array.from(new Set(paginatedResult.data.map((entry) => entry.id)));
+
     // Fetch account information (currency and name)
     const accountIds = Array.from(
       new Set(paginatedResult.data.map((entry) => entry.ledgerAccountId)),
@@ -138,6 +143,25 @@ export class LedgerEntryService {
       {} as Record<string, string>,
     );
 
+    // Fetch metadata for accounts (if needed in the future)
+    const metadataResults = await this.db.kysely
+      .selectFrom('ledgerEntryMetadata')
+      .select(['ledgerEntryId', 'key', 'value'])
+      .where('ledgerEntryId', 'in', entryIds)
+      .execute();
+
+    // Group metadata by account ID
+    const metadataByEntryId = metadataResults.reduce(
+      (acc, meta) => {
+        if (!acc[meta.ledgerEntryId]) {
+          acc[meta.ledgerEntryId] = [];
+        }
+        acc[meta.ledgerEntryId].push({ key: meta.key, value: meta.value });
+        return acc;
+      },
+      {} as Record<string, Array<{ key: string; value: string }>>,
+    );
+
     const data: LedgerEntryWithAccount[] = paginatedResult.data.map((entry) => ({
       id: entry.id,
       createdAt: entry.createdAt,
@@ -152,6 +176,7 @@ export class LedgerEntryService {
       currencyExponent: accountMap[entry.ledgerAccountId].currencyExponent,
       accountName: accountMap[entry.ledgerAccountId].name,
       transactionExternalId: transactionMap[entry.ledgerTransactionId],
+      metadata: metadataByEntryId[entry.id] || [],
     }));
 
     return {

@@ -93,6 +93,16 @@ export interface LedgerEntries {
   updatedAt: Generated<Timestamp>;
 }
 
+export interface LedgerEntryMetadata {
+  createdAt: Generated<Timestamp>;
+  deletedAt: Timestamp | null;
+  id: Generated<string>;
+  key: string;
+  ledgerEntryId: string;
+  updatedAt: Generated<Timestamp>;
+  value: string;
+}
+
 export interface LedgerMetadata {
   createdAt: Generated<Timestamp | null>;
   deletedAt: Timestamp | null;
@@ -152,6 +162,7 @@ export interface DB {
   ledgerAccountMetadata: LedgerAccountMetadata;
   ledgerAccounts: LedgerAccounts;
   ledgerEntries: LedgerEntries;
+  ledgerEntryMetadata: LedgerEntryMetadata;
   ledgerMetadata: LedgerMetadata;
   ledgers: Ledgers;
   ledgerTransactionMetadata: LedgerTransactionMetadata;
