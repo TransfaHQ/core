@@ -25,6 +25,46 @@ export type Numeric = ColumnType<string, number | string, number | string>;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export interface CdcNormalizedLedgerEntries {
+  amount: Numeric;
+  direction: string;
+  ledgerAccountCreatedAt: Timestamp;
+  ledgerAccountCurrencyCode: string;
+  ledgerAccountCurrencyExponent: number;
+  ledgerAccountDeletedAt: Timestamp | null;
+  ledgerAccountDescription: string | null;
+  ledgerAccountExternalId: string | null;
+  ledgerAccountId: string;
+  ledgerAccountMetadata: Json | null;
+  ledgerAccountName: string;
+  ledgerAccountNormalBalance: string;
+  ledgerAccountTigerBeetleId: Buffer;
+  ledgerAccountUpdatedAt: Timestamp;
+  ledgerCreatedAt: Timestamp;
+  ledgerDeletedAt: Timestamp | null;
+  ledgerDescription: string | null;
+  ledgerEntryCreatedAt: Timestamp;
+  ledgerEntryDeletedAt: Timestamp | null;
+  ledgerEntryId: string;
+  ledgerEntryMetadata: Json | null;
+  ledgerEntryTigerBeetleId: Buffer;
+  ledgerEntryUpdatedAt: Timestamp;
+  ledgerId: string;
+  ledgerMetadata: Json | null;
+  ledgerName: string;
+  ledgerTigerBeetleId: number;
+  ledgerTransactionId: string;
+  ledgerTransactionMetadata: Json | null;
+  ledgerUpdatedAt: Timestamp;
+  legerTransactionCreatedAt: Timestamp;
+  legerTransactionDeletedAt: Timestamp | null;
+  legerTransactionDescription: string;
+  legerTransactionExternalId: string;
+  legerTransactionTigerBeetleId: Buffer;
+  legerTransactionUpdatedAt: Timestamp;
+  tigerBeetleId: Buffer;
+}
+
 export interface Currencies {
   code: string;
   createdAt: Generated<Timestamp | null>;
@@ -32,6 +72,19 @@ export interface Currencies {
   id: Generated<number>;
   name: string;
   updatedAt: Generated<Timestamp | null>;
+}
+
+export interface ExternalTransactions {
+  amount: Numeric;
+  createdAt: Generated<Timestamp>;
+  currencyCode: string;
+  date: Timestamp;
+  deletedAt: Timestamp | null;
+  id: Generated<string>;
+  updatedAt: Generated<Timestamp>;
+  vendorDescription: string | null;
+  vendorId: string;
+  vendorName: string;
 }
 
 export interface IdempotencyKeys {
@@ -156,7 +209,9 @@ export interface Users {
 }
 
 export interface DB {
+  cdcNormalizedLedgerEntries: CdcNormalizedLedgerEntries;
   currencies: Currencies;
+  externalTransactions: ExternalTransactions;
   idempotencyKeys: IdempotencyKeys;
   keys: Keys;
   ledgerAccountMetadata: LedgerAccountMetadata;
