@@ -143,14 +143,14 @@ export class LedgerEntryService {
       {} as Record<string, string>,
     );
 
-    // Fetch metadata for accounts (if needed in the future)
+    // Fetch metadata for entries (if needed in the future)
     const metadataResults = await this.db.kysely
       .selectFrom('ledgerEntryMetadata')
       .select(['ledgerEntryId', 'key', 'value'])
       .where('ledgerEntryId', 'in', entryIds)
       .execute();
 
-    // Group metadata by account ID
+    // Group metadata by entry ID
     const metadataByEntryId = metadataResults.reduce(
       (acc, meta) => {
         if (!acc[meta.ledgerEntryId]) {

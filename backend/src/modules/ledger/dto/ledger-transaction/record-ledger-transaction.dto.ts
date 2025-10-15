@@ -52,7 +52,7 @@ export class RecordLedgerEntryDto {
 
   @ApiPropertyOptional({
     description:
-      'Additional data  associated with debit entry represented as key-value pairs. Keys and values must be strings, max length 255.',
+      'Additional data associated with source entry represented as key-value pairs. Keys and values must be strings, max length 255.',
     type: 'object',
     example: { currency: 'USD', region: 'US' },
     additionalProperties: { type: 'string', maxLength: 255, minLength: 3 },
@@ -64,7 +64,7 @@ export class RecordLedgerEntryDto {
 
   @ApiPropertyOptional({
     description:
-      'Additional data associated with credit entry represented as key-value pairs. Keys and values must be strings, max length 255.',
+      'Additional data associated with destination entry represented as key-value pairs. Keys and values must be strings, max length 255.',
     type: 'object',
     example: { currency: 'USD', region: 'US' },
     additionalProperties: { type: 'string', maxLength: 255, minLength: 3 },
