@@ -26,8 +26,6 @@ export type Numeric = ColumnType<string, number | string, number | string>;
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export interface CdcNormalizedLedgerEntries {
-  amount: Numeric;
-  direction: string;
   ledgerAccountCreatedAt: Timestamp;
   ledgerAccountCurrencyCode: string;
   ledgerAccountCurrencyExponent: number;
@@ -43,8 +41,10 @@ export interface CdcNormalizedLedgerEntries {
   ledgerCreatedAt: Timestamp;
   ledgerDeletedAt: Timestamp | null;
   ledgerDescription: string | null;
+  ledgerEntryAmount: Numeric;
   ledgerEntryCreatedAt: Timestamp;
   ledgerEntryDeletedAt: Timestamp | null;
+  ledgerEntryDirection: string;
   ledgerEntryId: string;
   ledgerEntryMetadata: Json | null;
   ledgerEntryTigerBeetleId: Buffer;
@@ -53,16 +53,15 @@ export interface CdcNormalizedLedgerEntries {
   ledgerMetadata: Json | null;
   ledgerName: string;
   ledgerTigerBeetleId: number;
+  ledgerTransactionCreatedAt: Timestamp;
+  ledgerTransactionDeletedAt: Timestamp | null;
+  ledgerTransactionDescription: string;
+  ledgerTransactionExternalId: string;
   ledgerTransactionId: string;
   ledgerTransactionMetadata: Json | null;
+  ledgerTransactionTigerBeetleId: Buffer;
+  ledgerTransactionUpdatedAt: Timestamp;
   ledgerUpdatedAt: Timestamp;
-  legerTransactionCreatedAt: Timestamp;
-  legerTransactionDeletedAt: Timestamp | null;
-  legerTransactionDescription: string;
-  legerTransactionExternalId: string;
-  legerTransactionTigerBeetleId: Buffer;
-  legerTransactionUpdatedAt: Timestamp;
-  tigerBeetleId: Buffer;
 }
 
 export interface Currencies {

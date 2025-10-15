@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddExternalTransactionsTable1760490680085 implements MigrationInterface {
+export class AddExternalTransactionsTable1760490680086 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Fix ledger_entries timestamp columns
     await queryRunner.query(`
@@ -26,10 +26,9 @@ export class AddExternalTransactionsTable1760490680085 implements MigrationInter
     await queryRunner.query(`create table cdc_normalized_ledger_entries(
         -- ledger_entries fields
         ledger_entry_id UUID NOT NULL REFERENCES ledger_entries(id) ON DELETE RESTRICT,
-        amount NUMERIC NOT NULL CHECK (amount >= 0),
-        tiger_beetle_id bytea NOT NULL,
-        direction character varying(6) NOT NULL,
+        ledger_entry_amount NUMERIC NOT NULL CHECK (ledger_entry_amount >= 0),
         ledger_entry_tiger_beetle_id bytea NOT NULL,
+        ledger_entry_direction character varying(6) NOT NULL,
         ledger_entry_created_at TIMESTAMPTZ NOT NULL,
         ledger_entry_updated_at TIMESTAMPTZ NOT NULL,
         ledger_entry_deleted_at TIMESTAMPTZ,
@@ -37,12 +36,12 @@ export class AddExternalTransactionsTable1760490680085 implements MigrationInter
 
         -- ledger_transactions field
         ledger_transaction_id UUID NOT NULL REFERENCES ledger_transactions(id) ON DELETE RESTRICT,
-        leger_transaction_external_id VARCHAR(255) NOT NULL,
-        leger_transaction_description VARCHAR(255) NOT NULL,
-        leger_transaction_tiger_beetle_id bytea NOT NULL,
-        leger_transaction_created_at TIMESTAMPTZ NOT NULL,
-        leger_transaction_updated_at TIMESTAMPTZ NOT NULL,
-        leger_transaction_deleted_at TIMESTAMPTZ,
+        ledger_transaction_external_id VARCHAR(255) NOT NULL,
+        ledger_transaction_description VARCHAR(255) NOT NULL,
+        ledger_transaction_tiger_beetle_id bytea NOT NULL,
+        ledger_transaction_created_at TIMESTAMPTZ NOT NULL,
+        ledger_transaction_updated_at TIMESTAMPTZ NOT NULL,
+        ledger_transaction_deleted_at TIMESTAMPTZ,
         ledger_transaction_metadata JSONB,
 
         -- ledger_accounts
