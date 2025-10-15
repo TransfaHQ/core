@@ -10,7 +10,7 @@ import {
   LedgerEntryResponseDto,
   LedgerTransactionResponseDto,
 } from '@modules/ledger/dto/ledger-transaction/ledger-transaction-response.dto';
-import { LedgerEntryWithAccount } from '@modules/ledger/services/ledger-entry.service';
+import { LedgerEntryResponse } from '@modules/ledger/services/ledger-entry.service';
 
 import { Currency, Ledger, LedgerAccount, LedgerEntry, LedgerTransaction } from '../types';
 
@@ -93,9 +93,9 @@ export const currencyToApiV1Response = (entity: Currency): CurrencyResponseDto =
 };
 
 export const ledgerEntryStandaloneToApiV1Response = (
-  entity: LedgerEntryWithAccount,
+  entity: LedgerEntryResponse,
 ): LedgerEntryStandaloneResponseDto => {
-  const decimalAmount = +entity.amount / Math.pow(10, entity.currencyExponent);
+  const decimalAmount = +entity.amount / Math.pow(10, entity.currency.exponent);
 
   return {
     id: entity.id,
@@ -104,12 +104,19 @@ export const ledgerEntryStandaloneToApiV1Response = (
     amount: decimalAmount,
     direction: entity.direction as NormalBalanceEnum,
     ledgerId: entity.ledgerId,
-    ledgerTransactionId: entity.ledgerTransactionId,
-    ledgerAccountId: entity.ledgerAccountId,
-    ledgerAccountCurrency: entity.currencyCode,
-    ledgerAccountCurrencyExponent: entity.currencyExponent,
-    ledgerAccountName: entity.accountName,
-    ledgerTransactionExternalId: entity.transactionExternalId,
+    ledgerAccount: {
+      id: entity.ledgerAccount.id,
+      name: entity.ledgerAccount.name,
+    },
+    ledgerTransaction: {
+      id: entity.ledgerTransaction.id,
+      externalId: entity.ledgerTransaction.externalId,
+    },
+    currency: {
+      code: entity.currency.code,
+      exponent: entity.currency.exponent,
+    },
+    status: entity.ledgerTransaction.status as LedgerTransactionStatusEnum,
     metadata: Object.fromEntries((entity.metadata ?? []).map((v) => [v.key, v.value])),
   };
 };

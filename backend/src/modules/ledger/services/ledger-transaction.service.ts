@@ -89,7 +89,6 @@ export class LedgerTransactionService {
       const sourceAccount = ledgerAccountMap[entry.sourceAccountId];
       const destinationAccount = ledgerAccountMap[entry.destinationAccountId];
 
-      // Defensive checks: accounts must exist (if your DB guarantees presence this can be omitted)
       if (!sourceAccount || !destinationAccount) {
         throw new BadRequestException(['one or more ledger accounts not found']);
       }

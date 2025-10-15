@@ -132,7 +132,7 @@ export class RecordLedgerTransactionDto {
   readonly effectiveAt?: string;
 
   @ApiPropertyOptional({
-    description: 'status of the transaction',
+    description: 'Status of the transaction',
     enum: allowLedgerTransactionOnRecord,
     example: LedgerTransactionStatusEnum.POSTED,
   })

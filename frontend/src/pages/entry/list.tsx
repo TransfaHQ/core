@@ -1,44 +1,20 @@
-import { useState, useMemo, useCallback } from "react";
+import type { TableColumn } from "@/components/data-table";
+import { DataTable } from "@/components/data-table";
 import Layout from "@/components/layout";
 import { ListPageLayout } from "@/components/list-page-layout";
-import { DataTable } from "@/components/data-table";
-import type { TableColumn } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
-import { EntryEmptyState } from "@/pages/entry/empty-state";
-import {
-  EntryFilterBar,
-  type EntryFilters,
-} from "@/pages/entry/components/entry-filter-bar";
-import { CreateTransactionSheet } from "@/pages/entry/sheets/create-transaction";
-import { TransactionDetailsSheet } from "@/pages/entry/sheets/transaction-details";
 import { Pagination, type PaginationInfo } from "@/components/ui/pagination";
 import { $api } from "@/lib/api/client";
 import { formatBalance } from "@/lib/currency";
 import { formatDateTime } from "@/lib/date";
-
-// Manual type definition until API types are regenerated
-type LedgerEntryResponse = {
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-  amount: number;
-  direction: "debit" | "credit";
-  ledgerId: string;
-  ledgerTransactionId: string;
-  ledgerAccountId: string;
-  ledgerAccountCurrency: string;
-  ledgerAccountCurrencyExponent: number;
-  ledgerAccountName: string;
-  ledgerTransactionExternalId: string;
-};
-
-type PaginatedResponse = {
-  data: LedgerEntryResponse[];
-  hasNext: boolean;
-  hasPrev: boolean;
-  nextCursor?: string;
-  prevCursor?: string;
-};
+import {
+  EntryFilterBar,
+  type EntryFilters,
+} from "@/pages/entry/components/entry-filter-bar";
+import { EntryEmptyState } from "@/pages/entry/empty-state";
+import { CreateTransactionSheet } from "@/pages/entry/sheets/create-transaction";
+import { TransactionDetailsSheet } from "@/pages/entry/sheets/transaction-details";
+import { useCallback, useMemo, useState } from "react";
 
 export function EntryList() {
   const [filters, setFilters] = useState<EntryFilters>({
@@ -94,12 +70,7 @@ export function EntryList() {
     params: {
       query: queryParams,
     },
-  }) as {
-    data: PaginatedResponse | undefined;
-    isLoading: boolean;
-    error: Error | null;
-  };
-
+  });
   const displayedEntries = entries?.data ?? [];
 
   const paginationInfo: PaginationInfo = {
@@ -146,31 +117,34 @@ export function EntryList() {
   }, []);
 
   // Handle row click to open transaction details
-  const handleRowClick = useCallback((entry: LedgerEntryResponse) => {
-    setSelectedTransactionId(entry.ledgerTransactionId);
-    setIsDetailsSheetOpen(true);
-  }, []);
+  const handleRowClick = useCallback(
+    (entry: (typeof displayedEntries)[number]) => {
+      setSelectedTransactionId(entry.ledgerTransaction.id);
+      setIsDetailsSheetOpen(true);
+    },
+    []
+  );
 
-  const columns: TableColumn<LedgerEntryResponse>[] = [
+  const columns: TableColumn<(typeof displayedEntries)[number]>[] = [
     {
       header: "Transaction",
       cell: (entry) => (
-        <div
-          className="text-sm font-mono text-muted-foreground truncate max-w-[200px]"
-          title={entry.ledgerTransactionExternalId}
-        >
-          {entry.ledgerTransactionExternalId}
+        <div className="text-sm font-mono text-muted-foreground truncate max-w-[200px]">
+          {entry.ledgerTransaction.externalId}
         </div>
+      ),
+    },
+    {
+      header: "Status",
+      cell: (entry) => (
+        <Badge variant={"outline"}>{entry.status.toUpperCase()}</Badge>
       ),
     },
     {
       header: "Account",
       cell: (entry) => (
-        <div
-          className="text-sm truncate max-w-[200px]"
-          title={entry.ledgerAccountName}
-        >
-          {entry.ledgerAccountName}
+        <div className="text-sm truncate max-w-[200px]">
+          {entry.ledgerAccount.name}
         </div>
       ),
     },
@@ -190,8 +164,8 @@ export function EntryList() {
           <div className="text-right font-mono">
             {formatBalance(
               entry.amount,
-              entry.ledgerAccountCurrency,
-              entry.ledgerAccountCurrencyExponent
+              entry.currency.code,
+              entry.currency.exponent
             )}
           </div>
         );
@@ -200,9 +174,7 @@ export function EntryList() {
     },
     {
       header: "Currency",
-      cell: (entry) => (
-        <Badge variant="outline">{entry.ledgerAccountCurrency}</Badge>
-      ),
+      cell: (entry) => <Badge variant="outline">{entry.currency.code}</Badge>,
     },
     {
       header: "Created",

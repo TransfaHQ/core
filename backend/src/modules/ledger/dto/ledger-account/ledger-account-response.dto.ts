@@ -50,7 +50,7 @@ export class LedgerAccountResponseDto {
   @IsString()
   id: string;
 
-  @ApiProperty({ description: 'Name of the ledger account', example: 'Company General Ledger' })
+  @ApiProperty({ description: 'Name of the ledger account', example: 'Cash account' })
   @IsString()
   name: string;
 

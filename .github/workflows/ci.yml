@@ -98,6 +98,7 @@ jobs:
       LOG_LEVEL: error
       DROP_TABLES: true
       NODE_ENV: test
+      CORS_ALLOWED_ORIGINS: ''
     services:
       postgres:
         image: postgres:17

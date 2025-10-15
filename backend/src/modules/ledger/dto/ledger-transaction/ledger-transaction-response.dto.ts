@@ -89,7 +89,7 @@ export class LedgerTransactionResponseDto {
   externalId: string;
 
   @ApiProperty({
-    description: 'status of the transaction',
+    description: 'Status of the transaction',
     enum: LedgerTransactionStatusEnum,
     example: LedgerTransactionStatusEnum.POSTED,
   })

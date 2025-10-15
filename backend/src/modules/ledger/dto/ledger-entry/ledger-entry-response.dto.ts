@@ -1,7 +1,40 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { NormalBalanceEnum } from '@libs/enums';
+import { LedgerTransactionStatusEnum, NormalBalanceEnum } from '@libs/enums';
 import { uuidV7 } from '@libs/utils/uuid';
+
+class LedgerEntryAccountDto {
+  @ApiProperty({
+    description: 'Ledger account unique identifier',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  id: string;
+
+  @ApiProperty({ description: 'Name of the ledger account', example: 'Cash account' })
+  name: string;
+}
+
+class LedgerEntryTransactionDto {
+  @ApiProperty({ description: 'Unique identifier for the transaction', example: uuidV7() })
+  id: string;
+
+  @ApiProperty({
+    description: 'External system ID for cross-reference',
+    example: uuidV7(),
+  })
+  externalId: string;
+}
+
+class LedgerEntryCurrencyDto {
+  @ApiProperty({ description: 'Currency code (ISO 4217)', example: 'USD' })
+  code: string;
+
+  @ApiProperty({
+    description: 'Currency exponent (e.g., 2 for USD, meaning 2 decimal places)',
+    example: 2,
+  })
+  exponent: number;
+}
 
 export class LedgerEntryStandaloneResponseDto {
   @ApiProperty({ description: 'Unique identifier for the ledger entry', example: uuidV7() })
@@ -39,37 +72,26 @@ export class LedgerEntryStandaloneResponseDto {
   ledgerId: string;
 
   @ApiProperty({
-    description: 'ID of the associated ledger transaction',
-    example: uuidV7(),
+    description: 'Associated ledger transaction',
   })
-  ledgerTransactionId: string;
+  ledgerTransaction: LedgerEntryTransactionDto;
 
   @ApiProperty({
-    description: 'ID of the associated ledger account',
-    example: uuidV7(),
+    description: 'Associated ledger account',
   })
-  ledgerAccountId: string;
-
-  @ApiProperty({ description: 'Currency code for the ledger account (ISO 4217)', example: 'USD' })
-  ledgerAccountCurrency: string;
+  ledgerAccount: LedgerEntryAccountDto;
 
   @ApiProperty({
-    description: 'Currency exponent (e.g., 2 for USD, meaning 2 decimal places)',
-    example: 2,
+    description: 'Currency for the ledger entry derived from the ledger account ',
   })
-  ledgerAccountCurrencyExponent: number;
+  currency: LedgerEntryCurrencyDto;
 
   @ApiProperty({
-    description: 'Name of the associated ledger account',
-    example: 'Cash Account',
+    description: 'Status of the entry',
+    enum: LedgerTransactionStatusEnum,
+    example: LedgerTransactionStatusEnum.POSTED,
   })
-  ledgerAccountName: string;
-
-  @ApiProperty({
-    description: 'External ID of the associated ledger transaction',
-    example: 'tx_external_123',
-  })
-  ledgerTransactionExternalId: string;
+  status: LedgerTransactionStatusEnum;
 
   @ApiPropertyOptional({
     description: 'Additional metadata as key-value pairs. Both keys and values must be strings.',

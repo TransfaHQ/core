@@ -2,6 +2,13 @@ import { AccountCombobox } from "@/components/account-combobox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -30,6 +37,7 @@ interface FormData {
   externalId: string;
   ledgerEntries: LedgerEntry[];
   metadata?: Record<string, string>;
+  status?: "pending" | "posted";
 }
 
 export function CreateTransactionSheet() {
@@ -46,6 +54,7 @@ export function CreateTransactionSheet() {
         amount: "",
       },
     ],
+    status: "posted",
   });
 
   const queryClient = useQueryClient();
@@ -118,6 +127,7 @@ export function CreateTransactionSheet() {
               amount: "",
             },
           ],
+          status: "posted",
         });
         setIdempotencyKey(crypto.randomUUID()); // Generate new key for next transaction
         setOpen(false);
@@ -161,6 +171,7 @@ export function CreateTransactionSheet() {
           };
         }),
         metadata: formData.metadata,
+        status: formData.status,
       },
       params: {
         header: {
@@ -287,6 +298,27 @@ export function CreateTransactionSheet() {
                 />
                 <p className="text-xs text-muted-foreground">
                   Unique identifier for this transaction
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value: "pending" | "posted") =>
+                    setFormData((prev) => ({ ...prev, status: value }))
+                  }
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="posted">Posted</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Posted transactions affect balances immediately, pending transactions can be posted later
                 </p>
               </div>
             </div>
