@@ -103,7 +103,7 @@ jobs:
             VERSION=${{ steps.calver.outputs.version }}
 
       - name: Run Trivy vulnerability scanner on API image
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_API }}:${{ steps.calver.outputs.version }}
           format: 'sarif'
@@ -118,7 +118,7 @@ jobs:
           category: 'trivy-api'
 
       - name: Run Trivy vulnerability scanner on Web image
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_WEB }}:${{ steps.calver.outputs.version }}
           format: 'sarif'
