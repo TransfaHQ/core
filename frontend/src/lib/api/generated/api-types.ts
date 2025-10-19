@@ -120,26 +120,6 @@ export interface paths {
         patch: operations["LedgerController_updateLedger_v1"];
         trace?: never;
     };
-    "/v0/ledgers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List ledgers following Modern Treasury format
-         * @description Retrieves a paginated list of ledgers
-         */
-        get: operations["MTLedgerController_listLegders_v0"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/ledger_accounts": {
         parameters: {
             query?: never;
@@ -384,8 +364,8 @@ export interface components {
             /**
              * @description Additional data represented as key-value pairs. Both the key and value must be strings.
              * @example {
-             *       "key": "currency",
-             *       "value": "USD"
+             *       "source": "web",
+             *       "region": "NA"
              *     }
              */
             metadata?: {
@@ -404,15 +384,14 @@ export interface components {
              */
             name: string;
             /**
-             * @description Description of the ledger purpose
+             * @description Description of the ledger's purpose
              * @example Main accounting ledger for company operations
              */
             description: string | null;
             /**
              * @description Additional data represented as key-value pairs. Both the key and value must be strings.
              * @example {
-             *       "key": "currency",
-             *       "value": "USD"
+             *       "source": "web"
              *     }
              */
             metadata?: {
@@ -420,13 +399,11 @@ export interface components {
             };
             /**
              * Format: date-time
-             * @description Timestamp when the ledger was created
              * @example 2023-12-01T10:00:00Z
              */
             createdAt: string;
             /**
              * Format: date-time
-             * @description Timestamp when the ledger was last updated
              * @example 2023-12-01T10:00:00Z
              */
             updatedAt: string;
@@ -587,13 +564,13 @@ export interface components {
             /**
              * Format: date-time
              * @description Creation timestamp
-             * @example 2025-10-15T20:30:06.526Z
+             * @example 2025-10-19T18:31:28.379Z
              */
             createdAt: string;
             /**
              * Format: date-time
              * @description Last update timestamp
-             * @example 2025-10-15T20:30:06.526Z
+             * @example 2025-10-19T18:31:28.379Z
              */
             updatedAt: string;
         };
@@ -725,7 +702,7 @@ export interface components {
             description: string;
             /**
              * @description External system reference ID (must be unique per transaction)
-             * @example 0199e990-d4db-728f-a066-cd7c8e9566ce
+             * @example 0199fdbd-a5c0-74c8-8a8c-13c3442639b4
              */
             externalId: string;
             /** @description Array of ledger entries involved in the transaction */
@@ -755,7 +732,7 @@ export interface components {
         LedgerEntryResponseDto: {
             /**
              * @description Unique identifier for the ledger entry
-             * @example 0199e990-d2df-74dd-9788-606ef7b5d9ce
+             * @example 0199fdbd-a583-726a-b553-f63f5f649f00
              */
             id: string;
             /**
@@ -783,7 +760,7 @@ export interface components {
             direction: "credit" | "debit";
             /**
              * @description ID of the associated ledger account
-             * @example 0199e990-d2df-74dd-9788-64556992d05e
+             * @example 0199fdbd-a583-726a-b553-fb6fc0424523
              */
             ledgerAccountId: string;
             /**
@@ -815,7 +792,7 @@ export interface components {
         LedgerTransactionResponseDto: {
             /**
              * @description Unique identifier for the transaction
-             * @example 0199e990-d2df-74dd-9788-68058f26e4c0
+             * @example 0199fdbd-a583-726a-b553-fd1a944b7275
              */
             id: string;
             /**
@@ -832,7 +809,7 @@ export interface components {
             updatedAt: string;
             /**
              * @description External system ID for cross-reference
-             * @example 0199e990-d2df-74dd-9788-6c002f102069
+             * @example 0199fdbd-a583-726a-b554-0134d87eb8f9
              */
             externalId: string;
             /**
@@ -892,12 +869,12 @@ export interface components {
         LedgerEntryTransactionDto: {
             /**
              * @description Unique identifier for the transaction
-             * @example 0199e990-d2d1-706d-be10-1cb5d1ae6d87
+             * @example 0199fdbd-a580-71a1-96c5-40cafcd49258
              */
             id: string;
             /**
              * @description External system ID for cross-reference
-             * @example 0199e990-d2d1-706d-be10-225031a6397e
+             * @example 0199fdbd-a580-71a1-96c5-4674dbcdaa00
              */
             externalId: string;
         };
@@ -928,7 +905,7 @@ export interface components {
         LedgerEntryStandaloneResponseDto: {
             /**
              * @description Unique identifier for the ledger entry
-             * @example 0199e990-d2d1-706d-be10-2542dd3fe39e
+             * @example 0199fdbd-a580-71a1-96c5-4ba955a356ce
              */
             id: string;
             /**
@@ -956,7 +933,7 @@ export interface components {
             direction: "credit" | "debit";
             /**
              * @description ID of the associated ledger
-             * @example 0199e990-d2d2-776c-b00f-5da3f18bef29
+             * @example 0199fdbd-a580-71a1-96c5-4e11b4e867a8
              */
             ledgerId: string;
             /** @description Associated ledger transaction */
@@ -1124,10 +1101,12 @@ export interface operations {
             query?: {
                 /** @description Number of items per page */
                 limit?: number;
+                /** @description Return items that appear after the item identified by this cursor */
+                afterCursor?: string;
+                /** @description Return items that appear before the item identified by this cursor */
+                beforeCursor?: string;
                 /** @description Cursor for pagination */
                 cursor?: string;
-                /** @description Direction to paginate: next for forward, prev for backward */
-                direction?: "next" | "prev";
             };
             header?: never;
             path?: never;
@@ -1285,49 +1264,15 @@ export interface operations {
             };
         };
     };
-    MTLedgerController_listLegders_v0: {
-        parameters: {
-            query?: {
-                /** @description Number of items to return per page */
-                limit?: number;
-                /** @description Cursor for cursor-based pagination */
-                cursor?: string;
-                /** @description Direction to paginate: next for forward, prev for backward */
-                direction?: "next" | "prev";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The ledgers have been successfully retrieved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LedgerResponseDto"][];
-                };
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     LedgerAccountController_listAccounts_v1: {
         parameters: {
             query?: {
                 /** @description Number of items per page */
                 limit?: number;
-                /** @description Cursor for pagination */
-                cursor?: string;
-                /** @description Direction to paginate: next for forward, prev for backward */
-                direction?: "next" | "prev";
+                /** @description Return items that appear after the item identified by this cursor */
+                afterCursor?: string;
+                /** @description Return items that appear before the item identified by this cursor */
+                beforeCursor?: string;
                 /** @description Filter by ledger ID */
                 ledgerId?: string;
                 /** @description Filter by currency code */
@@ -1340,6 +1285,8 @@ export interface operations {
                 metadata?: {
                     [key: string]: string;
                 };
+                /** @description Cursor for pagination */
+                cursor?: string;
             };
             header?: never;
             path?: never;
@@ -1670,10 +1617,10 @@ export interface operations {
             query?: {
                 /** @description Number of items per page */
                 limit?: number;
-                /** @description Cursor for pagination */
-                cursor?: string;
-                /** @description Direction to paginate: next for forward, prev for backward */
-                direction?: "next" | "prev";
+                /** @description Return items that appear after the item identified by this cursor */
+                afterCursor?: string;
+                /** @description Return items that appear before the item identified by this cursor */
+                beforeCursor?: string;
                 /** @description Filter by external ID */
                 externalId?: string;
                 /** @description Search by transaction description */
@@ -1682,6 +1629,8 @@ export interface operations {
                 metadata?: {
                     [key: string]: string;
                 };
+                /** @description Cursor for pagination */
+                cursor?: string;
             };
             header?: never;
             path?: never;
@@ -1886,10 +1835,10 @@ export interface operations {
             query?: {
                 /** @description Number of items per page */
                 limit?: number;
-                /** @description Cursor for pagination */
-                cursor?: string;
-                /** @description Direction to paginate: next for forward, prev for backward */
-                direction?: "next" | "prev";
+                /** @description Return items that appear after the item identified by this cursor */
+                afterCursor?: string;
+                /** @description Return items that appear before the item identified by this cursor */
+                beforeCursor?: string;
                 /** @description Filter by ledger ID */
                 ledgerId?: string;
                 /** @description Filter by transaction ID (native) */
@@ -1902,6 +1851,8 @@ export interface operations {
                 accountExternalId?: string;
                 /** @description Filter by direction (credit or debit) */
                 balanceDirection?: "credit" | "debit";
+                /** @description Cursor for pagination */
+                cursor?: string;
             };
             header?: never;
             path?: never;

@@ -20,7 +20,9 @@ import { useCallback, useMemo, useState } from "react";
 type LedgerAccountResponse = components["schemas"]["LedgerAccountResponseDto"];
 
 export function AccountList() {
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(
+    null
+  );
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [filters, setFilters] = useState<AccountFilters>({
     search: "",
@@ -31,7 +33,7 @@ export function AccountList() {
 
   // Pagination state
   const [pageSize, setPageSize] = useState(20);
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [cursor, setCursor] = useState<{ before?: string; after?: string }>({});
 
   // Build query parameters from filters and pagination
   const queryParams = useMemo(() => {
@@ -39,15 +41,24 @@ export function AccountList() {
       limit: pageSize,
     };
 
-    if (cursor) params.cursor = cursor;
-    if (filters.ledgerId && filters.ledgerId !== "all") params.ledgerId = filters.ledgerId;
+    if (cursor.after) params.afterCursor = cursor.after;
+    if (cursor.before) params.beforeCursor = cursor.before;
+    if (filters.ledgerId && filters.ledgerId !== "all")
+      params.ledgerId = filters.ledgerId;
     if (filters.currency) params.currency = filters.currency;
     if (filters.normalBalance && filters.normalBalance !== "all") {
       params.normalBalance = filters.normalBalance as "debit" | "credit";
     }
     if (filters.search.trim()) params.search = filters.search.trim();
     return params;
-  }, [filters.ledgerId, filters.currency, filters.normalBalance, filters.search, pageSize, cursor]);
+  }, [
+    filters.ledgerId,
+    filters.currency,
+    filters.normalBalance,
+    filters.search,
+    pageSize,
+    cursor,
+  ]);
 
   const {
     data: accounts,
@@ -86,7 +97,7 @@ export function AccountList() {
       newFilters.search !== filters.search;
 
     if (shouldResetPagination) {
-      setCursor(undefined);
+      setCursor({});
     }
 
     setFilters(newFilters);
@@ -99,30 +110,37 @@ export function AccountList() {
       currency: "",
       normalBalance: "all",
     });
-    setCursor(undefined); // Reset to first page when clearing filters
+    setCursor({});
   };
 
   // Pagination event handlers
   const handlePageSizeChange = useCallback((newPageSize: number) => {
     setPageSize(newPageSize);
-    setCursor(undefined); // Reset to first page when changing page size
+    setCursor({});
   }, []);
 
-  const handleCursorChange = useCallback((newCursor: string | undefined) => {
-    setCursor(newCursor);
-  }, []);
-
+  const handleCursorChange = useCallback(
+    (newCursor: string | undefined, direction: "prev" | "next") => {
+      if (direction === "prev") {
+        setCursor({ before: newCursor });
+      } else {
+        setCursor({ after: newCursor });
+      }
+    },
+    []
+  );
 
   const columns: TableColumn<LedgerAccountResponse>[] = [
     {
       header: "Name",
       cell: (account) => <div className="font-medium">{account.name}</div>,
+      sticky: "left",
     },
     {
       header: "External ID",
       cell: (account) => <div>{account.externalId ?? "-"}</div>,
     },
-    
+
     {
       header: "Currency",
       cell: (account) => (
