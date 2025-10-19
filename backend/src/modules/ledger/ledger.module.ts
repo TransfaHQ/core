@@ -4,10 +4,7 @@ import { CurrencyController } from '@modules/ledger/controllers/currency.control
 import { LedgerAccountController } from '@modules/ledger/controllers/ledger-account.controller';
 import { LedgerEntryController } from '@modules/ledger/controllers/ledger-entry.controller';
 import { LedgerTransactionController } from '@modules/ledger/controllers/ledger-transaction.controller';
-import {
-  LedgerController,
-  MTLedgerController,
-} from '@modules/ledger/controllers/ledger.controller';
+import { LedgerController } from '@modules/ledger/controllers/ledger.controller';
 import { CurrencyService } from '@modules/ledger/services/currency.service';
 import { LedgerAccountService } from '@modules/ledger/services/ledger-account.service';
 import { LedgerEntryService } from '@modules/ledger/services/ledger-entry.service';
@@ -25,7 +22,6 @@ import { LedgerService } from '@modules/ledger/services/ledger.service';
   ],
   controllers: [
     LedgerController,
-    MTLedgerController,
     LedgerAccountController,
     CurrencyController,
     LedgerTransactionController,

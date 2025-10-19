@@ -33,8 +33,8 @@ export class CreateLedgerDto {
     description:
       'Additional data represented as key-value pairs. Both the key and value must be strings.',
     type: 'object',
-    example: { key: 'currency', value: 'USD' },
-    additionalProperties: { type: 'string', maxLength: 255, minLength: 3 },
+    additionalProperties: { type: 'string' },
+    example: { source: 'web', region: 'NA' },
   })
   @IsOptional()
   @IsObject()

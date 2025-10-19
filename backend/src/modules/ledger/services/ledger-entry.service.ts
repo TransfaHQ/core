@@ -2,7 +2,7 @@ import { Selectable } from 'kysely';
 
 import { Injectable } from '@nestjs/common';
 
-import { CursorPaginatedResult, cursorPaginate } from '@libs/database';
+import { CursorPaginatedResult, CursorPaginationRequest, cursorPaginate } from '@libs/database';
 import { DatabaseService } from '@libs/database/database.service';
 import { LedgerAccounts, LedgerTransactions } from '@libs/database/types';
 import { NormalBalanceEnum } from '@libs/enums';
@@ -30,21 +30,17 @@ export type LedgerEntryResponse = {
 export class LedgerEntryService {
   constructor(private readonly db: DatabaseService) {}
 
-  async paginate(options: {
-    limit?: number;
-    cursor?: string;
-    direction?: 'next' | 'prev';
-    filters: {
+  async paginate(
+    options: CursorPaginationRequest<{
       ledgerId?: string;
       transactionId?: string;
       transactionExternalId?: string;
       accountId?: string;
       accountExternalId?: string;
       direction?: NormalBalanceEnum;
-    };
-    order?: 'asc' | 'desc';
-  }): Promise<CursorPaginatedResult<LedgerEntryResponse>> {
-    const { limit = 15, cursor, direction = 'next', order = 'desc' } = options;
+    }>,
+  ): Promise<CursorPaginatedResult<LedgerEntryResponse>> {
+    const { limit = 15, afterCursor, beforeCursor, order = 'desc' } = options;
     const {
       ledgerId,
       transactionId,
@@ -92,8 +88,8 @@ export class LedgerEntryService {
     const paginatedResult = await cursorPaginate({
       qb: queryWithSelect,
       limit,
-      cursor,
-      direction,
+      afterCursor: afterCursor,
+      beforeCursor: beforeCursor,
       initialOrder: order,
     });
 

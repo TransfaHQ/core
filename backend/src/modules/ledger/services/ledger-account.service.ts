@@ -5,7 +5,7 @@ import { validate } from 'uuid';
 
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
-import { CursorPaginatedResult, cursorPaginate } from '@libs/database';
+import { CursorPaginatedResult, CursorPaginationRequest, cursorPaginate } from '@libs/database';
 import { DatabaseService } from '@libs/database/database.service';
 import { LedgerAccounts } from '@libs/database/types';
 import { bufferToTbId, tbIdToBuffer } from '@libs/database/utils';
@@ -125,27 +125,17 @@ export class LedgerAccountService {
     };
   }
 
-  async paginate(options: {
-    limit?: number;
-    cursor?: string;
-    direction?: 'next' | 'prev';
-    filters: {
+  async paginate(
+    options: CursorPaginationRequest<{
       ledgerId?: string;
       currency?: string;
       normalBalance?: string;
       search?: string;
       metadata?: Record<string, string>;
       ids?: string[];
-    };
-    order?: 'asc' | 'desc';
-  }): Promise<CursorPaginatedResult<LedgerAccount>> {
-    const {
-      limit = 15,
-      cursor,
-      direction = 'next',
-
-      order = 'desc',
-    } = options;
+    }>,
+  ): Promise<CursorPaginatedResult<LedgerAccount>> {
+    const { limit = 15, afterCursor, beforeCursor, order = 'desc' } = options;
     const { ledgerId, currency, normalBalance, search, metadata, ids } = options.filters;
 
     // Build base query with filters
@@ -194,8 +184,8 @@ export class LedgerAccountService {
     const paginatedResult = await cursorPaginate({
       qb: queryWithSelect,
       limit,
-      cursor,
-      direction,
+      afterCursor,
+      beforeCursor,
       initialOrder: order,
     });
 

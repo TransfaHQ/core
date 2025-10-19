@@ -538,8 +538,7 @@ describe('LedgerEntryController', () => {
             .get(endpoint)
             .query({
               limit: 3,
-              cursor: firstPageResponse.body.nextCursor,
-              direction: 'next',
+              afterCursor: firstPageResponse.body.nextCursor,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK)
@@ -567,7 +566,7 @@ describe('LedgerEntryController', () => {
               .get(endpoint)
               .query({
                 limit: pageSize,
-                ...(currentCursor && { cursor: currentCursor, direction: 'next' }),
+                ...(currentCursor && { afterCursor: currentCursor }),
               })
               .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
               .expect(HttpStatus.OK);
@@ -606,8 +605,7 @@ describe('LedgerEntryController', () => {
             .get(endpoint)
             .query({
               limit: 3,
-              cursor: firstPageResponse.body.nextCursor,
-              direction: 'next',
+              afterCursor: firstPageResponse.body.nextCursor,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK);
@@ -620,8 +618,7 @@ describe('LedgerEntryController', () => {
             .get(endpoint)
             .query({
               limit: 3,
-              cursor: secondPageResponse.body.prevCursor,
-              direction: 'prev',
+              beforeCursor: secondPageResponse.body.prevCursor,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK)
@@ -652,8 +649,7 @@ describe('LedgerEntryController', () => {
             .get(endpoint)
             .query({
               limit: 2,
-              cursor: initialResponse.body.nextCursor,
-              direction: 'next',
+              afterCursor: initialResponse.body.nextCursor,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK);
@@ -663,8 +659,7 @@ describe('LedgerEntryController', () => {
             .get(endpoint)
             .query({
               limit: 2,
-              cursor: forwardResponse.body.prevCursor,
-              direction: 'prev',
+              beforeCursor: forwardResponse.body.prevCursor,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK);
@@ -696,8 +691,7 @@ describe('LedgerEntryController', () => {
           return request(ctx.app.getHttpServer())
             .get(endpoint)
             .query({
-              cursor: 'invalid-cursor-id-12345',
-              direction: 'next',
+              afterCursor: 'invalid-cursor-id-12345',
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK)
@@ -743,8 +737,7 @@ describe('LedgerEntryController', () => {
             .get(endpoint)
             .query({
               ledgerId: ledger1.id,
-              cursor: firstPage.body.nextCursor,
-              direction: 'next',
+              afterCursor: firstPage.body.nextCursor,
               limit: 2,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -778,8 +771,7 @@ describe('LedgerEntryController', () => {
             .get(endpoint)
             .query({
               balanceDirection: NormalBalanceEnum.CREDIT,
-              cursor: firstPage.body.nextCursor,
-              direction: 'next',
+              afterCursor: firstPage.body.nextCursor,
               limit: 2,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))

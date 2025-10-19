@@ -8,9 +8,8 @@ import { setTestBasicAuthHeader } from '@libs/utils/tests';
 
 import { AuthService } from '@modules/auth/auth.service';
 import { KeyResponseDto } from '@modules/auth/dto';
-
-import { LedgerService } from '../services/ledger.service';
-import { Ledger } from '../types';
+import { LedgerService } from '@modules/ledger/services/ledger.service';
+import { Ledger } from '@modules/ledger/types';
 
 describe('LedgerController', () => {
   const ctx = setupTestContext();

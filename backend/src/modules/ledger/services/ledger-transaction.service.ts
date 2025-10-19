@@ -6,7 +6,7 @@ import { validate } from 'uuid';
 
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
-import { CursorPaginatedResult, cursorPaginate } from '@libs/database';
+import { CursorPaginatedResult, CursorPaginationRequest, cursorPaginate } from '@libs/database';
 import { DatabaseService } from '@libs/database/database.service';
 import { LedgerAccounts } from '@libs/database/types';
 import { bufferToTbId, tbIdToBuffer } from '@libs/database/utils';
@@ -208,6 +208,8 @@ export class LedgerTransactionService {
 
       const sourceEntryId = uuidV7();
       const destinationEntryId = uuidV7();
+
+      console.log(entry.destinationAccountId, destinationAccount.name);
 
       // Two DB ledger entries: one credit (destination) and one debit (source)
       ledgerEntryData.push({
@@ -429,18 +431,14 @@ export class LedgerTransactionService {
     };
   }
 
-  async paginate(options: {
-    limit?: number;
-    cursor?: string;
-    direction?: 'next' | 'prev';
-    filters: {
+  async paginate(
+    options: CursorPaginationRequest<{
       externalId?: string;
       search?: string;
       metadata?: Record<string, string>;
-    };
-    order?: 'asc' | 'desc';
-  }): Promise<CursorPaginatedResult<LedgerTransaction>> {
-    const { limit = 15, cursor, direction = 'next', order = 'desc' } = options;
+    }>,
+  ): Promise<CursorPaginatedResult<LedgerTransaction>> {
+    const { limit = 15, afterCursor, beforeCursor, order = 'desc' } = options;
     const { externalId, search, metadata } = options.filters;
 
     let baseQuery = this.db.kysely.selectFrom('ledgerTransactions');
@@ -475,8 +473,8 @@ export class LedgerTransactionService {
     const paginatedResult = await cursorPaginate({
       qb: queryWithSelect,
       limit,
-      cursor,
-      direction,
+      afterCursor: afterCursor,
+      beforeCursor: beforeCursor,
       initialOrder: order,
     });
 

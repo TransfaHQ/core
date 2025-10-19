@@ -18,7 +18,7 @@ import { CurrencyService } from '@modules/ledger/services/currency.service';
 import { LedgerAccountService } from '@modules/ledger/services/ledger-account.service';
 import { LedgerService } from '@modules/ledger/services/ledger.service';
 
-import { Ledger, LedgerAccount } from '../types';
+import { Ledger, LedgerAccount } from '../../types';
 
 describe('LedgerAccountController', () => {
   const ctx = setupTestContext();
@@ -759,8 +759,7 @@ describe('LedgerAccountController', () => {
             .get('/v1/ledger_accounts')
             .query({
               limit: 5,
-              cursor: firstPageResponse.body.nextCursor,
-              direction: 'next',
+              afterCursor: firstPageResponse.body.nextCursor,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK)
@@ -789,7 +788,7 @@ describe('LedgerAccountController', () => {
               .get('/v1/ledger_accounts')
               .query({
                 limit: pageSize,
-                ...(currentCursor && { cursor: currentCursor, direction: 'next' }),
+                ...(currentCursor && { afterCursor: currentCursor }),
               })
               .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
               .expect(HttpStatus.OK);
@@ -826,8 +825,7 @@ describe('LedgerAccountController', () => {
             .get('/v1/ledger_accounts')
             .query({
               limit: 5,
-              cursor: firstPageResponse.body.nextCursor,
-              direction: 'next',
+              afterCursor: firstPageResponse.body.nextCursor,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK);
@@ -835,19 +833,30 @@ describe('LedgerAccountController', () => {
           expect(secondPageResponse.body.hasPrev).toBe(true);
           expect(secondPageResponse.body.prevCursor).toBeDefined();
 
+          const thirdPageResponse = await request(ctx.app.getHttpServer())
+            .get('/v1/ledger_accounts')
+            .query({
+              limit: 5,
+              afterCursor: secondPageResponse.body.nextCursor,
+            })
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.OK);
+
+          expect(thirdPageResponse.body.hasPrev).toBe(true);
+          expect(thirdPageResponse.body.prevCursor).toBeDefined();
+
           // Navigate back to first page
           return request(ctx.app.getHttpServer())
             .get('/v1/ledger_accounts')
             .query({
               limit: 5,
-              cursor: secondPageResponse.body.prevCursor,
-              direction: 'prev',
+              beforeCursor: thirdPageResponse.body.prevCursor,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK)
             .expect((response) => {
               // Should get back the original first page data
-              const originalIds = firstPageResponse.body.data.map((acc: any) => acc.id);
+              const originalIds = secondPageResponse.body.data.map((acc: any) => acc.id);
               const backNavigatedIds = response.body.data.map((acc: any) => acc.id);
               expect(backNavigatedIds).toEqual(originalIds);
             });
@@ -868,8 +877,7 @@ describe('LedgerAccountController', () => {
             .get('/v1/ledger_accounts')
             .query({
               limit: 3,
-              cursor: initialResponse.body.nextCursor,
-              direction: 'next',
+              afterCursor: initialResponse.body.nextCursor,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK);
@@ -879,8 +887,7 @@ describe('LedgerAccountController', () => {
             .get('/v1/ledger_accounts')
             .query({
               limit: 3,
-              cursor: forwardResponse.body.prevCursor,
-              direction: 'prev',
+              beforeCursor: forwardResponse.body.prevCursor,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK);
@@ -913,8 +920,7 @@ describe('LedgerAccountController', () => {
         return request(ctx.app.getHttpServer())
           .get('/v1/ledger_accounts')
           .query({
-            cursor: 'invalid-cursor-id-12345',
-            direction: 'next',
+            afterCursor: 'invalid-cursor-id-12345',
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
           .expect(HttpStatus.OK)
@@ -1040,8 +1046,7 @@ describe('LedgerAccountController', () => {
           .get('/v1/ledger_accounts')
           .query({
             currency: 'USD',
-            cursor: firstPage.body.nextCursor,
-            direction: 'next',
+            afterCursor: firstPage.body.nextCursor,
             limit: 3,
           })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))

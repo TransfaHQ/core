@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
 import { API_PAGE_SIZE } from '@libs/constants';
-import { CursorPaginatedResult, cursorPaginate } from '@libs/database';
+import { CursorPaginatedResult, CursorPaginationRequest, cursorPaginate } from '@libs/database';
 import { DatabaseService } from '@libs/database/database.service';
 
-import { CreateLedgerDto } from '@modules/ledger/dto/create-ledger.dto';
-import { UpdateLedgerDto } from '@modules/ledger/dto/update-ledger.dto';
+import { CreateLedgerDto } from '@modules/ledger/dto/ledger/create-ledger.dto';
+import { UpdateLedgerDto } from '@modules/ledger/dto/ledger/update-ledger.dto';
 
 import { Ledger } from '../types';
 
@@ -57,21 +57,18 @@ export class LedgerService {
     };
   }
 
-  async paginate(options: {
-    limit?: number;
-    cursor?: string;
-    direction?: 'next' | 'prev';
-    order?: 'asc' | 'desc';
-  }): Promise<CursorPaginatedResult<Ledger>> {
-    const { cursor, limit = API_PAGE_SIZE, direction = 'next', order = 'desc' } = options;
+  async paginate(
+    options: CursorPaginationRequest<undefined>,
+  ): Promise<CursorPaginatedResult<Ledger>> {
+    const { limit = API_PAGE_SIZE, beforeCursor, afterCursor, order = 'desc' } = options;
 
     // Get paginated ledgers using the new utility
     const baseQuery = this.db.kysely.selectFrom('ledgers').selectAll();
     const paginatedResult = await cursorPaginate({
       qb: baseQuery,
       limit,
-      cursor,
-      direction,
+      afterCursor: afterCursor,
+      beforeCursor: beforeCursor,
       initialOrder: order,
     });
 

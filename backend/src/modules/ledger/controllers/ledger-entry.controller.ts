@@ -126,8 +126,8 @@ export class LedgerEntryController {
   ): Promise<CursorPaginatedResult<LedgerEntryStandaloneResponseDto>> {
     const response = await this.ledgerEntryService.paginate({
       limit: queryParams.limit,
-      cursor: queryParams.cursor,
-      direction: queryParams.direction,
+      afterCursor: queryParams.afterCursor,
+      beforeCursor: queryParams.beforeCursor,
       filters: {
         ledgerId: queryParams.ledgerId,
         transactionId: queryParams.transactionId,
