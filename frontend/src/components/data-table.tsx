@@ -13,6 +13,7 @@ export interface TableColumn<T> {
   accessor?: keyof T;
   cell?: (item: T) => ReactNode;
   className?: string;
+  sticky?: "left" | "right";
 }
 
 interface DataTableProps<T> {
@@ -32,7 +33,7 @@ export function DataTable<T>({
   error,
   emptyState,
   getRowKey,
-  onRowClick
+  onRowClick,
 }: DataTableProps<T>) {
   if (isLoading) {
     return (
@@ -56,12 +57,23 @@ export function DataTable<T>({
   }
 
   if (!data || data.length === 0) {
-    return emptyState || (
-      <div className="flex items-center justify-center py-24">
-        <div className="text-muted-foreground">No data available</div>
-      </div>
+    return (
+      emptyState || (
+        <div className="flex items-center justify-center py-24">
+          <div className="text-muted-foreground">No data available</div>
+        </div>
+      )
     );
   }
+
+  const getStickyClassName = (sticky?: "left" | "right") => {
+    if (!sticky) return "";
+
+    const baseClasses = "sticky z-10 bg-background";
+    const positionClass = sticky === "left" ? "left-0" : "right-0";
+
+    return `${baseClasses} ${positionClass}`;
+  };
 
   return (
     <div className="rounded-md border">
@@ -69,7 +81,12 @@ export function DataTable<T>({
         <TableHeader>
           <TableRow>
             {columns.map((column, index) => (
-              <TableHead key={index} className={column.className}>
+              <TableHead
+                key={index}
+                className={`${column.className || ""} ${getStickyClassName(
+                  column.sticky
+                )}`.trim()}
+              >
                 {column.header}
               </TableHead>
             ))}
@@ -79,17 +96,23 @@ export function DataTable<T>({
           {data.map((item) => (
             <TableRow
               key={getRowKey(item)}
-              className={onRowClick ? "cursor-pointer hover:bg-muted/50" : undefined}
+              className={
+                onRowClick ? "cursor-pointer hover:bg-muted/50" : undefined
+              }
               onClick={onRowClick ? () => onRowClick(item) : undefined}
             >
               {columns.map((column, index) => (
-                <TableCell key={index} className={column.className}>
+                <TableCell
+                  key={index}
+                  className={`${column.className || ""} ${getStickyClassName(
+                    column.sticky
+                  )}`.trim()}
+                >
                   {column.cell
                     ? column.cell(item)
                     : column.accessor
-                      ? String(item[column.accessor])
-                      : null
-                  }
+                    ? String(item[column.accessor])
+                    : null}
                 </TableCell>
               ))}
             </TableRow>

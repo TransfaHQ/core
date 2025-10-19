@@ -82,7 +82,7 @@ export class LedgerEntryController {
     example: 'acc_external_123',
   })
   @ApiQuery({
-    name: 'balanceDirection',
+    name: 'direction',
     required: false,
     enum: NormalBalanceEnum,
     description: 'Filter by direction (credit or debit)',
@@ -126,15 +126,15 @@ export class LedgerEntryController {
   ): Promise<CursorPaginatedResult<LedgerEntryStandaloneResponseDto>> {
     const response = await this.ledgerEntryService.paginate({
       limit: queryParams.limit,
-      cursor: queryParams.cursor,
-      direction: queryParams.direction,
+      afterCursor: queryParams.afterCursor,
+      beforeCursor: queryParams.beforeCursor,
       filters: {
         ledgerId: queryParams.ledgerId,
         transactionId: queryParams.transactionId,
         transactionExternalId: queryParams.transactionExternalId,
         accountId: queryParams.accountId,
         accountExternalId: queryParams.accountExternalId,
-        direction: queryParams.balanceDirection,
+        direction: queryParams.direction,
       },
     });
     return { ...response, data: response.data.map(ledgerEntryStandaloneToApiV1Response) };

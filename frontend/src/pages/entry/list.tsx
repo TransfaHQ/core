@@ -27,7 +27,7 @@ export function EntryList() {
 
   // Pagination state
   const [pageSize, setPageSize] = useState(20);
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [cursor, setCursor] = useState<{ after?: string; before?: string }>({});
 
   // Transaction details sheet state
   const [selectedTransactionId, setSelectedTransactionId] = useState<
@@ -41,7 +41,8 @@ export function EntryList() {
       limit: pageSize,
     };
 
-    if (cursor) params.cursor = cursor;
+    if (cursor.after) params.afterCursor = cursor.after;
+    if (cursor.before) params.beforeCursor = cursor.before;
     if (filters.ledgerId && filters.ledgerId !== "all")
       params.ledgerId = filters.ledgerId;
     if (filters.accountId && filters.accountId !== "all")
@@ -49,7 +50,7 @@ export function EntryList() {
     if (filters.transactionExternalId)
       params.transactionExternalId = filters.transactionExternalId;
     if (filters.direction && filters.direction !== "all") {
-      params.balanceDirection = filters.direction as "debit" | "credit";
+      params.direction = filters.direction as "debit" | "credit";
     }
     return params;
   }, [
@@ -89,7 +90,7 @@ export function EntryList() {
       newFilters.search !== filters.search;
 
     if (shouldResetPagination) {
-      setCursor(undefined);
+      setCursor({});
     }
 
     setFilters(newFilters);
@@ -103,18 +104,25 @@ export function EntryList() {
       transactionExternalId: "",
       direction: "all",
     });
-    setCursor(undefined);
+    setCursor({});
   };
 
   // Pagination event handlers
   const handlePageSizeChange = useCallback((newPageSize: number) => {
     setPageSize(newPageSize);
-    setCursor(undefined);
+    setCursor({});
   }, []);
 
-  const handleCursorChange = useCallback((newCursor: string | undefined) => {
-    setCursor(newCursor);
-  }, []);
+  const handleCursorChange = useCallback(
+    (newCursor: string | undefined, direction: "prev" | "next") => {
+      if (direction === "prev") {
+        setCursor({ before: newCursor });
+      } else {
+        setCursor({ after: newCursor });
+      }
+    },
+    []
+  );
 
   // Handle row click to open transaction details
   const handleRowClick = useCallback(
@@ -129,7 +137,7 @@ export function EntryList() {
     {
       header: "Transaction",
       cell: (entry) => (
-        <div className="text-sm font-mono text-muted-foreground truncate max-w-[200px]">
+        <div className="text-sm font-mono text-muted-foreground">
           {entry.ledgerTransaction.externalId}
         </div>
       ),
@@ -143,9 +151,7 @@ export function EntryList() {
     {
       header: "Account",
       cell: (entry) => (
-        <div className="text-sm truncate max-w-[200px]">
-          {entry.ledgerAccount.name}
-        </div>
+        <div className="text-sm truncate">{entry.ledgerAccount.name}</div>
       ),
     },
 

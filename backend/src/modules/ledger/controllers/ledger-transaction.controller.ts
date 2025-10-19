@@ -177,8 +177,8 @@ export class LedgerTransactionController {
   ): Promise<CursorPaginatedResult<LedgerTransactionResponseDto>> {
     const response = await this.ledgerService.paginate({
       limit: queryParams.limit,
-      cursor: queryParams.cursor,
-      direction: queryParams.direction,
+      afterCursor: queryParams.afterCursor,
+      beforeCursor: queryParams.beforeCursor,
       filters: {
         externalId: queryParams.externalId,
         search: queryParams.search,

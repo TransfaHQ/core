@@ -9,7 +9,6 @@ import {
   Post,
   Query,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -24,15 +23,14 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
-import { MTCursorPaginationInterceptor } from '@libs/api/interceptors/mt-cursor-paginated.interceptor';
 import { CursorPaginatedResult } from '@libs/database';
 
 import { ApiKeyOrJwtGuard } from '@modules/auth/guards/api-key-or-jwt.guard';
 import { ledgerToApiV1Response } from '@modules/ledger/controllers/api-response';
-import { CreateLedgerDto } from '@modules/ledger/dto/create-ledger.dto';
-import { LedgerResponseDto } from '@modules/ledger/dto/ledger-response.dto';
-import { ListLedgerRequestDto } from '@modules/ledger/dto/list-ledger.dto';
-import { UpdateLedgerDto } from '@modules/ledger/dto/update-ledger.dto';
+import { CreateLedgerDto } from '@modules/ledger/dto/ledger/create-ledger.dto';
+import { LedgerResponseDto } from '@modules/ledger/dto/ledger/ledger-response.dto';
+import { ListLedgerRequestDto } from '@modules/ledger/dto/ledger/list-ledger.dto';
+import { UpdateLedgerDto } from '@modules/ledger/dto/ledger/update-ledger.dto';
 import { LedgerService } from '@modules/ledger/services/ledger.service';
 
 @ApiTags('ledgers')
@@ -160,39 +158,7 @@ export class LedgerController {
   async listLedgers(
     @Query() queryParams: ListLedgerRequestDto,
   ): Promise<CursorPaginatedResult<LedgerResponseDto>> {
-    const response = await this.ledgerService.paginate(queryParams);
-    return { ...response, data: response.data.map(ledgerToApiV1Response) };
-  }
-}
-
-@ApiTags('ledgers')
-@ApiSecurity('basic')
-@UseGuards(ApiKeyOrJwtGuard)
-@Controller({ version: '0', path: 'ledgers' })
-export class MTLedgerController {
-  constructor(private ledgerService: LedgerService) {}
-
-  @Get()
-  @HttpCode(HttpStatus.OK)
-  @UseInterceptors(MTCursorPaginationInterceptor)
-  @ApiOperation({
-    summary: 'List ledgers following Modern Treasury format',
-    description: 'Retrieves a paginated list of ledgers',
-  })
-  @ApiOkResponse({
-    description: 'The ledgers have been successfully retrieved',
-    schema: {
-      type: 'array',
-      items: { $ref: '#/components/schemas/LedgerResponseDto' },
-    },
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Invalid or missing API key',
-  })
-  async listLegders(
-    @Query() queryParams: ListLedgerRequestDto,
-  ): Promise<CursorPaginatedResult<LedgerResponseDto>> {
-    const response = await this.ledgerService.paginate(queryParams);
+    const response = await this.ledgerService.paginate({ ...queryParams, filters: undefined });
     return { ...response, data: response.data.map(ledgerToApiV1Response) };
   }
 }

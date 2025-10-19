@@ -5,11 +5,11 @@ import { LedgerTransactionStatusEnum, NormalBalanceEnum } from '@libs/enums';
 import { CurrencyResponseDto } from '@modules/ledger/dto/currency/currency-response.dto';
 import { LedgerAccountResponseDto } from '@modules/ledger/dto/ledger-account/ledger-account-response.dto';
 import { LedgerEntryStandaloneResponseDto } from '@modules/ledger/dto/ledger-entry/ledger-entry-response.dto';
-import { LedgerResponseDto } from '@modules/ledger/dto/ledger-response.dto';
 import {
   LedgerEntryResponseDto,
   LedgerTransactionResponseDto,
 } from '@modules/ledger/dto/ledger-transaction/ledger-transaction-response.dto';
+import { LedgerResponseDto } from '@modules/ledger/dto/ledger/ledger-response.dto';
 import { LedgerEntryResponse } from '@modules/ledger/services/ledger-entry.service';
 
 import { Currency, Ledger, LedgerAccount, LedgerEntry, LedgerTransaction } from '../types';

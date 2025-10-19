@@ -13,15 +13,23 @@ export interface CursorPaginationOptions<T extends keyof DB, O extends Record<st
   qb: SelectQueryBuilder<DB, T, O>;
   /** Number of items to return per page (default: API_PAGE_SIZE) */
   limit?: number;
-  /** Cursor for pagination - if provided, returns items after/before this cursor */
-  cursor?: string;
-  /** Direction to paginate: 'next' for forward, 'prev' for backward (default: 'next') */
-  direction?: 'next' | 'prev';
+  /** Cursor for forward pagination - returns items after this cursor */
+  afterCursor?: string;
+  /** Cursor for backward pagination - returns items before this cursor */
+  beforeCursor?: string;
   /** Field to use for cursor-based ordering (default: 'id') */
   cursorField?: keyof O;
   /** Initial sort order when no cursor is provided (default: 'desc') */
   initialOrder?: 'asc' | 'desc';
 }
+
+export type CursorPaginationRequest<F> = {
+  limit?: number;
+  afterCursor?: string;
+  beforeCursor?: string;
+  filters: F;
+  order?: 'asc' | 'desc';
+};
 
 /**
  * Result of cursor-based pagination
@@ -45,6 +53,14 @@ export interface CursorPaginatedResult<T> {
  * Supports both forward and backward pagination with efficient cursor-based queries.
  * Uses UUIDv7 IDs by default for natural chronological ordering.
  *
+ * If order is asc:
+ *    - after -> where id > cursor order by asc
+ *    - before -> where id < cursor order by desc
+ *
+ * If order is desc:
+ *    - after -> where id < cursor order by desc
+ *    - before -> where id > cursor order by asc
+ *
  * @param options Configuration for pagination
  * @returns Paginated results with bidirectional cursors
  */
@@ -54,8 +70,8 @@ export async function cursorPaginate<T extends keyof DB, O extends Record<string
   const {
     qb,
     limit = API_PAGE_SIZE,
-    cursor,
-    direction = 'next',
+    afterCursor: after,
+    beforeCursor: before,
     cursorField = 'id' as keyof O,
     initialOrder = 'desc',
   } = options;
@@ -63,34 +79,36 @@ export async function cursorPaginate<T extends keyof DB, O extends Record<string
   // Create a new query to avoid mutating the original
   let query = qb;
 
-  // Validate cursor if provided - if invalid, treat as if no cursor was provided
-  const validCursor = cursor && isUUID(cursor) ? cursor : undefined;
+  // Validate cursors if provided - if invalid, treat as if no cursor was provided
+  const validAfter = after && isUUID(after) ? after : undefined;
+  const validBefore = before && isUUID(before) ? before : undefined;
 
-  // Determine sort order based on direction and initial order
-  const isForward = direction === 'next';
-  const sortOrder = isForward ? initialOrder : initialOrder === 'desc' ? 'asc' : 'desc';
+  // Determine sort order based on which cursor is provided
+  const isForward = !validBefore; // Forward if using 'after' or no cursor
 
-  // Apply cursor filtering if provided and valid
-  if (validCursor) {
-    if (isForward) {
-      // For forward pagination
-      if (initialOrder === 'desc') {
-        query = query.where(cursorField as ReferenceExpression<DB, T>, '<', validCursor);
-      } else {
-        query = query.where(cursorField as ReferenceExpression<DB, T>, '>', validCursor);
-      }
+  if (initialOrder === 'asc') {
+    if (validAfter) {
+      query = query.where(cursorField as ReferenceExpression<DB, T>, '>', validAfter);
+      query = query.orderBy(cursorField as string, 'asc');
+    } else if (validBefore) {
+      query = query.where(cursorField as ReferenceExpression<DB, T>, '<', validBefore);
+      query = query.orderBy(cursorField as string, 'desc');
     } else {
-      // For backward pagination
-      if (initialOrder === 'desc') {
-        query = query.where(cursorField as ReferenceExpression<DB, T>, '>', validCursor);
-      } else {
-        query = query.where(cursorField as ReferenceExpression<DB, T>, '<', validCursor);
-      }
+      query = query.orderBy(cursorField as string, initialOrder);
+    }
+  } else {
+    if (validAfter) {
+      query = query.where(cursorField as ReferenceExpression<DB, T>, '<', validAfter);
+      query = query.orderBy(cursorField as string, 'desc');
+    } else if (validBefore) {
+      query = query.where(cursorField as ReferenceExpression<DB, T>, '>', validBefore);
+      query = query.orderBy(cursorField as string, 'asc');
+    } else {
+      query = query.orderBy(cursorField as string, initialOrder);
     }
   }
 
-  // Apply ordering and limit
-  query = query.orderBy(cursorField as string, sortOrder).limit(limit + 1);
+  query = query.limit(limit + 1);
 
   // Execute query
   const results = await query.execute();
@@ -118,7 +136,7 @@ export async function cursorPaginate<T extends keyof DB, O extends Record<string
       nextCursor = hasNext ? String(lastItem[cursorField]) : undefined;
 
       // Check if there are previous items (only if we have a valid cursor)
-      if (validCursor) {
+      if (validAfter) {
         hasPrev = true;
         prevCursor = String(items[0][cursorField]);
       }
@@ -128,7 +146,7 @@ export async function cursorPaginate<T extends keyof DB, O extends Record<string
       prevCursor = hasPrev ? String(items[0][cursorField]) : undefined;
 
       // Check if there are next items (only if we have a valid cursor)
-      if (validCursor) {
+      if (validBefore) {
         hasNext = true;
         nextCursor = String(lastItem[cursorField]);
       }
@@ -136,7 +154,7 @@ export async function cursorPaginate<T extends keyof DB, O extends Record<string
   }
 
   // If no valid cursor was provided, this is initial load
-  if (!validCursor && items.length > 0) {
+  if (!validAfter && !validBefore && items.length > 0) {
     const lastItem = items[items.length - 1];
     nextCursor = hasMore ? String(lastItem[cursorField]) : undefined;
     hasNext = hasMore;
@@ -150,23 +168,4 @@ export async function cursorPaginate<T extends keyof DB, O extends Record<string
     hasNext,
     hasPrev,
   };
-}
-
-/**
- * Simplified pagination for forward-only navigation
- */
-export async function simplePaginate<T extends keyof DB, O extends Record<string, any>>(
-  qb: SelectQueryBuilder<DB, T, O>,
-  limit: number = API_PAGE_SIZE,
-  cursor?: string,
-  cursorField: keyof O = 'id' as keyof O,
-  order: 'asc' | 'desc' = 'desc',
-): Promise<CursorPaginatedResult<O>> {
-  return cursorPaginate({
-    qb,
-    limit,
-    cursor,
-    cursorField,
-    initialOrder: order,
-  });
 }

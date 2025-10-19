@@ -17,12 +17,12 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-  SheetTrigger
+  SheetTrigger,
 } from "@/components/ui/sheet";
 import { $api } from "@/lib/api/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface LedgerEntry {
   id: string;
@@ -42,7 +42,6 @@ interface FormData {
 
 export function CreateTransactionSheet() {
   const [open, setOpen] = useState(false);
-  const [idempotencyKey, setIdempotencyKey] = useState(crypto.randomUUID());
   const [formData, setFormData] = useState<FormData>({
     description: "",
     externalId: "",
@@ -58,12 +57,6 @@ export function CreateTransactionSheet() {
   });
 
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (open) {
-      setIdempotencyKey(crypto.randomUUID());
-    }
-  }, [open]);
 
   // Fetch accounts to support validation
   const { data: accounts } = $api.useQuery("get", "/v1/ledger_accounts", {
@@ -129,7 +122,6 @@ export function CreateTransactionSheet() {
           ],
           status: "posted",
         });
-        setIdempotencyKey(crypto.randomUUID()); // Generate new key for next transaction
         setOpen(false);
         queryClient.invalidateQueries({
           queryKey: $api.queryOptions("get", "/v1/ledger_entries").queryKey,
@@ -175,7 +167,7 @@ export function CreateTransactionSheet() {
       },
       params: {
         header: {
-          "idempotency-key": idempotencyKey,
+          "idempotency-key": formData.externalId.trim(),
         },
       },
     });
@@ -318,7 +310,8 @@ export function CreateTransactionSheet() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Posted transactions affect balances immediately, pending transactions can be posted later
+                  Posted transactions affect balances immediately, pending
+                  transactions can be posted later
                 </p>
               </div>
             </div>

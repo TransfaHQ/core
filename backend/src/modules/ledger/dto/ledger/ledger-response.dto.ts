@@ -14,7 +14,7 @@ export class LedgerResponseDto {
   name: string;
 
   @ApiProperty({
-    description: 'Description of the ledger purpose',
+    description: "Description of the ledger's purpose",
     example: 'Main accounting ledger for company operations',
     nullable: true,
     type: String,
@@ -25,19 +25,17 @@ export class LedgerResponseDto {
     description:
       'Additional data represented as key-value pairs. Both the key and value must be strings.',
     type: 'object',
-    example: { key: 'currency', value: 'USD' },
-    additionalProperties: { type: 'string', minLength: 1, maxLength: 1 },
+    example: { source: 'web' },
+    additionalProperties: { type: 'string' },
   })
   metadata: Record<string, string>;
 
   @ApiProperty({
-    description: 'Timestamp when the ledger was created',
     example: '2023-12-01T10:00:00Z',
   })
   createdAt: Date;
 
   @ApiProperty({
-    description: 'Timestamp when the ledger was last updated',
     example: '2023-12-01T10:00:00Z',
   })
   updatedAt: Date;

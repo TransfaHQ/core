@@ -761,7 +761,7 @@ describe('LedgerTransactionController', () => {
       if (nextCursor) {
         await request(ctx.app.getHttpServer())
           .get(endpoint)
-          .query({ limit: 2, cursor: nextCursor })
+          .query({ limit: 2, afterCursor: nextCursor })
           .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
           .expect(HttpStatus.OK)
           .expect(async (response) => {
