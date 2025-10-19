@@ -59,7 +59,7 @@ export interface CursorPaginatedResult<T> {
  *
  * If order is desc:
  *    - after -> where id < cursor order by desc
- *    - before -> where id > cursor order by desc
+ *    - before -> where id > cursor order by asc
  *
  * @param options Configuration for pagination
  * @returns Paginated results with bidirectional cursors

@@ -209,8 +209,6 @@ export class LedgerTransactionService {
       const sourceEntryId = uuidV7();
       const destinationEntryId = uuidV7();
 
-      console.log(entry.destinationAccountId, destinationAccount.name);
-
       // Two DB ledger entries: one credit (destination) and one debit (source)
       ledgerEntryData.push({
         id: destinationEntryId,
