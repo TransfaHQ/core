@@ -415,11 +415,11 @@ describe('LedgerEntryController', () => {
         });
       });
 
-      describe('Filter by balanceDirection', () => {
+      describe('Filter by direction', () => {
         it('should filter entries by credit direction', async () => {
           return request(ctx.app.getHttpServer())
             .get(endpoint)
-            .query({ balanceDirection: NormalBalanceEnum.CREDIT })
+            .query({ direction: NormalBalanceEnum.CREDIT })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK)
             .expect((response) => {
@@ -433,7 +433,7 @@ describe('LedgerEntryController', () => {
         it('should filter entries by debit direction', async () => {
           return request(ctx.app.getHttpServer())
             .get(endpoint)
-            .query({ balanceDirection: NormalBalanceEnum.DEBIT })
+            .query({ direction: NormalBalanceEnum.DEBIT })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK)
             .expect((response) => {
@@ -446,12 +446,12 @@ describe('LedgerEntryController', () => {
       });
 
       describe('Combined filters', () => {
-        it('should combine ledgerId and balanceDirection filters', async () => {
+        it('should combine ledgerId and direction filters', async () => {
           return request(ctx.app.getHttpServer())
             .get(endpoint)
             .query({
               ledgerId: ledger1.id,
-              balanceDirection: NormalBalanceEnum.CREDIT,
+              direction: NormalBalanceEnum.CREDIT,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK)
@@ -481,13 +481,13 @@ describe('LedgerEntryController', () => {
             });
         });
 
-        it('should combine ledgerId, accountId and balanceDirection', async () => {
+        it('should combine ledgerId, accountId and direction', async () => {
           return request(ctx.app.getHttpServer())
             .get(endpoint)
             .query({
               ledgerId: ledger2.id,
               accountId: usdDebitAccount2.id,
-              balanceDirection: NormalBalanceEnum.DEBIT,
+              direction: NormalBalanceEnum.DEBIT,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
             .expect(HttpStatus.OK)
@@ -759,7 +759,7 @@ describe('LedgerEntryController', () => {
           const firstPage = await request(ctx.app.getHttpServer())
             .get(endpoint)
             .query({
-              balanceDirection: NormalBalanceEnum.CREDIT,
+              direction: NormalBalanceEnum.CREDIT,
               limit: 2,
             })
             .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
@@ -770,7 +770,7 @@ describe('LedgerEntryController', () => {
           const secondPage = await request(ctx.app.getHttpServer())
             .get(endpoint)
             .query({
-              balanceDirection: NormalBalanceEnum.CREDIT,
+              direction: NormalBalanceEnum.CREDIT,
               afterCursor: firstPage.body.nextCursor,
               limit: 2,
             })

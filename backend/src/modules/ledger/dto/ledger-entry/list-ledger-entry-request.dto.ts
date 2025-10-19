@@ -53,5 +53,5 @@ export class ListLedgerEntryRequestDto extends PaginatedRequestDto {
   })
   @IsOptional()
   @IsEnum(NormalBalanceEnum)
-  balanceDirection?: NormalBalanceEnum;
+  direction?: NormalBalanceEnum;
 }

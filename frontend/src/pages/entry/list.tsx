@@ -50,7 +50,7 @@ export function EntryList() {
     if (filters.transactionExternalId)
       params.transactionExternalId = filters.transactionExternalId;
     if (filters.direction && filters.direction !== "all") {
-      params.balanceDirection = filters.direction as "debit" | "credit";
+      params.direction = filters.direction as "debit" | "credit";
     }
     return params;
   }, [
@@ -151,9 +151,7 @@ export function EntryList() {
     {
       header: "Account",
       cell: (entry) => (
-        <div className="text-sm truncate">
-          {entry.ledgerAccount.name}
-        </div>
+        <div className="text-sm truncate">{entry.ledgerAccount.name}</div>
       ),
     },
 

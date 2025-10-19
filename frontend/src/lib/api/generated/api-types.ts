@@ -4,1894 +4,1894 @@
  */
 
 export interface paths {
-    "/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["AppController_health"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/health": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/auth/users": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a new user */
-        post: operations["AuthController_createUser_v1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["AppController_health"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/auth/users": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** User login */
-        post: operations["AuthController_login_v1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Create a new user */
+    post: operations["AuthController_createUser_v1"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/auth/login": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/auth/keys": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create API key */
-        post: operations["AuthController_createKey_v1"];
-        /** Delete API key */
-        delete: operations["AuthController_deleteKey_v1"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** User login */
+    post: operations["AuthController_login_v1"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/auth/keys": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/ledgers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List ledgers
-         * @description Retrieves a paginated list of ledgers
-         */
-        get: operations["LedgerController_listLedgers_v1"];
-        put?: never;
-        /**
-         * Create a new ledger
-         * @description Creates a new ledger with the provided name and description
-         */
-        post: operations["LedgerController_createLedger_v1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Create API key */
+    post: operations["AuthController_createKey_v1"];
+    /** Delete API key */
+    delete: operations["AuthController_deleteKey_v1"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/ledgers": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/ledgers/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get a ledger by ID
-         * @description Retrieves a single ledger by its unique identifier
-         */
-        get: operations["LedgerController_retrieveLedger_v1"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update a ledger by ID
-         * @description Updates an existing ledger by its unique identifier with the provided fields
-         */
-        patch: operations["LedgerController_updateLedger_v1"];
-        trace?: never;
+    /**
+     * List ledgers
+     * @description Retrieves a paginated list of ledgers
+     */
+    get: operations["LedgerController_listLedgers_v1"];
+    put?: never;
+    /**
+     * Create a new ledger
+     * @description Creates a new ledger with the provided name and description
+     */
+    post: operations["LedgerController_createLedger_v1"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/ledgers/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/ledger_accounts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List ledger accounts
-         * @description Retrieves a paginated list of ledger accounts
-         */
-        get: operations["LedgerAccountController_listAccounts_v1"];
-        put?: never;
-        /**
-         * Create a new ledger account
-         * @description Creates a new ledger account with the provided details
-         */
-        post: operations["LedgerAccountController_createLedgerAccount_v1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Get a ledger by ID
+     * @description Retrieves a single ledger by its unique identifier
+     */
+    get: operations["LedgerController_retrieveLedger_v1"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Update a ledger by ID
+     * @description Updates an existing ledger by its unique identifier with the provided fields
+     */
+    patch: operations["LedgerController_updateLedger_v1"];
+    trace?: never;
+  };
+  "/v1/ledger_accounts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/ledger_accounts/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get a ledger account by ID
-         * @description Retrieves a single ledger account by its unique identifier
-         */
-        get: operations["LedgerAccountController_retrieveLedgerAccount_v1"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update a ledger account by ID
-         * @description Updates an existing ledger account by its unique identifier with the provided fields
-         */
-        patch: operations["LedgerAccountController_updateLedgerAccount_v1"];
-        trace?: never;
+    /**
+     * List ledger accounts
+     * @description Retrieves a paginated list of ledger accounts
+     */
+    get: operations["LedgerAccountController_listAccounts_v1"];
+    put?: never;
+    /**
+     * Create a new ledger account
+     * @description Creates a new ledger account with the provided details
+     */
+    post: operations["LedgerAccountController_createLedgerAccount_v1"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/ledger_accounts/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/currencies": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List currencies
-         * @description Retrieves a paginated list of currencies
-         */
-        get: operations["CurrencyController_listCurrencies_v1"];
-        put?: never;
-        /**
-         * Create a new currency
-         * @description Creates a new currency with the provided details
-         */
-        post: operations["CurrencyController_createCurrency_v1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Get a ledger account by ID
+     * @description Retrieves a single ledger account by its unique identifier
+     */
+    get: operations["LedgerAccountController_retrieveLedgerAccount_v1"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Update a ledger account by ID
+     * @description Updates an existing ledger account by its unique identifier with the provided fields
+     */
+    patch: operations["LedgerAccountController_updateLedgerAccount_v1"];
+    trace?: never;
+  };
+  "/v1/currencies": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/currencies/{code}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get a currency by code
-         * @description Retrieves a single currency by its code
-         */
-        get: operations["CurrencyController_getCurrency_v1"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete a currency by code
-         * @description Deletes a currency by its code. Cannot delete if ledger accounts are using it.
-         */
-        delete: operations["CurrencyController_deleteCurrency_v1"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * List currencies
+     * @description Retrieves a paginated list of currencies
+     */
+    get: operations["CurrencyController_listCurrencies_v1"];
+    put?: never;
+    /**
+     * Create a new currency
+     * @description Creates a new currency with the provided details
+     */
+    post: operations["CurrencyController_createCurrency_v1"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/currencies/{code}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/ledger_transactions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List ledger transactions
-         * @description Retrieves a paginated list of ledger transactions
-         */
-        get: operations["LedgerTransactionController_list_v1"];
-        put?: never;
-        /**
-         * Create a new ledger transaction
-         * @description Creates a new ledger transaction with the provided details
-         */
-        post: operations["LedgerTransactionController_create_v1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Get a currency by code
+     * @description Retrieves a single currency by its code
+     */
+    get: operations["CurrencyController_getCurrency_v1"];
+    put?: never;
+    post?: never;
+    /**
+     * Delete a currency by code
+     * @description Deletes a currency by its code. Cannot delete if ledger accounts are using it.
+     */
+    delete: operations["CurrencyController_deleteCurrency_v1"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/ledger_transactions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/ledger_transactions/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get a ledger transaction by ID
-         * @description Retrieves a single ledger transaction by its unique identifier or external ID
-         */
-        get: operations["LedgerTransactionController_retrieve_v1"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * List ledger transactions
+     * @description Retrieves a paginated list of ledger transactions
+     */
+    get: operations["LedgerTransactionController_list_v1"];
+    put?: never;
+    /**
+     * Create a new ledger transaction
+     * @description Creates a new ledger transaction with the provided details
+     */
+    post: operations["LedgerTransactionController_create_v1"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/ledger_transactions/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/ledger_transactions/{id}/post": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Post a pending transaction
-         * @description Post a pending transaction
-         */
-        post: operations["LedgerTransactionController_postPendingTransaction_v1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Get a ledger transaction by ID
+     * @description Retrieves a single ledger transaction by its unique identifier or external ID
+     */
+    get: operations["LedgerTransactionController_retrieve_v1"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/ledger_transactions/{id}/post": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/ledger_transactions/{id}/archive": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Archive a pending transaction
-         * @description Archive a pending transaction
-         */
-        post: operations["LedgerTransactionController_archivePendingTransaction_v1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Post a pending transaction
+     * @description Post a pending transaction
+     */
+    post: operations["LedgerTransactionController_postPendingTransaction_v1"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/ledger_transactions/{id}/archive": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/ledger_entries": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List ledger entries
-         * @description Retrieves a paginated list of ledger entries
-         */
-        get: operations["LedgerEntryController_list_v1"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Archive a pending transaction
+     * @description Archive a pending transaction
+     */
+    post: operations["LedgerTransactionController_archivePendingTransaction_v1"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/ledger_entries": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    /**
+     * List ledger entries
+     * @description Retrieves a paginated list of ledger entries
+     */
+    get: operations["LedgerEntryController_list_v1"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        CreateUserDto: {
-            /**
-             * @description User email address
-             * @example user@example.com
-             */
-            email: string;
-            /** @description User password */
-            password: string;
-        };
-        UserResponseDto: Record<string, never>;
-        LoginDto: {
-            /**
-             * @description User email address
-             * @example user@example.com
-             */
-            email: string;
-            /** @description User password */
-            password: string;
-        };
-        LoginResponseDto: {
-            /** @description JWT access token */
-            token: string;
-        };
-        CreateKeyDto: Record<string, never>;
-        KeyResponseDto: Record<string, never>;
-        DeleteKeyDto: Record<string, never>;
-        CreateLedgerDto: {
-            /**
-             * @description Name of the ledger
-             * @example Company General Ledger
-             */
-            name: string;
-            /**
-             * @description Description of the ledger purpose
-             * @example Main accounting ledger for company operations
-             */
-            description?: string;
-            /**
-             * @description Additional data represented as key-value pairs. Both the key and value must be strings.
-             * @example {
-             *       "source": "web",
-             *       "region": "NA"
-             *     }
-             */
-            metadata?: {
-                [key: string]: string;
-            };
-        };
-        LedgerResponseDto: {
-            /**
-             * @description Unique identifier for the ledger
-             * @example 01234567-89ab-cdef-0123-456789abcdef
-             */
-            id: string;
-            /**
-             * @description Name of the ledger
-             * @example Company General Ledger
-             */
-            name: string;
-            /**
-             * @description Description of the ledger's purpose
-             * @example Main accounting ledger for company operations
-             */
-            description: string | null;
-            /**
-             * @description Additional data represented as key-value pairs. Both the key and value must be strings.
-             * @example {
-             *       "source": "web"
-             *     }
-             */
-            metadata?: {
-                [key: string]: string;
-            };
-            /**
-             * Format: date-time
-             * @example 2023-12-01T10:00:00Z
-             */
-            createdAt: string;
-            /**
-             * Format: date-time
-             * @example 2023-12-01T10:00:00Z
-             */
-            updatedAt: string;
-        };
-        UpdateLedgerDto: {
-            /**
-             * @description Name of the ledger
-             * @example Company General Ledger
-             */
-            name?: string;
-            /**
-             * @description Description of the ledger purpose
-             * @example Main accounting ledger for company operations
-             */
-            description?: string;
-            /**
-             * @description Additional data represented as key-value pairs. Both the key and value must be strings.
-             * @example {
-             *       "key": "currency",
-             *       "value": "USD"
-             *     }
-             */
-            metadata?: {
-                [key: string]: string;
-            };
-        };
-        CreateLedgerAccountDto: {
-            /**
-             * @description Ledger id associated with the ledger account
-             * @example 550e8400-e29b-41d4-a716-446655440000
-             */
-            ledgerId: string;
-            /**
-             * @description Name of the ledger account
-             * @example Company General Ledger
-             */
-            name: string;
-            /**
-             * @description Description of the ledger account purpose
-             * @example Main accounting ledger account for company operations
-             */
-            description?: string;
-            /**
-             * @description Additional data represented as key-value pairs. Both the key and value must be strings.
-             * @example {
-             *       "currency": "USD",
-             *       "region": "US"
-             *     }
-             */
-            metadata?: {
-                [key: string]: string;
-            };
-            /**
-             * @description Currency code of the ledger account (ISO 4217)
-             * @example USD
-             */
-            currency: string;
-            /**
-             * @description Normal balance type for the ledger account
-             * @example debit
-             * @enum {string}
-             */
-            normalBalance: "credit" | "debit";
-            /**
-             * @description External identifier for the ledger account
-             * @example 550e8400-e29b-41d4-a716-446655440000
-             */
-            externalId?: string;
-        };
-        BalanceDto: {
-            /**
-             * @description Total credits
-             * @example 1000
-             */
-            credits: number;
-            /**
-             * @description Total debits
-             * @example 500
-             */
-            debits: number;
-            /**
-             * @description Net amount
-             * @example 500
-             */
-            amount: number;
-            /**
-             * @description Currency code (ISO 4217)
-             * @example USD
-             */
-            currency: string;
-            /**
-             * @description Currency exponent (number of decimal places, e.g., 2 for USD)
-             * @example 2
-             */
-            currencyExponent: number;
-        };
-        LedgerAccountBalancesDto: {
-            /** @description Pending balance */
-            pendingBalance: components["schemas"]["BalanceDto"];
-            /** @description Posted balance */
-            postedBalance: components["schemas"]["BalanceDto"];
-            /** @description Available balance */
-            availableBalance: components["schemas"]["BalanceDto"];
-        };
-        LedgerAccountResponseDto: {
-            /**
-             * @description Ledger account unique identifier
-             * @example 550e8400-e29b-41d4-a716-446655440000
-             */
-            id: string;
-            /**
-             * @description Name of the ledger account
-             * @example Cash account
-             */
-            name: string;
-            /**
-             * @description Description of the ledger account
-             * @example Main accounting ledger account
-             */
-            description: string | null;
-            /**
-             * @description Normal balance type
-             * @example DEBIT
-             */
-            normalBalance: string;
-            /**
-             * @description Associated ledger ID
-             * @example 550e8400-e29b-41d4-a716-446655440000
-             */
-            ledgerId: string;
-            /**
-             * @description External identifier for the ledger account
-             * @example EXT-12345
-             */
-            externalId: string | null;
-            /**
-             * @description Max available balance on the account.
-             * @example 1000000
-             */
-            maxBalanceLimit: Record<string, never>;
-            /**
-             * @description Min available balance on the account.
-             * @example 100000
-             */
-            minBalanceLimit: Record<string, never>;
-            /** @description Balances of the ledger account */
-            balances: components["schemas"]["LedgerAccountBalancesDto"];
-            /**
-             * @description Additional data represented as key-value pairs. Both the key and value must be strings.
-             * @example {
-             *       "key": "currency",
-             *       "value": "USD"
-             *     }
-             */
-            metadata?: {
-                [key: string]: string;
-            };
-            /**
-             * Format: date-time
-             * @description Creation timestamp
-             * @example 2025-10-19T18:31:28.379Z
-             */
-            createdAt: string;
-            /**
-             * Format: date-time
-             * @description Last update timestamp
-             * @example 2025-10-19T18:31:28.379Z
-             */
-            updatedAt: string;
-        };
-        UpdateLedgerAccountDto: {
-            /**
-             * @description Name of the ledger account
-             * @example Company General Ledger
-             */
-            name?: string;
-            /**
-             * @description Description of the ledger account purpose
-             * @example Main accounting ledger account for company operations
-             */
-            description?: string;
-            /**
-             * @description Additional data represented as key-value pairs. Both the key and value must be strings.
-             * @example {
-             *       "currency": "USD",
-             *       "region": "US"
-             *     }
-             */
-            metadata?: {
-                [key: string]: string;
-            };
-            /**
-             * @description Max available balance on the account.
-             * @example 1000000
-             */
-            maxBalanceLimit?: Record<string, never>;
-            /**
-             * @description Min available balance on the account.
-             * @example 100000
-             */
-            minBalanceLimit?: Record<string, never>;
-        };
-        CreateCurrencyDto: {
-            /**
-             * @description Currency code (e.g., USD, EUR, BTC)
-             * @example BTC
-             */
-            code: string;
-            /**
-             * @description Number of decimal places for the currency
-             * @example 8
-             */
-            exponent: number;
-            /**
-             * @description Full name of the currency
-             * @example Bitcoin
-             */
-            name: string;
-        };
-        CurrencyResponseDto: {
-            /**
-             * @description Unique identifier of the currency
-             * @example 1
-             */
-            id: number;
-            /**
-             * @description Currency code
-             * @example USD
-             */
-            code: string;
-            /**
-             * @description Number of decimal places for the currency
-             * @example 2
-             */
-            exponent: number;
-            /**
-             * @description Full name of the currency
-             * @example US Dollar
-             */
-            name: string;
-            /**
-             * Format: date-time
-             * @description When the currency was created
-             * @example 2023-01-01T00:00:00Z
-             */
-            createdAt: string;
-            /**
-             * Format: date-time
-             * @description When the currency was last updated
-             * @example 2023-01-01T00:00:00Z
-             */
-            updatedAt: string;
-        };
-        RecordLedgerEntryDto: {
-            /**
-             * @description UUID of the source ledger account
-             * @example a7f68f16-9834-4a6e-9a7d-5e9f4fc1d1a2
-             */
-            sourceAccountId: string;
-            /**
-             * @description UUID of the destination ledger account
-             * @example b2e58f27-7234-4e3d-8b2c-8f8f8c5edc23
-             */
-            destinationAccountId: string;
-            /**
-             * @description Amount to transfer
-             * @example 10
-             */
-            amount: number;
-            /**
-             * @description Additional data associated with source entry represented as key-value pairs. Keys and values must be strings, max length 255.
-             * @example {
-             *       "currency": "USD",
-             *       "region": "US"
-             *     }
-             */
-            sourceMetadata?: {
-                [key: string]: string;
-            };
-            /**
-             * @description Additional data associated with destination entry represented as key-value pairs. Keys and values must be strings, max length 255.
-             * @example {
-             *       "currency": "USD",
-             *       "region": "US"
-             *     }
-             */
-            destinationMetadata?: {
-                [key: string]: string;
-            };
-        };
-        RecordLedgerTransactionDto: {
-            /**
-             * @description Description or memo for the transaction
-             * @example Payout for September
-             */
-            description: string;
-            /**
-             * @description External system reference ID (must be unique per transaction)
-             * @example 0199fdbd-a5c0-74c8-8a8c-13c3442639b4
-             */
-            externalId: string;
-            /** @description Array of ledger entries involved in the transaction */
-            ledgerEntries: components["schemas"]["RecordLedgerEntryDto"][];
-            /**
-             * @description Additional data represented as key-value pairs. Keys and values must be strings, max length 255.
-             * @example {
-             *       "currency": "USD",
-             *       "region": "US"
-             *     }
-             */
-            metadata?: {
-                [key: string]: string;
-            };
-            /**
-             * @description Format: ISO8601. Defaults to time of insertion in the DB if not provided
-             * @example 2025-10-08T20:53:21.239Z
-             */
-            effectiveAt?: string;
-            /**
-             * @description Status of the transaction
-             * @example posted
-             * @enum {string}
-             */
-            status?: "pending" | "posted";
-        };
-        LedgerEntryResponseDto: {
-            /**
-             * @description Unique identifier for the ledger entry
-             * @example 0199fdbd-a583-726a-b553-f63f5f649f00
-             */
-            id: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when the entry was created
-             * @example 2025-10-03T10:00:00.000Z
-             */
-            createdAt: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when the entry was last updated
-             * @example 2025-10-03T12:00:00.000Z
-             */
-            updatedAt: string;
-            /**
-             * @description Amount for the ledger entry (in smallest currency unit)
-             * @example 1000
-             */
-            amount: number;
-            /**
-             * @description Direction of the entry (debit or credit)
-             * @example debit
-             * @enum {string}
-             */
-            direction: "credit" | "debit";
-            /**
-             * @description ID of the associated ledger account
-             * @example 0199fdbd-a583-726a-b553-fb6fc0424523
-             */
-            ledgerAccountId: string;
-            /**
-             * @description Currency code for the ledger account (ISO 4217)
-             * @example USD
-             */
-            ledgerAccountCurrency: string;
-            /**
-             * @description Currency exponent (e.g., 2 for USD, meaning 2 decimal places)
-             * @example 2
-             */
-            ledgerAccountCurrencyExponent: number;
-            /**
-             * @description Name of the associated ledger account
-             * @example Cash Account
-             */
-            ledgerAccountName: string;
-            /**
-             * @description Additional metadata as key-value pairs. Both keys and values must be strings.
-             * @example {
-             *       "source": "api",
-             *       "tag": "invoice"
-             *     }
-             */
-            metadata?: {
-                [key: string]: string;
-            };
-        };
-        LedgerTransactionResponseDto: {
-            /**
-             * @description Unique identifier for the transaction
-             * @example 0199fdbd-a583-726a-b553-fd1a944b7275
-             */
-            id: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when the transaction was created
-             * @example 2025-10-03T10:00:00.000Z
-             */
-            createdAt: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when the transaction was last updated
-             * @example 2025-10-03T12:00:00.000Z
-             */
-            updatedAt: string;
-            /**
-             * @description External system ID for cross-reference
-             * @example 0199fdbd-a583-726a-b554-0134d87eb8f9
-             */
-            externalId: string;
-            /**
-             * @description Status of the transaction
-             * @example posted
-             * @enum {string}
-             */
-            status: "posted" | "archived" | "pending";
-            /**
-             * @description Description or memo for the transaction
-             * @example Payout for September
-             */
-            description: string;
-            /**
-             * @description List of ledger entries associated with the transaction
-             * @example [
-             *       {
-             *         "id": "0199aaf9-9a19-736c-a9cb-21aaaf7e1218",
-             *         "createdAt": "2025-10-03T10:00:00.000Z",
-             *         "updatedAt": "2025-10-03T12:00:00.000Z",
-             *         "amount": 1000,
-             *         "direction": "credit",
-             *         "ledgerAccountId": "0199aaf9-9a19-736c-a9cb-24af81bf5d1a",
-             *         "ledgerAccountCurrency": "USD",
-             *         "ledgerAccountCurrencyExponent": 2
-             *       },
-             *       {
-             *         "id": "0199aaf9-9a19-736c-a9cb-21aaaf7e1217",
-             *         "createdAt": "2025-10-03T10:00:00.000Z",
-             *         "updatedAt": "2025-10-03T12:00:00.000Z",
-             *         "amount": 1000,
-             *         "direction": "debit",
-             *         "ledgerAccountId": "0199aaf9-9a19-736c-a9cb-24af81bf5d1b",
-             *         "ledgerAccountCurrency": "USD",
-             *         "ledgerAccountCurrencyExponent": 2
-             *       }
-             *     ]
-             */
-            ledgerEntries: components["schemas"]["LedgerEntryResponseDto"][];
-            /**
-             * @description Additional metadata as key-value pairs. Both keys and values must be strings.
-             * @example {
-             *       "source": "api",
-             *       "tag": "invoice"
-             *     }
-             */
-            metadata?: {
-                [key: string]: string;
-            };
-            /**
-             * Format: date-time
-             * @description Format: ISO8601. Defaults to time of insertion in the DB if not provided
-             * @example 2025-10-08T20:53:21.239Z
-             */
-            effectiveAt: string;
-        };
-        LedgerEntryTransactionDto: {
-            /**
-             * @description Unique identifier for the transaction
-             * @example 0199fdbd-a580-71a1-96c5-40cafcd49258
-             */
-            id: string;
-            /**
-             * @description External system ID for cross-reference
-             * @example 0199fdbd-a580-71a1-96c5-4674dbcdaa00
-             */
-            externalId: string;
-        };
-        LedgerEntryAccountDto: {
-            /**
-             * @description Ledger account unique identifier
-             * @example 550e8400-e29b-41d4-a716-446655440000
-             */
-            id: string;
-            /**
-             * @description Name of the ledger account
-             * @example Cash account
-             */
-            name: string;
-        };
-        LedgerEntryCurrencyDto: {
-            /**
-             * @description Currency code (ISO 4217)
-             * @example USD
-             */
-            code: string;
-            /**
-             * @description Currency exponent (e.g., 2 for USD, meaning 2 decimal places)
-             * @example 2
-             */
-            exponent: number;
-        };
-        LedgerEntryStandaloneResponseDto: {
-            /**
-             * @description Unique identifier for the ledger entry
-             * @example 0199fdbd-a580-71a1-96c5-4ba955a356ce
-             */
-            id: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when the entry was created
-             * @example 2025-10-03T10:00:00.000Z
-             */
-            createdAt: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when the entry was last updated
-             * @example 2025-10-03T12:00:00.000Z
-             */
-            updatedAt: string;
-            /**
-             * @description Amount for the ledger entry (in smallest currency unit)
-             * @example 1000
-             */
-            amount: number;
-            /**
-             * @description Direction of the entry (debit or credit)
-             * @example debit
-             * @enum {string}
-             */
-            direction: "credit" | "debit";
-            /**
-             * @description ID of the associated ledger
-             * @example 0199fdbd-a580-71a1-96c5-4e11b4e867a8
-             */
-            ledgerId: string;
-            /** @description Associated ledger transaction */
-            ledgerTransaction: components["schemas"]["LedgerEntryTransactionDto"];
-            /** @description Associated ledger account */
-            ledgerAccount: components["schemas"]["LedgerEntryAccountDto"];
-            /** @description Currency for the ledger entry derived from the ledger account  */
-            currency: components["schemas"]["LedgerEntryCurrencyDto"];
-            /**
-             * @description Status of the entry
-             * @example posted
-             * @enum {string}
-             */
-            status: "posted" | "archived" | "pending";
-            /**
-             * @description Additional metadata as key-value pairs. Both keys and values must be strings.
-             * @example {
-             *       "source": "api",
-             *       "tag": "invoice"
-             *     }
-             */
-            metadata?: {
-                [key: string]: string;
-            };
-        };
+  schemas: {
+    CreateUserDto: {
+      /**
+       * @description User email address
+       * @example user@example.com
+       */
+      email: string;
+      /** @description User password */
+      password: string;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    UserResponseDto: Record<string, never>;
+    LoginDto: {
+      /**
+       * @description User email address
+       * @example user@example.com
+       */
+      email: string;
+      /** @description User password */
+      password: string;
+    };
+    LoginResponseDto: {
+      /** @description JWT access token */
+      token: string;
+    };
+    CreateKeyDto: Record<string, never>;
+    KeyResponseDto: Record<string, never>;
+    DeleteKeyDto: Record<string, never>;
+    CreateLedgerDto: {
+      /**
+       * @description Name of the ledger
+       * @example Company General Ledger
+       */
+      name: string;
+      /**
+       * @description Description of the ledger purpose
+       * @example Main accounting ledger for company operations
+       */
+      description?: string;
+      /**
+       * @description Additional data represented as key-value pairs. Both the key and value must be strings.
+       * @example {
+       *       "source": "web",
+       *       "region": "NA"
+       *     }
+       */
+      metadata?: {
+        [key: string]: string;
+      };
+    };
+    LedgerResponseDto: {
+      /**
+       * @description Unique identifier for the ledger
+       * @example 01234567-89ab-cdef-0123-456789abcdef
+       */
+      id: string;
+      /**
+       * @description Name of the ledger
+       * @example Company General Ledger
+       */
+      name: string;
+      /**
+       * @description Description of the ledger's purpose
+       * @example Main accounting ledger for company operations
+       */
+      description: string | null;
+      /**
+       * @description Additional data represented as key-value pairs. Both the key and value must be strings.
+       * @example {
+       *       "source": "web"
+       *     }
+       */
+      metadata?: {
+        [key: string]: string;
+      };
+      /**
+       * Format: date-time
+       * @example 2023-12-01T10:00:00Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @example 2023-12-01T10:00:00Z
+       */
+      updatedAt: string;
+    };
+    UpdateLedgerDto: {
+      /**
+       * @description Name of the ledger
+       * @example Company General Ledger
+       */
+      name?: string;
+      /**
+       * @description Description of the ledger purpose
+       * @example Main accounting ledger for company operations
+       */
+      description?: string;
+      /**
+       * @description Additional data represented as key-value pairs. Both the key and value must be strings.
+       * @example {
+       *       "key": "currency",
+       *       "value": "USD"
+       *     }
+       */
+      metadata?: {
+        [key: string]: string;
+      };
+    };
+    CreateLedgerAccountDto: {
+      /**
+       * @description Ledger id associated with the ledger account
+       * @example 550e8400-e29b-41d4-a716-446655440000
+       */
+      ledgerId: string;
+      /**
+       * @description Name of the ledger account
+       * @example Company General Ledger
+       */
+      name: string;
+      /**
+       * @description Description of the ledger account purpose
+       * @example Main accounting ledger account for company operations
+       */
+      description?: string;
+      /**
+       * @description Additional data represented as key-value pairs. Both the key and value must be strings.
+       * @example {
+       *       "currency": "USD",
+       *       "region": "US"
+       *     }
+       */
+      metadata?: {
+        [key: string]: string;
+      };
+      /**
+       * @description Currency code of the ledger account (ISO 4217)
+       * @example USD
+       */
+      currency: string;
+      /**
+       * @description Normal balance type for the ledger account
+       * @example debit
+       * @enum {string}
+       */
+      normalBalance: "credit" | "debit";
+      /**
+       * @description External identifier for the ledger account
+       * @example 550e8400-e29b-41d4-a716-446655440000
+       */
+      externalId?: string;
+    };
+    BalanceDto: {
+      /**
+       * @description Total credits
+       * @example 1000
+       */
+      credits: number;
+      /**
+       * @description Total debits
+       * @example 500
+       */
+      debits: number;
+      /**
+       * @description Net amount
+       * @example 500
+       */
+      amount: number;
+      /**
+       * @description Currency code (ISO 4217)
+       * @example USD
+       */
+      currency: string;
+      /**
+       * @description Currency exponent (number of decimal places, e.g., 2 for USD)
+       * @example 2
+       */
+      currencyExponent: number;
+    };
+    LedgerAccountBalancesDto: {
+      /** @description Pending balance */
+      pendingBalance: components["schemas"]["BalanceDto"];
+      /** @description Posted balance */
+      postedBalance: components["schemas"]["BalanceDto"];
+      /** @description Available balance */
+      availableBalance: components["schemas"]["BalanceDto"];
+    };
+    LedgerAccountResponseDto: {
+      /**
+       * @description Ledger account unique identifier
+       * @example 550e8400-e29b-41d4-a716-446655440000
+       */
+      id: string;
+      /**
+       * @description Name of the ledger account
+       * @example Cash account
+       */
+      name: string;
+      /**
+       * @description Description of the ledger account
+       * @example Main accounting ledger account
+       */
+      description: string | null;
+      /**
+       * @description Normal balance type
+       * @example DEBIT
+       */
+      normalBalance: string;
+      /**
+       * @description Associated ledger ID
+       * @example 550e8400-e29b-41d4-a716-446655440000
+       */
+      ledgerId: string;
+      /**
+       * @description External identifier for the ledger account
+       * @example EXT-12345
+       */
+      externalId: string | null;
+      /**
+       * @description Max available balance on the account.
+       * @example 1000000
+       */
+      maxBalanceLimit: Record<string, never>;
+      /**
+       * @description Min available balance on the account.
+       * @example 100000
+       */
+      minBalanceLimit: Record<string, never>;
+      /** @description Balances of the ledger account */
+      balances: components["schemas"]["LedgerAccountBalancesDto"];
+      /**
+       * @description Additional data represented as key-value pairs. Both the key and value must be strings.
+       * @example {
+       *       "key": "currency",
+       *       "value": "USD"
+       *     }
+       */
+      metadata?: {
+        [key: string]: string;
+      };
+      /**
+       * Format: date-time
+       * @description Creation timestamp
+       * @example 2025-10-19T18:31:28.379Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description Last update timestamp
+       * @example 2025-10-19T18:31:28.379Z
+       */
+      updatedAt: string;
+    };
+    UpdateLedgerAccountDto: {
+      /**
+       * @description Name of the ledger account
+       * @example Company General Ledger
+       */
+      name?: string;
+      /**
+       * @description Description of the ledger account purpose
+       * @example Main accounting ledger account for company operations
+       */
+      description?: string;
+      /**
+       * @description Additional data represented as key-value pairs. Both the key and value must be strings.
+       * @example {
+       *       "currency": "USD",
+       *       "region": "US"
+       *     }
+       */
+      metadata?: {
+        [key: string]: string;
+      };
+      /**
+       * @description Max available balance on the account.
+       * @example 1000000
+       */
+      maxBalanceLimit?: Record<string, never>;
+      /**
+       * @description Min available balance on the account.
+       * @example 100000
+       */
+      minBalanceLimit?: Record<string, never>;
+    };
+    CreateCurrencyDto: {
+      /**
+       * @description Currency code (e.g., USD, EUR, BTC)
+       * @example BTC
+       */
+      code: string;
+      /**
+       * @description Number of decimal places for the currency
+       * @example 8
+       */
+      exponent: number;
+      /**
+       * @description Full name of the currency
+       * @example Bitcoin
+       */
+      name: string;
+    };
+    CurrencyResponseDto: {
+      /**
+       * @description Unique identifier of the currency
+       * @example 1
+       */
+      id: number;
+      /**
+       * @description Currency code
+       * @example USD
+       */
+      code: string;
+      /**
+       * @description Number of decimal places for the currency
+       * @example 2
+       */
+      exponent: number;
+      /**
+       * @description Full name of the currency
+       * @example US Dollar
+       */
+      name: string;
+      /**
+       * Format: date-time
+       * @description When the currency was created
+       * @example 2023-01-01T00:00:00Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description When the currency was last updated
+       * @example 2023-01-01T00:00:00Z
+       */
+      updatedAt: string;
+    };
+    RecordLedgerEntryDto: {
+      /**
+       * @description UUID of the source ledger account
+       * @example a7f68f16-9834-4a6e-9a7d-5e9f4fc1d1a2
+       */
+      sourceAccountId: string;
+      /**
+       * @description UUID of the destination ledger account
+       * @example b2e58f27-7234-4e3d-8b2c-8f8f8c5edc23
+       */
+      destinationAccountId: string;
+      /**
+       * @description Amount to transfer
+       * @example 10
+       */
+      amount: number;
+      /**
+       * @description Additional data associated with source entry represented as key-value pairs. Keys and values must be strings, max length 255.
+       * @example {
+       *       "currency": "USD",
+       *       "region": "US"
+       *     }
+       */
+      sourceMetadata?: {
+        [key: string]: string;
+      };
+      /**
+       * @description Additional data associated with destination entry represented as key-value pairs. Keys and values must be strings, max length 255.
+       * @example {
+       *       "currency": "USD",
+       *       "region": "US"
+       *     }
+       */
+      destinationMetadata?: {
+        [key: string]: string;
+      };
+    };
+    RecordLedgerTransactionDto: {
+      /**
+       * @description Description or memo for the transaction
+       * @example Payout for September
+       */
+      description: string;
+      /**
+       * @description External system reference ID (must be unique per transaction)
+       * @example 0199fdbd-a5c0-74c8-8a8c-13c3442639b4
+       */
+      externalId: string;
+      /** @description Array of ledger entries involved in the transaction */
+      ledgerEntries: components["schemas"]["RecordLedgerEntryDto"][];
+      /**
+       * @description Additional data represented as key-value pairs. Keys and values must be strings, max length 255.
+       * @example {
+       *       "currency": "USD",
+       *       "region": "US"
+       *     }
+       */
+      metadata?: {
+        [key: string]: string;
+      };
+      /**
+       * @description Format: ISO8601. Defaults to time of insertion in the DB if not provided
+       * @example 2025-10-08T20:53:21.239Z
+       */
+      effectiveAt?: string;
+      /**
+       * @description Status of the transaction
+       * @example posted
+       * @enum {string}
+       */
+      status?: "pending" | "posted";
+    };
+    LedgerEntryResponseDto: {
+      /**
+       * @description Unique identifier for the ledger entry
+       * @example 0199fdbd-a583-726a-b553-f63f5f649f00
+       */
+      id: string;
+      /**
+       * Format: date-time
+       * @description Timestamp when the entry was created
+       * @example 2025-10-03T10:00:00.000Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description Timestamp when the entry was last updated
+       * @example 2025-10-03T12:00:00.000Z
+       */
+      updatedAt: string;
+      /**
+       * @description Amount for the ledger entry (in smallest currency unit)
+       * @example 1000
+       */
+      amount: number;
+      /**
+       * @description Direction of the entry (debit or credit)
+       * @example debit
+       * @enum {string}
+       */
+      direction: "credit" | "debit";
+      /**
+       * @description ID of the associated ledger account
+       * @example 0199fdbd-a583-726a-b553-fb6fc0424523
+       */
+      ledgerAccountId: string;
+      /**
+       * @description Currency code for the ledger account (ISO 4217)
+       * @example USD
+       */
+      ledgerAccountCurrency: string;
+      /**
+       * @description Currency exponent (e.g., 2 for USD, meaning 2 decimal places)
+       * @example 2
+       */
+      ledgerAccountCurrencyExponent: number;
+      /**
+       * @description Name of the associated ledger account
+       * @example Cash Account
+       */
+      ledgerAccountName: string;
+      /**
+       * @description Additional metadata as key-value pairs. Both keys and values must be strings.
+       * @example {
+       *       "source": "api",
+       *       "tag": "invoice"
+       *     }
+       */
+      metadata?: {
+        [key: string]: string;
+      };
+    };
+    LedgerTransactionResponseDto: {
+      /**
+       * @description Unique identifier for the transaction
+       * @example 0199fdbd-a583-726a-b553-fd1a944b7275
+       */
+      id: string;
+      /**
+       * Format: date-time
+       * @description Timestamp when the transaction was created
+       * @example 2025-10-03T10:00:00.000Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description Timestamp when the transaction was last updated
+       * @example 2025-10-03T12:00:00.000Z
+       */
+      updatedAt: string;
+      /**
+       * @description External system ID for cross-reference
+       * @example 0199fdbd-a583-726a-b554-0134d87eb8f9
+       */
+      externalId: string;
+      /**
+       * @description Status of the transaction
+       * @example posted
+       * @enum {string}
+       */
+      status: "posted" | "archived" | "pending";
+      /**
+       * @description Description or memo for the transaction
+       * @example Payout for September
+       */
+      description: string;
+      /**
+       * @description List of ledger entries associated with the transaction
+       * @example [
+       *       {
+       *         "id": "0199aaf9-9a19-736c-a9cb-21aaaf7e1218",
+       *         "createdAt": "2025-10-03T10:00:00.000Z",
+       *         "updatedAt": "2025-10-03T12:00:00.000Z",
+       *         "amount": 1000,
+       *         "direction": "credit",
+       *         "ledgerAccountId": "0199aaf9-9a19-736c-a9cb-24af81bf5d1a",
+       *         "ledgerAccountCurrency": "USD",
+       *         "ledgerAccountCurrencyExponent": 2
+       *       },
+       *       {
+       *         "id": "0199aaf9-9a19-736c-a9cb-21aaaf7e1217",
+       *         "createdAt": "2025-10-03T10:00:00.000Z",
+       *         "updatedAt": "2025-10-03T12:00:00.000Z",
+       *         "amount": 1000,
+       *         "direction": "debit",
+       *         "ledgerAccountId": "0199aaf9-9a19-736c-a9cb-24af81bf5d1b",
+       *         "ledgerAccountCurrency": "USD",
+       *         "ledgerAccountCurrencyExponent": 2
+       *       }
+       *     ]
+       */
+      ledgerEntries: components["schemas"]["LedgerEntryResponseDto"][];
+      /**
+       * @description Additional metadata as key-value pairs. Both keys and values must be strings.
+       * @example {
+       *       "source": "api",
+       *       "tag": "invoice"
+       *     }
+       */
+      metadata?: {
+        [key: string]: string;
+      };
+      /**
+       * Format: date-time
+       * @description Format: ISO8601. Defaults to time of insertion in the DB if not provided
+       * @example 2025-10-08T20:53:21.239Z
+       */
+      effectiveAt: string;
+    };
+    LedgerEntryTransactionDto: {
+      /**
+       * @description Unique identifier for the transaction
+       * @example 0199fdbd-a580-71a1-96c5-40cafcd49258
+       */
+      id: string;
+      /**
+       * @description External system ID for cross-reference
+       * @example 0199fdbd-a580-71a1-96c5-4674dbcdaa00
+       */
+      externalId: string;
+    };
+    LedgerEntryAccountDto: {
+      /**
+       * @description Ledger account unique identifier
+       * @example 550e8400-e29b-41d4-a716-446655440000
+       */
+      id: string;
+      /**
+       * @description Name of the ledger account
+       * @example Cash account
+       */
+      name: string;
+    };
+    LedgerEntryCurrencyDto: {
+      /**
+       * @description Currency code (ISO 4217)
+       * @example USD
+       */
+      code: string;
+      /**
+       * @description Currency exponent (e.g., 2 for USD, meaning 2 decimal places)
+       * @example 2
+       */
+      exponent: number;
+    };
+    LedgerEntryStandaloneResponseDto: {
+      /**
+       * @description Unique identifier for the ledger entry
+       * @example 0199fdbd-a580-71a1-96c5-4ba955a356ce
+       */
+      id: string;
+      /**
+       * Format: date-time
+       * @description Timestamp when the entry was created
+       * @example 2025-10-03T10:00:00.000Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description Timestamp when the entry was last updated
+       * @example 2025-10-03T12:00:00.000Z
+       */
+      updatedAt: string;
+      /**
+       * @description Amount for the ledger entry (in smallest currency unit)
+       * @example 1000
+       */
+      amount: number;
+      /**
+       * @description Direction of the entry (debit or credit)
+       * @example debit
+       * @enum {string}
+       */
+      direction: "credit" | "debit";
+      /**
+       * @description ID of the associated ledger
+       * @example 0199fdbd-a580-71a1-96c5-4e11b4e867a8
+       */
+      ledgerId: string;
+      /** @description Associated ledger transaction */
+      ledgerTransaction: components["schemas"]["LedgerEntryTransactionDto"];
+      /** @description Associated ledger account */
+      ledgerAccount: components["schemas"]["LedgerEntryAccountDto"];
+      /** @description Currency for the ledger entry derived from the ledger account  */
+      currency: components["schemas"]["LedgerEntryCurrencyDto"];
+      /**
+       * @description Status of the entry
+       * @example posted
+       * @enum {string}
+       */
+      status: "posted" | "archived" | "pending";
+      /**
+       * @description Additional metadata as key-value pairs. Both keys and values must be strings.
+       * @example {
+       *       "source": "api",
+       *       "tag": "invoice"
+       *     }
+       */
+      metadata?: {
+        [key: string]: string;
+      };
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    AppController_health: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  AppController_health: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    AuthController_createUser_v1: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description Admin secret key passed as environment variable */
-                "x-admin-key"?: string;
-            };
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateUserDto"];
-            };
-        };
-        responses: {
-            /** @description User created successfully */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserResponseDto"];
-                };
-            };
-            /** @description Email already exists */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+        content?: never;
+      };
     };
-    AuthController_login_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LoginDto"];
-            };
-        };
-        responses: {
-            /** @description Login successful */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LoginResponseDto"];
-                };
-            };
-            /** @description Invalid credentials */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  AuthController_createUser_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        /** @description Admin secret key passed as environment variable */
+        "x-admin-key"?: string;
+      };
+      path?: never;
+      cookie?: never;
     };
-    AuthController_createKey_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateKeyDto"];
-            };
-        };
-        responses: {
-            /** @description Key created successfully */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KeyResponseDto"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateUserDto"];
+      };
     };
-    AuthController_deleteKey_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description User created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DeleteKeyDto"];
-            };
+        content: {
+          "application/json": components["schemas"]["UserResponseDto"];
         };
-        responses: {
-            /** @description Key deleted successfully */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      /** @description Email already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
+      };
     };
-    LedgerController_listLedgers_v1: {
-        parameters: {
-            query?: {
-                /** @description Number of items per page */
-                limit?: number;
-                /** @description Return items that appear after the item identified by this cursor */
-                afterCursor?: string;
-                /** @description Return items that appear before the item identified by this cursor */
-                beforeCursor?: string;
-                /** @description Cursor for pagination */
-                cursor?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The ledgers have been successfully retrieved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data?: components["schemas"]["LedgerResponseDto"][];
-                        /**
-                         * @description Cursor for the next page
-                         * @example 01234567-89ab-cdef-0123-456789abcdef
-                         */
-                        nextCursor?: string;
-                        /**
-                         * @description Cursor for the previous page
-                         * @example 01234567-89ab-cdef-0123-456789abcdef
-                         */
-                        prevCursor?: string;
-                        /** @description Whether there are more items after this page */
-                        hasNext?: boolean;
-                        /** @description Whether there are more items before this page */
-                        hasPrev?: boolean;
-                    };
-                };
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  AuthController_login_v1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    LedgerController_createLedger_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateLedgerDto"];
-            };
-        };
-        responses: {
-            /** @description The ledger has been successfully created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LedgerResponseDto"];
-                };
-            };
-            /** @description Invalid input data */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LoginDto"];
+      };
     };
-    LedgerController_retrieveLedger_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Unique identifier of the ledger */
-                id: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Login successful */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description The ledger has been successfully retrieved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LedgerResponseDto"];
-                };
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Ledger not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          "application/json": components["schemas"]["LoginResponseDto"];
         };
+      };
+      /** @description Invalid credentials */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    LedgerController_updateLedger_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Unique identifier of the ledger to update */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateLedgerDto"];
-            };
-        };
-        responses: {
-            /** @description The ledger has been successfully updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LedgerResponseDto"];
-                };
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Ledger not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  AuthController_createKey_v1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    LedgerAccountController_listAccounts_v1: {
-        parameters: {
-            query?: {
-                /** @description Number of items per page */
-                limit?: number;
-                /** @description Return items that appear after the item identified by this cursor */
-                afterCursor?: string;
-                /** @description Return items that appear before the item identified by this cursor */
-                beforeCursor?: string;
-                /** @description Filter by ledger ID */
-                ledgerId?: string;
-                /** @description Filter by currency code */
-                currency?: string;
-                /** @description Filter by normal balance type */
-                normalBalance?: "credit" | "debit";
-                /** @description Search by account name, description, or external ID */
-                search?: string;
-                /** @description Filter by metadata key/value pairs using Stripe convention: ?metadata[key]=value */
-                metadata?: {
-                    [key: string]: string;
-                };
-                /** @description Cursor for pagination */
-                cursor?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The ledger accounts have been successfully retrieved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data?: components["schemas"]["LedgerAccountResponseDto"][];
-                        /**
-                         * @description Cursor for the next page
-                         * @example 01234567-89ab-cdef-0123-456789abcdef
-                         */
-                        nextCursor?: string;
-                        /**
-                         * @description Cursor for the previous page
-                         * @example 01234567-89ab-cdef-0123-456789abcdef
-                         */
-                        prevCursor?: string;
-                        /** @description Whether there are more items after this page */
-                        hasNext?: boolean;
-                        /** @description Whether there are more items before this page */
-                        hasPrev?: boolean;
-                    };
-                };
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateKeyDto"];
+      };
     };
-    LedgerAccountController_createLedgerAccount_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description Key created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateLedgerAccountDto"];
-            };
+        content: {
+          "application/json": components["schemas"]["KeyResponseDto"];
         };
-        responses: {
-            /** @description The ledger account has been successfully created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LedgerAccountResponseDto"];
-                };
-            };
-            /** @description Invalid input data */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+      };
     };
-    LedgerAccountController_retrieveLedgerAccount_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Unique identifier or externalId of the ledger account */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The ledger account has been successfully retrieved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LedgerAccountResponseDto"];
-                };
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Ledger account not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  AuthController_deleteKey_v1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    LedgerAccountController_updateLedgerAccount_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Unique identifier of the ledger account to update */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateLedgerAccountDto"];
-            };
-        };
-        responses: {
-            /** @description The ledger account has been successfully updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LedgerAccountResponseDto"];
-                };
-            };
-            /** @description Invalid input data */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Ledger account not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DeleteKeyDto"];
+      };
     };
-    CurrencyController_listCurrencies_v1: {
-        parameters: {
-            query?: {
-                /** @description Page number */
-                page?: number;
-                /** @description Number of items per page */
-                limit?: number;
-                /** @description Search currencies by code or name (partial match) */
-                search?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description Key deleted successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description The currencies have been successfully retrieved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data?: components["schemas"]["CurrencyResponseDto"][];
-                        /** @description Total number of currencies */
-                        total?: number;
-                        /** @description Current page number */
-                        page?: number;
-                        /** @description Items per page */
-                        limit?: number;
-                        /** @description Total number of pages */
-                        totalPages?: number;
-                    };
-                };
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+        content?: never;
+      };
     };
-    CurrencyController_createCurrency_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateCurrencyDto"];
-            };
-        };
-        responses: {
-            /** @description The currency has been successfully created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CurrencyResponseDto"];
-                };
-            };
-            /** @description Invalid input data or currency code already exists */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  LedgerController_listLedgers_v1: {
+    parameters: {
+      query?: {
+        /** @description Number of items per page */
+        limit?: number;
+        /** @description Return items that appear after the item identified by this cursor */
+        afterCursor?: string;
+        /** @description Return items that appear before the item identified by this cursor */
+        beforeCursor?: string;
+        /** @description Cursor for pagination */
+        cursor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    CurrencyController_getCurrency_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Currency code (e.g., USD, EUR) */
-                code: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description The ledgers have been successfully retrieved */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description The currency has been successfully retrieved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CurrencyResponseDto"];
-                };
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Currency not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          "application/json": {
+            data?: components["schemas"]["LedgerResponseDto"][];
+            /**
+             * @description Cursor for the next page
+             * @example 01234567-89ab-cdef-0123-456789abcdef
+             */
+            nextCursor?: string;
+            /**
+             * @description Cursor for the previous page
+             * @example 01234567-89ab-cdef-0123-456789abcdef
+             */
+            prevCursor?: string;
+            /** @description Whether there are more items after this page */
+            hasNext?: boolean;
+            /** @description Whether there are more items before this page */
+            hasPrev?: boolean;
+          };
         };
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    CurrencyController_deleteCurrency_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Currency code to delete */
-                code: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The currency has been successfully deleted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Currency is being used by ledger accounts and cannot be deleted */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Currency not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  LedgerController_createLedger_v1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    LedgerTransactionController_list_v1: {
-        parameters: {
-            query?: {
-                /** @description Number of items per page */
-                limit?: number;
-                /** @description Return items that appear after the item identified by this cursor */
-                afterCursor?: string;
-                /** @description Return items that appear before the item identified by this cursor */
-                beforeCursor?: string;
-                /** @description Filter by external ID */
-                externalId?: string;
-                /** @description Search by transaction description */
-                search?: string;
-                /** @description Filter by metadata key/value pairs using Stripe convention: ?metadata[key]=value */
-                metadata?: {
-                    [key: string]: string;
-                };
-                /** @description Cursor for pagination */
-                cursor?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The ledger transactions have been successfully retrieved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data?: components["schemas"]["LedgerTransactionResponseDto"][];
-                        /**
-                         * @description Cursor for the next page
-                         * @example 01234567-89ab-cdef-0123-456789abcdef
-                         */
-                        nextCursor?: string;
-                        /**
-                         * @description Cursor for the previous page
-                         * @example 01234567-89ab-cdef-0123-456789abcdef
-                         */
-                        prevCursor?: string;
-                        /** @description Whether there are more items after this page */
-                        hasNext?: boolean;
-                        /** @description Whether there are more items before this page */
-                        hasPrev?: boolean;
-                    };
-                };
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateLedgerDto"];
+      };
     };
-    LedgerTransactionController_create_v1: {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Unique key to prevent duplicate transactions */
-                "idempotency-key": string;
-            };
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description The ledger has been successfully created */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RecordLedgerTransactionDto"];
-            };
+        content: {
+          "application/json": components["schemas"]["LedgerResponseDto"];
         };
-        responses: {
-            /** @description The ledger transaction has been successfully created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LedgerTransactionResponseDto"];
-                };
-            };
-            /** @description Invalid input data */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      /** @description Invalid input data */
+      400: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    LedgerTransactionController_retrieve_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Unique identifier or externalId of the ledger transaction */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The ledger transaction has been successfully retrieved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LedgerTransactionResponseDto"];
-                };
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Ledger transaction not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  LedgerController_retrieveLedger_v1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Unique identifier of the ledger */
+        id: string;
+      };
+      cookie?: never;
     };
-    LedgerTransactionController_postPendingTransaction_v1: {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Unique key to prevent duplicate transactions */
-                "idempotency-key": string;
-            };
-            path: {
-                /** @description Unique identifier of the ledger transaction */
-                id: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description The ledger has been successfully retrieved */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description The ledger transaction has been successfully posted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LedgerTransactionResponseDto"];
-                };
-            };
-            /** @description Invalid input data */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          "application/json": components["schemas"]["LedgerResponseDto"];
         };
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ledger not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    LedgerTransactionController_archivePendingTransaction_v1: {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Unique key to prevent duplicate transactions */
-                "idempotency-key": string;
-            };
-            path: {
-                /** @description Unique identifier of the ledger transaction */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The ledger transaction has been successfully archived */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LedgerTransactionResponseDto"];
-                };
-            };
-            /** @description Invalid input data */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  LedgerController_updateLedger_v1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Unique identifier of the ledger to update */
+        id: string;
+      };
+      cookie?: never;
     };
-    LedgerEntryController_list_v1: {
-        parameters: {
-            query?: {
-                /** @description Number of items per page */
-                limit?: number;
-                /** @description Return items that appear after the item identified by this cursor */
-                afterCursor?: string;
-                /** @description Return items that appear before the item identified by this cursor */
-                beforeCursor?: string;
-                /** @description Filter by ledger ID */
-                ledgerId?: string;
-                /** @description Filter by transaction ID (native) */
-                transactionId?: string;
-                /** @description Filter by transaction external ID */
-                transactionExternalId?: string;
-                /** @description Filter by account ID (native) */
-                accountId?: string;
-                /** @description Filter by account external ID */
-                accountExternalId?: string;
-                /** @description Filter by direction (credit or debit) */
-                balanceDirection?: "credit" | "debit";
-                /** @description Cursor for pagination */
-                cursor?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The ledger entries have been successfully retrieved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data?: components["schemas"]["LedgerEntryStandaloneResponseDto"][];
-                        /**
-                         * @description Cursor for the next page
-                         * @example 01234567-89ab-cdef-0123-456789abcdef
-                         */
-                        nextCursor?: string;
-                        /**
-                         * @description Cursor for the previous page
-                         * @example 01234567-89ab-cdef-0123-456789abcdef
-                         */
-                        prevCursor?: string;
-                        /** @description Whether there are more items after this page */
-                        hasNext?: boolean;
-                        /** @description Whether there are more items before this page */
-                        hasPrev?: boolean;
-                    };
-                };
-            };
-            /** @description Invalid or missing API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateLedgerDto"];
+      };
     };
+    responses: {
+      /** @description The ledger has been successfully updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LedgerResponseDto"];
+        };
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ledger not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LedgerAccountController_listAccounts_v1: {
+    parameters: {
+      query?: {
+        /** @description Number of items per page */
+        limit?: number;
+        /** @description Return items that appear after the item identified by this cursor */
+        afterCursor?: string;
+        /** @description Return items that appear before the item identified by this cursor */
+        beforeCursor?: string;
+        /** @description Filter by ledger ID */
+        ledgerId?: string;
+        /** @description Filter by currency code */
+        currency?: string;
+        /** @description Filter by normal balance type */
+        normalBalance?: "credit" | "debit";
+        /** @description Search by account name, description, or external ID */
+        search?: string;
+        /** @description Filter by metadata key/value pairs using Stripe convention: ?metadata[key]=value */
+        metadata?: {
+          [key: string]: string;
+        };
+        /** @description Cursor for pagination */
+        cursor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The ledger accounts have been successfully retrieved */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data?: components["schemas"]["LedgerAccountResponseDto"][];
+            /**
+             * @description Cursor for the next page
+             * @example 01234567-89ab-cdef-0123-456789abcdef
+             */
+            nextCursor?: string;
+            /**
+             * @description Cursor for the previous page
+             * @example 01234567-89ab-cdef-0123-456789abcdef
+             */
+            prevCursor?: string;
+            /** @description Whether there are more items after this page */
+            hasNext?: boolean;
+            /** @description Whether there are more items before this page */
+            hasPrev?: boolean;
+          };
+        };
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LedgerAccountController_createLedgerAccount_v1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateLedgerAccountDto"];
+      };
+    };
+    responses: {
+      /** @description The ledger account has been successfully created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LedgerAccountResponseDto"];
+        };
+      };
+      /** @description Invalid input data */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LedgerAccountController_retrieveLedgerAccount_v1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Unique identifier or externalId of the ledger account */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The ledger account has been successfully retrieved */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LedgerAccountResponseDto"];
+        };
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ledger account not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LedgerAccountController_updateLedgerAccount_v1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Unique identifier of the ledger account to update */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateLedgerAccountDto"];
+      };
+    };
+    responses: {
+      /** @description The ledger account has been successfully updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LedgerAccountResponseDto"];
+        };
+      };
+      /** @description Invalid input data */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ledger account not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CurrencyController_listCurrencies_v1: {
+    parameters: {
+      query?: {
+        /** @description Page number */
+        page?: number;
+        /** @description Number of items per page */
+        limit?: number;
+        /** @description Search currencies by code or name (partial match) */
+        search?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The currencies have been successfully retrieved */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data?: components["schemas"]["CurrencyResponseDto"][];
+            /** @description Total number of currencies */
+            total?: number;
+            /** @description Current page number */
+            page?: number;
+            /** @description Items per page */
+            limit?: number;
+            /** @description Total number of pages */
+            totalPages?: number;
+          };
+        };
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CurrencyController_createCurrency_v1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateCurrencyDto"];
+      };
+    };
+    responses: {
+      /** @description The currency has been successfully created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CurrencyResponseDto"];
+        };
+      };
+      /** @description Invalid input data or currency code already exists */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CurrencyController_getCurrency_v1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Currency code (e.g., USD, EUR) */
+        code: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The currency has been successfully retrieved */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CurrencyResponseDto"];
+        };
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Currency not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CurrencyController_deleteCurrency_v1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Currency code to delete */
+        code: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The currency has been successfully deleted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Currency is being used by ledger accounts and cannot be deleted */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Currency not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LedgerTransactionController_list_v1: {
+    parameters: {
+      query?: {
+        /** @description Number of items per page */
+        limit?: number;
+        /** @description Return items that appear after the item identified by this cursor */
+        afterCursor?: string;
+        /** @description Return items that appear before the item identified by this cursor */
+        beforeCursor?: string;
+        /** @description Filter by external ID */
+        externalId?: string;
+        /** @description Search by transaction description */
+        search?: string;
+        /** @description Filter by metadata key/value pairs using Stripe convention: ?metadata[key]=value */
+        metadata?: {
+          [key: string]: string;
+        };
+        /** @description Cursor for pagination */
+        cursor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The ledger transactions have been successfully retrieved */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data?: components["schemas"]["LedgerTransactionResponseDto"][];
+            /**
+             * @description Cursor for the next page
+             * @example 01234567-89ab-cdef-0123-456789abcdef
+             */
+            nextCursor?: string;
+            /**
+             * @description Cursor for the previous page
+             * @example 01234567-89ab-cdef-0123-456789abcdef
+             */
+            prevCursor?: string;
+            /** @description Whether there are more items after this page */
+            hasNext?: boolean;
+            /** @description Whether there are more items before this page */
+            hasPrev?: boolean;
+          };
+        };
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LedgerTransactionController_create_v1: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description Unique key to prevent duplicate transactions */
+        "idempotency-key": string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RecordLedgerTransactionDto"];
+      };
+    };
+    responses: {
+      /** @description The ledger transaction has been successfully created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LedgerTransactionResponseDto"];
+        };
+      };
+      /** @description Invalid input data */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LedgerTransactionController_retrieve_v1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Unique identifier or externalId of the ledger transaction */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The ledger transaction has been successfully retrieved */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LedgerTransactionResponseDto"];
+        };
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ledger transaction not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LedgerTransactionController_postPendingTransaction_v1: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description Unique key to prevent duplicate transactions */
+        "idempotency-key": string;
+      };
+      path: {
+        /** @description Unique identifier of the ledger transaction */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The ledger transaction has been successfully posted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LedgerTransactionResponseDto"];
+        };
+      };
+      /** @description Invalid input data */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LedgerTransactionController_archivePendingTransaction_v1: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description Unique key to prevent duplicate transactions */
+        "idempotency-key": string;
+      };
+      path: {
+        /** @description Unique identifier of the ledger transaction */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The ledger transaction has been successfully archived */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LedgerTransactionResponseDto"];
+        };
+      };
+      /** @description Invalid input data */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LedgerEntryController_list_v1: {
+    parameters: {
+      query?: {
+        /** @description Number of items per page */
+        limit?: number;
+        /** @description Return items that appear after the item identified by this cursor */
+        afterCursor?: string;
+        /** @description Return items that appear before the item identified by this cursor */
+        beforeCursor?: string;
+        /** @description Filter by ledger ID */
+        ledgerId?: string;
+        /** @description Filter by transaction ID (native) */
+        transactionId?: string;
+        /** @description Filter by transaction external ID */
+        transactionExternalId?: string;
+        /** @description Filter by account ID (native) */
+        accountId?: string;
+        /** @description Filter by account external ID */
+        accountExternalId?: string;
+        /** @description Filter by direction (credit or debit) */
+        direction?: "credit" | "debit";
+        /** @description Cursor for pagination */
+        cursor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The ledger entries have been successfully retrieved */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data?: components["schemas"]["LedgerEntryStandaloneResponseDto"][];
+            /**
+             * @description Cursor for the next page
+             * @example 01234567-89ab-cdef-0123-456789abcdef
+             */
+            nextCursor?: string;
+            /**
+             * @description Cursor for the previous page
+             * @example 01234567-89ab-cdef-0123-456789abcdef
+             */
+            prevCursor?: string;
+            /** @description Whether there are more items after this page */
+            hasNext?: boolean;
+            /** @description Whether there are more items before this page */
+            hasPrev?: boolean;
+          };
+        };
+      };
+      /** @description Invalid or missing API key */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
 }
