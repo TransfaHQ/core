@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
-import { Observable, of } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { Observable, from, of, throwError } from 'rxjs';
+import { catchError, map, mergeMap } from 'rxjs/operators';
 
 import {
   BadRequestException,
@@ -21,8 +21,8 @@ export class IdempotencyInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest();
     const responseObj = context.switchToHttp().getResponse();
 
-    const idempotencyKey: string = request.headers['idempotency-key'];
-    const endpoint: string = request.originalUrl;
+    const idempotencyKey: string = String(request.headers['idempotency-key'] || '');
+    const endpoint: string = `${request.method} ${request.path}`;
 
     if (!idempotencyKey) {
       throw new BadRequestException(['Missing Idempotency-Key header']);
@@ -51,38 +51,42 @@ export class IdempotencyInterceptor implements NestInterceptor {
     responseObj.setHeader('X-Idempotency-Replayed', 'false');
 
     return next.handle().pipe(
-      tap(async (response) => {
+      mergeMap((response) => {
         const statusCode = responseObj.statusCode;
 
-        await this.db.kysely
-          .insertInto('idempotencyKeys')
-          .values({
-            externalId: idempotencyKey,
-            requestPayload: request.body ?? {},
-            responsePayload: response,
-            statusCode,
-            endpoint,
-          })
-          .execute();
-      }),
-
-      catchError(async (err) => {
-        const statusCode = typeof err.getStatus === 'function' ? err.getStatus() : 500;
-
-        if (statusCode >= 400 && statusCode < 500) {
-          await this.db.kysely
+        return from(
+          this.db.kysely
             .insertInto('idempotencyKeys')
             .values({
               externalId: idempotencyKey,
               requestPayload: request.body ?? {},
-              responsePayload: err.response,
+              responsePayload: response,
               statusCode,
               endpoint,
             })
-            .execute();
+            .execute(),
+        ).pipe(map(() => response));
+      }),
+
+      catchError((err) => {
+        const statusCode = typeof err.getStatus === 'function' ? err.getStatus() : 500;
+
+        if (statusCode >= 400 && statusCode < 500) {
+          return from(
+            this.db.kysely
+              .insertInto('idempotencyKeys')
+              .values({
+                externalId: idempotencyKey,
+                requestPayload: request.body ?? {},
+                responsePayload: err.getResponse?.() ?? err.response,
+                statusCode,
+                endpoint,
+              })
+              .execute(),
+          ).pipe(mergeMap(() => throwError(() => err)));
         }
 
-        throw err;
+        return throwError(() => err);
       }),
     );
   }

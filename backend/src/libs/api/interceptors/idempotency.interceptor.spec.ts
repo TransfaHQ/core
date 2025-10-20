@@ -25,6 +25,8 @@ describe('IdempotencyInterceptor', () => {
       headers: {},
       body: {},
       originalUrl: '/v1/test-endpoint',
+      method: 'POST',
+      path: '/v1/test-endpoint',
     };
 
     // Mock response object
@@ -164,7 +166,7 @@ describe('IdempotencyInterceptor', () => {
         requestPayload: { amount: 100, currency: 'USD' },
         responsePayload: { success: true, id: 'tx-123' },
         statusCode: 200,
-        endpoint: '/v1/test-endpoint',
+        endpoint: 'POST /v1/test-endpoint',
       });
     });
   });
@@ -177,7 +179,7 @@ describe('IdempotencyInterceptor', () => {
       // Existing response found with matching body
       const existingResponse = {
         externalId: 'test-key-123',
-        endpoint: '/v1/test-endpoint',
+        endpoint: 'POST /v1/test-endpoint',
         requestPayload: { amount: 100, currency: 'USD' },
         responsePayload: { success: true, id: 'tx-123' },
         statusCode: 201,
@@ -243,7 +245,7 @@ describe('IdempotencyInterceptor', () => {
       // Existing response found with different body
       const existingResponse = {
         externalId: 'test-key-123',
-        endpoint: '/v1/test-endpoint',
+        endpoint: 'POST /v1/test-endpoint',
         requestPayload: { amount: 100, currency: 'USD' }, // Original body
         responsePayload: { success: true, id: 'tx-123' },
         statusCode: 201,
@@ -285,7 +287,7 @@ describe('IdempotencyInterceptor', () => {
 
       const existingResponse = {
         externalId: 'test-key-123',
-        endpoint: '/v1/test-endpoint',
+        endpoint: 'POST /v1/test-endpoint',
         requestPayload: {
           amount: 100,
           currency: 'USD',
@@ -359,7 +361,7 @@ describe('IdempotencyInterceptor', () => {
         requestPayload: { amount: 100, currency: 'USD' },
         responsePayload: error.getResponse(),
         statusCode: 400,
-        endpoint: '/v1/test-endpoint',
+        endpoint: 'POST /v1/test-endpoint',
       });
     });
 
@@ -396,7 +398,7 @@ describe('IdempotencyInterceptor', () => {
 
       const existingResponse = {
         externalId: 'test-key-empty',
-        endpoint: '/v1/test-endpoint',
+        endpoint: 'POST /v1/test-endpoint',
         requestPayload: {},
         responsePayload: { success: true },
         statusCode: 200,
@@ -436,7 +438,7 @@ describe('IdempotencyInterceptor', () => {
 
       const existingResponse = {
         externalId: 'test-key-array',
-        endpoint: '/v1/test-endpoint',
+        endpoint: 'POST /v1/test-endpoint',
         requestPayload: { items: [1, 2, 3] },
         responsePayload: { success: true },
         statusCode: 200,
@@ -473,7 +475,7 @@ describe('IdempotencyInterceptor', () => {
 
       const existingResponse = {
         externalId: 'test-key-array-order',
-        endpoint: '/v1/test-endpoint',
+        endpoint: 'POST /v1/test-endpoint',
         requestPayload: { items: [1, 2, 3] }, // Original order
         responsePayload: { success: true },
         statusCode: 200,
