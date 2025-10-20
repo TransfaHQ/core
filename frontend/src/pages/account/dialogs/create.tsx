@@ -22,7 +22,9 @@ import {
 import { CurrencyCombobox } from "@/components/currency-combobox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { $api } from "@/lib/api/client";
+import { extractErrorMessage } from "@/lib/api/error-handler";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface FormData {
   name: string;
@@ -52,6 +54,7 @@ export function CreateAccountDialog() {
 
   const createAccount = $api.useMutation("post", "/v1/ledger_accounts", {
     onSuccess: () => {
+      toast.success("Account created successfully");
       setFormData({
         name: "",
         description: undefined,
@@ -64,6 +67,10 @@ export function CreateAccountDialog() {
       queryClient.invalidateQueries({
         queryKey: $api.queryOptions("get", "/v1/ledger_accounts").queryKey,
       });
+    },
+    onError: (error) => {
+      const message = extractErrorMessage(error);
+      toast.error(message);
     },
   });
 
@@ -182,7 +189,7 @@ export function CreateAccountDialog() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="currency">Currency</Label>
+                <Label htmlFor="currency">Currency *</Label>
                 <CurrencyCombobox
                   value={formData.currency}
                   onValueChange={handleSelectChange("currency")}
@@ -214,6 +221,7 @@ export function CreateAccountDialog() {
               disabled={
                 createAccount.isPending ||
                 !formData.name.trim() ||
+                !formData.currency.trim() ||
                 !formData.ledgerId
               }
             >

@@ -13,7 +13,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { $api } from "@/lib/api/client";
+import { extractErrorMessage } from "@/lib/api/error-handler";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { components } from "@/lib/api/generated/api-types";
 
 type LedgerAccountResponse = components["schemas"]["LedgerAccountResponseDto"];
@@ -55,6 +57,7 @@ export function EditAccountDialog({
 
   const updateAccount = $api.useMutation("patch", "/v1/ledger_accounts/{id}", {
     onSuccess: () => {
+      toast.success("Account updated successfully");
       setOpen(false);
       queryClient.invalidateQueries({
         queryKey: $api.queryOptions("get", "/v1/ledger_accounts").queryKey,
@@ -64,6 +67,10 @@ export function EditAccountDialog({
           params: { path: { id: account.id } },
         }).queryKey,
       });
+    },
+    onError: (error) => {
+      const message = extractErrorMessage(error);
+      toast.error(message);
     },
   });
 
