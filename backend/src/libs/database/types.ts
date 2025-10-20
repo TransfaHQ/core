@@ -51,6 +51,7 @@ export interface IdempotencyKeys {
   createdAt: Generated<Timestamp>;
   endpoint: string;
   externalId: string;
+  id: Generated<number>;
   requestPayload: Json;
   responsePayload: Json;
   statusCode: number;
