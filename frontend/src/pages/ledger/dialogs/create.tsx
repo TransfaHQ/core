@@ -13,7 +13,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { $api } from "@/lib/api/client";
+import { extractErrorMessage } from "@/lib/api/error-handler";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface FormData {
   name: string;
@@ -32,11 +34,16 @@ export function CreateLedgerDialog() {
 
   const createLedger = $api.useMutation("post", "/v1/ledgers", {
     onSuccess: () => {
+      toast.success("Ledger created successfully");
       setFormData({ name: "", description: undefined });
       setOpen(false);
       queryClient.invalidateQueries({
         queryKey: $api.queryOptions("get", "/v1/ledgers").queryKey,
       });
+    },
+    onError: (error) => {
+      const message = extractErrorMessage(error);
+      toast.error(message);
     },
   });
 

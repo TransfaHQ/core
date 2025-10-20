@@ -20,9 +20,11 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { $api } from "@/lib/api/client";
+import { extractErrorMessage } from "@/lib/api/error-handler";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface LedgerEntry {
   id: string;
@@ -109,6 +111,7 @@ export function CreateTransactionSheet() {
     "/v1/ledger_transactions",
     {
       onSuccess: () => {
+        toast.success("Transaction created successfully");
         setFormData({
           description: "",
           externalId: "",
@@ -126,6 +129,10 @@ export function CreateTransactionSheet() {
         queryClient.invalidateQueries({
           queryKey: $api.queryOptions("get", "/v1/ledger_entries").queryKey,
         });
+      },
+      onError: (error) => {
+        const message = extractErrorMessage(error);
+        toast.error(message);
       },
     }
   );
