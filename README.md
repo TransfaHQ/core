@@ -29,6 +29,11 @@ Transfa is an open-source ledger infrastructure platform designed for companies 
 - **📱 Dashboard**: Built-in management dashboard and tools
 - **🔐 Secure**: Industry-standard security practices and encryption
 
+## Demo
+
+[<img width="1848" height="1080" alt="image" src="https://github.com/user-attachments/assets/cb7f9fed-05b8-41ce-96e4-1833aa1246b7" />](https://screen.studio/share/OM6kHEyR)
+
+
 ## Table of Contents
 
 - [Local Development](#local-development)
