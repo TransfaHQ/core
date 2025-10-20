@@ -71,6 +71,19 @@ export function extractErrorMessage(error: unknown): string {
       const message =
         err.message || err.response?.data?.message || err.data?.message;
 
+      // Handle array of validation errors
+      if (Array.isArray(message)) {
+        return message.join("; ");
+      }
+
+      // Handle object of validation errors
+      if (message && typeof message === "object") {
+        const errors = Object.values(message as Record<string, string>);
+        if (errors.length > 0) {
+          return errors.join("; ");
+        }
+      }
+
       if (typeof message === "string") {
         return message;
       }
