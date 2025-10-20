@@ -463,6 +463,275 @@ describe('LedgerTransactionController', () => {
         ).toBeDefined();
       });
 
+      describe('Idempotency key validation', () => {
+        it('should return 409 when same idempotency key is used with different amount', async () => {
+          const idempotencyKey = uuidV7();
+          const data = {
+            description: 'test',
+            externalId: uuidV7(),
+            metadata: { test: 'test' },
+            ledgerEntries: [
+              {
+                sourceAccountId: eurDebitAccount.id,
+                destinationAccountId: eurCreditAccount.id,
+                amount: 10,
+              },
+            ],
+          };
+
+          // First request should succeed
+          await request(ctx.app.getHttpServer())
+            .post(endpoint)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+            .send(data)
+            .expect(HttpStatus.CREATED);
+
+          // Second request with different amount should fail with 409
+          data.ledgerEntries[0].amount = 20;
+          await request(ctx.app.getHttpServer())
+            .post(endpoint)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+            .send(data)
+            .expect(HttpStatus.CONFLICT)
+            .expect((response) => {
+              expect(response.body.message).toBe(
+                'Idempotency key already used with different request body',
+              );
+            });
+        });
+
+        it('should return 409 when same idempotency key is used with different ledger entries', async () => {
+          const idempotencyKey = uuidV7();
+          const data = {
+            description: 'test',
+            externalId: uuidV7(),
+            metadata: { test: 'test' },
+            ledgerEntries: [
+              {
+                sourceAccountId: eurDebitAccount.id,
+                destinationAccountId: eurCreditAccount.id,
+                amount: 10,
+              },
+            ],
+          };
+
+          // First request should succeed
+          await request(ctx.app.getHttpServer())
+            .post(endpoint)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+            .send(data)
+            .expect(HttpStatus.CREATED);
+
+          // Second request with different accounts should fail with 409
+          data.ledgerEntries[0].sourceAccountId = usdDebitAccount.id;
+          data.ledgerEntries[0].destinationAccountId = usdCreditAccount.id;
+          await request(ctx.app.getHttpServer())
+            .post(endpoint)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+            .send(data)
+            .expect(HttpStatus.CONFLICT)
+            .expect((response) => {
+              expect(response.body.message).toBe(
+                'Idempotency key already used with different request body',
+              );
+            });
+        });
+
+        it('should return 409 when same idempotency key is used with different metadata', async () => {
+          const idempotencyKey = uuidV7();
+          const data = {
+            description: 'test',
+            externalId: uuidV7(),
+            metadata: { test: 'original' },
+            ledgerEntries: [
+              {
+                sourceAccountId: eurDebitAccount.id,
+                destinationAccountId: eurCreditAccount.id,
+                amount: 10,
+              },
+            ],
+          };
+
+          // First request should succeed
+          await request(ctx.app.getHttpServer())
+            .post(endpoint)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+            .send(data)
+            .expect(HttpStatus.CREATED);
+
+          // Second request with different metadata should fail with 409
+          data.metadata.test = 'modified';
+          await request(ctx.app.getHttpServer())
+            .post(endpoint)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+            .send(data)
+            .expect(HttpStatus.CONFLICT)
+            .expect((response) => {
+              expect(response.body.message).toBe(
+                'Idempotency key already used with different request body',
+              );
+            });
+        });
+
+        it('should return 409 when same idempotency key is used with different description', async () => {
+          const idempotencyKey = uuidV7();
+          const data = {
+            description: 'original description',
+            externalId: uuidV7(),
+            metadata: { test: 'test' },
+            ledgerEntries: [
+              {
+                sourceAccountId: eurDebitAccount.id,
+                destinationAccountId: eurCreditAccount.id,
+                amount: 10,
+              },
+            ],
+          };
+
+          // First request should succeed
+          await request(ctx.app.getHttpServer())
+            .post(endpoint)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+            .send(data)
+            .expect(HttpStatus.CREATED);
+
+          // Second request with different description should fail with 409
+          data.description = 'modified description';
+          await request(ctx.app.getHttpServer())
+            .post(endpoint)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+            .send(data)
+            .expect(HttpStatus.CONFLICT)
+            .expect((response) => {
+              expect(response.body.message).toBe(
+                'Idempotency key already used with different request body',
+              );
+            });
+        });
+
+        it('should return 409 when same idempotency key is used with different effectiveAt', async () => {
+          const idempotencyKey = uuidV7();
+          const data = {
+            description: 'test',
+            externalId: uuidV7(),
+            metadata: { test: 'test' },
+            effectiveAt: '2025-01-10',
+            ledgerEntries: [
+              {
+                sourceAccountId: eurDebitAccount.id,
+                destinationAccountId: eurCreditAccount.id,
+                amount: 10,
+              },
+            ],
+          };
+
+          // First request should succeed
+          await request(ctx.app.getHttpServer())
+            .post(endpoint)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+            .send(data)
+            .expect(HttpStatus.CREATED);
+
+          // Second request with different effectiveAt should fail with 409
+          data.effectiveAt = '2025-01-15';
+          await request(ctx.app.getHttpServer())
+            .post(endpoint)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+            .send(data)
+            .expect(HttpStatus.CONFLICT)
+            .expect((response) => {
+              expect(response.body.message).toBe(
+                'Idempotency key already used with different request body',
+              );
+            });
+        });
+
+        it('should successfully replay when same key used with identical body', async () => {
+          const idempotencyKey = uuidV7();
+          const data = {
+            description: 'test',
+            externalId: uuidV7(),
+            metadata: { test: 'test', another: 'value' },
+            effectiveAt: '2025-01-10',
+            ledgerEntries: [
+              {
+                sourceAccountId: eurDebitAccount.id,
+                destinationAccountId: eurCreditAccount.id,
+                amount: 10,
+              },
+            ],
+          };
+
+          let firstResponse: any;
+
+          // First request should succeed
+          await request(ctx.app.getHttpServer())
+            .post(endpoint)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+            .send(data)
+            .expect(HttpStatus.CREATED)
+            .expect((response) => {
+              firstResponse = response.body;
+              expect(response.headers['x-idempotency-replayed']).toBe('false');
+            });
+
+          // Second request with exact same data should replay successfully
+          await request(ctx.app.getHttpServer())
+            .post(endpoint)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey))
+            .send(data)
+            .expect(HttpStatus.CREATED)
+            .expect((response) => {
+              expect(response.headers['x-idempotency-replayed']).toBe('true');
+              expect(response.body.id).toBe(firstResponse.id);
+              expect(response.body.externalId).toBe(firstResponse.externalId);
+            });
+        });
+
+        it('should allow different idempotency keys with different request bodies', async () => {
+          const idempotencyKey1 = uuidV7();
+          const idempotencyKey2 = uuidV7();
+          const data1 = {
+            description: 'test 1',
+            externalId: uuidV7(),
+            metadata: { test: 'test1' },
+            ledgerEntries: [
+              {
+                sourceAccountId: eurDebitAccount.id,
+                destinationAccountId: eurCreditAccount.id,
+                amount: 10,
+              },
+            ],
+          };
+
+          const data2 = {
+            description: 'test 2',
+            externalId: uuidV7(),
+            metadata: { test: 'test2' },
+            ledgerEntries: [
+              {
+                sourceAccountId: eurDebitAccount.id,
+                destinationAccountId: eurCreditAccount.id,
+                amount: 20,
+              },
+            ],
+          };
+
+          // Both requests should succeed with different idempotency keys
+          await request(ctx.app.getHttpServer())
+            .post(endpoint)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey1))
+            .send(data1)
+            .expect(HttpStatus.CREATED);
+
+          await request(ctx.app.getHttpServer())
+            .post(endpoint)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret, idempotencyKey2))
+            .send(data2)
+            .expect(HttpStatus.CREATED);
+        });
+      });
+
       it('should create a transaction with pending status', async () => {
         // fetch account and its balances
         const eurDebitAccountResponse = await request(ctx.app.getHttpServer())

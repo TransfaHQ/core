@@ -1,9 +1,11 @@
+import { isDeepStrictEqual } from 'node:util';
 import { Observable, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
 import {
   BadRequestException,
   CallHandler,
+  ConflictException,
   ExecutionContext,
   Injectable,
   NestInterceptor,
@@ -35,6 +37,13 @@ export class IdempotencyInterceptor implements NestInterceptor {
       .executeTakeFirst();
 
     if (existingResponse) {
+      const currentRequestPayload = request.body ?? {};
+      const storedRequestPayload = existingResponse.requestPayload;
+
+      if (!isDeepStrictEqual(currentRequestPayload, storedRequestPayload)) {
+        throw new ConflictException('Idempotency key already used with different request body');
+      }
+
       responseObj.status(existingResponse.statusCode);
       responseObj.setHeader('X-Idempotency-Replayed', 'true');
       return of(existingResponse.responsePayload);

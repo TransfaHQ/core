@@ -53,8 +53,8 @@ export class LedgerEntryStandaloneResponseDto {
   updatedAt: Date;
 
   @ApiProperty({
-    description: 'Amount for the ledger entry (in smallest currency unit)',
-    example: 1000,
+    description: 'Amount for the ledger entry',
+    example: 10,
   })
   amount: number;
 

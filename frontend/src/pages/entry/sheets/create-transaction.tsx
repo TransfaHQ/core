@@ -361,7 +361,7 @@ export function CreateTransactionSheet() {
                     )}
                   </div>
 
-                  <div className=" flex gap-x-4">
+                  <div className=" flex gap-4 flex-wrap">
                     <div className="space-y-2">
                       <Label htmlFor={`source-${entry.id}`}>
                         Source Account *
