@@ -23,6 +23,18 @@ export const ConfigSchema = DBConfigSchema.extend({
     .string()
     .transform((v) => v.split(',').map((s) => s.trim()))
     .refine((arr) => arr.length > 0, { message: 'Must have at least one item' }),
+  // Secondary TigerBeetle cluster for dual-write (optional)
+  TIGER_BEETLE_SECONDARY_CLUSTER_ID: z.string().transform(BigInt).optional(),
+  TIGER_BEETLE_SECONDARY_REPLICAS_ADDRESSES: z
+    .string()
+    .transform((v) => v.split(',').map((s) => s.trim()))
+    .refine((arr) => arr.length > 0, { message: 'Must have at least one item' })
+    .optional(),
+  // Enable dual-write to both primary and secondary clusters
+  TIGER_BEETLE_DUAL_WRITE_ENABLED: z
+    .string()
+    .transform((v) => v === 'true')
+    .default('false'),
 });
 
 export type EnvConfig = z.infer<typeof ConfigSchema>;

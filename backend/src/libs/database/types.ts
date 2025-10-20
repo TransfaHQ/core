@@ -159,6 +159,45 @@ export interface LedgerTransactions {
   updatedAt: Generated<Timestamp>;
 }
 
+export interface TigerbeetleAccounts {
+  accountId: Buffer;
+  code: number;
+  createdAt: Generated<Timestamp>;
+  creditsPosted: Generated<string>;
+  creditsPending: Generated<string>;
+  debitsPosted: Generated<string>;
+  debitsPending: Generated<string>;
+  flags: number;
+  id: Generated<string>;
+  ledger: number;
+  ledgerAccountId: string | null;
+  timestamp: string | null;
+  updatedAt: Generated<Timestamp>;
+  userData128: Buffer | null;
+  userData64: string | null;
+  userData32: number | null;
+}
+
+export interface TigerbeetleTransfers {
+  amount: Generated<string>;
+  code: number;
+  createdAt: Generated<Timestamp>;
+  creditAccountId: Buffer;
+  debitAccountId: Buffer;
+  flags: number;
+  id: Generated<string>;
+  ledger: number;
+  ledgerEntryId: string | null;
+  pendingId: Buffer | null;
+  timeout: string | null;
+  timestamp: string | null;
+  transferId: Buffer;
+  updatedAt: Generated<Timestamp>;
+  userData128: Buffer | null;
+  userData64: string | null;
+  userData32: number | null;
+}
+
 export interface Users {
   createdAt: Generated<Timestamp | null>;
   deletedAt: Timestamp | null;
@@ -182,5 +221,7 @@ export interface DB {
   ledgers: Ledgers;
   ledgerTransactionMetadata: LedgerTransactionMetadata;
   ledgerTransactions: LedgerTransactions;
+  tigerbeetleAccounts: TigerbeetleAccounts;
+  tigerbeetleTransfers: TigerbeetleTransfers;
   users: Users;
 }

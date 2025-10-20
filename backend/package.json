@@ -22,7 +22,8 @@
     "db:generate": "ts-node --files -r tsconfig-paths/register scripts/db/generate.ts",
     "tb:start:dev": "scripts/tigerbeetle/start.sh 0_0_transfa_dev",
     "tb:configure:dev": "scripts/tigerbeetle/configure.sh 0_0_transfa_dev",
-    "tb:download": "scripts/tigerbeetle/download.sh"
+    "tb:download": "scripts/tigerbeetle/download.sh",
+    "tb:migrate": "ts-node --files -r tsconfig-paths/register scripts/tigerbeetle/migrate.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

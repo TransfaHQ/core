@@ -38,6 +38,23 @@ export class ConfigService {
     };
   }
 
+  get tigerBeetleSecondaryConfigs(): { cluster_id: bigint; replica_addresses: string[] } | null {
+    if (
+      this.envConfig.TIGER_BEETLE_SECONDARY_CLUSTER_ID &&
+      this.envConfig.TIGER_BEETLE_SECONDARY_REPLICAS_ADDRESSES
+    ) {
+      return {
+        cluster_id: this.envConfig.TIGER_BEETLE_SECONDARY_CLUSTER_ID,
+        replica_addresses: this.envConfig.TIGER_BEETLE_SECONDARY_REPLICAS_ADDRESSES,
+      };
+    }
+    return null;
+  }
+
+  get tigerBeetleDualWriteEnabled(): boolean {
+    return this.envConfig.TIGER_BEETLE_DUAL_WRITE_ENABLED;
+  }
+
   get adminSecret(): string {
     return this.envConfig.ADMIN_SECRET;
   }
