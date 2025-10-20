@@ -27,17 +27,11 @@ export class IdempotencyInterceptor implements NestInterceptor {
       .selectFrom('idempotencyKeys')
       .selectAll()
       .where('externalId', '=', idempotencyKey)
+      .where('endpoint', '=', endpoint)
       .executeTakeFirst();
 
     if (!existingResponse) {
       throw new Error('Expected existing idempotency record but found none');
-    }
-
-    // Validate endpoint matches (defensive check since external_id is globally unique)
-    if (existingResponse.endpoint !== endpoint) {
-      throw new ConflictException(
-        `Idempotency key already used for different endpoint: ${existingResponse.endpoint}`,
-      );
     }
 
     // Validate payload matches
@@ -64,10 +58,11 @@ export class IdempotencyInterceptor implements NestInterceptor {
       .selectFrom('idempotencyKeys')
       .selectAll()
       .where('externalId', '=', idempotencyKey)
+      .where('endpoint', '=', endpoint)
       .executeTakeFirst();
 
     if (existingResponse) {
-      // Validate endpoint and payload match
+      // Validate payload match
       await this.handleExistingRecord(idempotencyKey, request.body ?? {}, endpoint);
 
       responseObj.status(existingResponse.statusCode);

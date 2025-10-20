@@ -28,10 +28,9 @@ services:
   # NOTE: TigerBeetle should be deployed separately in production
   # See guides/TIGERBEETLE.md for deployment guidance
   backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    image: ghcr.io/transfahq/transfa-api:latest
     container_name: transfa-api
+    env_file: .env.backend
     environment:
       # Database
       DB_HOST: postgres
@@ -43,23 +42,6 @@ services:
       DB_MIGRATIONS_TABLE: ${DB_MIGRATIONS_TABLE:-core_migrations}
       DB_ENABLE_LOGGING: ${DB_ENABLE_LOGGING:-false}
 
-      # TigerBeetle (External deployment required)
-      # Set this to your TigerBeetle cluster addresses
-      # Format: host1:port1,host2:port2,host3:port3
-      TIGER_BEETLE_CLUSTER_ID: ${TIGER_BEETLE_CLUSTER_ID:-0}
-      TIGER_BEETLE_REPLICAS_ADDRESSES: ${TIGER_BEETLE_REPLICAS_ADDRESSES:-tigerbeetle:3000}
-
-      # Authentication
-      ADMIN_SECRET: ${ADMIN_SECRET:-your_admin_secret_change_in_production}
-      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_change_in_production}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
-
-      # CORS Configuration
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3001}
-
-      # Application
-      PORT: 3000
-      NODE_ENV: production
     ports:
       - "3000:3000"
     depends_on:
@@ -69,22 +51,20 @@ services:
       - transfa-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-
+    security_opt:
+      - "seccomp=unconfined"
   # Frontend
   frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
+    image: ghcr.io/transfahq/transfa-web:latest
     container_name: transfa-web
-    environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+    env_file: .env.frontend
     ports:
-      - "5173:8080"
+      - "8080:8080"
     depends_on:
       - backend
     networks:
