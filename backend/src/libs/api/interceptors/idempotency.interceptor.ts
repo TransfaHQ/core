@@ -33,7 +33,6 @@ export class IdempotencyInterceptor implements NestInterceptor {
       .selectFrom('idempotencyKeys')
       .selectAll()
       .where('externalId', '=', idempotencyKey)
-      .where('endpoint', '=', endpoint)
       .executeTakeFirst();
 
     if (existingResponse) {
