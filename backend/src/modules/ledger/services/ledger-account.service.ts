@@ -1,5 +1,5 @@
 import BigNumber from 'bignumber.js';
-import { Selectable } from 'kysely';
+import { Selectable, Transaction } from 'kysely';
 import { Account, AccountFlags, Account as TigerBeetleAccount, id } from 'tigerbeetle-node';
 import { validate } from 'uuid';
 
@@ -7,11 +7,12 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 
 import { CursorPaginatedResult, CursorPaginationRequest, cursorPaginate } from '@libs/database';
 import { DatabaseService } from '@libs/database/database.service';
-import { LedgerAccounts } from '@libs/database/types';
+import { DB, LedgerAccounts } from '@libs/database/types';
 import { bufferToTbId, tbIdToBuffer } from '@libs/database/utils';
 import { NormalBalanceEnum } from '@libs/enums';
 import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
 import { generateDeterministicId } from '@libs/utils/id';
+import { uuidV7 } from '@libs/utils/uuid';
 
 import { CreateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/create-ledger-account.dto';
 import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/update-ledger-account.dto';
@@ -26,7 +27,8 @@ export class LedgerAccountService {
   ) {}
 
   async createLedgerAccount(data: CreateLedgerAccountDto): Promise<LedgerAccount> {
-    return this.db.transaction(async (trx) => {
+    const accountId = uuidV7();
+    await this.db.transaction(async (trx) => {
       const ledger = await trx
         .selectFrom('ledgers')
         .where('id', '=', data.ledgerId)
@@ -50,11 +52,12 @@ export class LedgerAccountService {
           normalBalance: data.normalBalance,
           tigerBeetleId: tbIdToBuffer(id()),
           currencyExponent: currency.exponent,
+          id: accountId,
         })
         .returningAll()
         .executeTakeFirstOrThrow();
 
-      const metadata = await Promise.all(
+      await Promise.all(
         Object.entries(data.metadata ?? {}).map(async ([key, value]) => {
           const data = {
             ledgerAccountId: account.id,
@@ -70,7 +73,7 @@ export class LedgerAccountService {
       );
 
       // Create account on tigerbeetle and save it
-      const tbAccount = await this.tigerBeetleService.createAccount({
+      await this.tigerBeetleService.createAccount({
         id: bufferToTbId(account.tigerBeetleId),
         debits_pending: 0n,
         credits_pending: 0n,
@@ -89,13 +92,12 @@ export class LedgerAccountService {
         code: currency.id,
       });
 
-      const balances = this.parseAccountBalanceFromTBAccount(account, tbAccount);
-      return {
-        ...account,
-        metadata,
-        balances,
-      };
+      if (data.minBalanceLimit != null || data.maxBalanceLimit != null) {
+        await this.setBalanceLimits(account.id, data.maxBalanceLimit, data.minBalanceLimit, trx);
+      }
     });
+
+    return this.retrieveLedgerAccount(accountId);
   }
 
   async retrieveLedgerAccount(id: string): Promise<LedgerAccount> {
@@ -351,10 +353,11 @@ export class LedgerAccountService {
     ledgerAccountId: string,
     maxBalanceLimit: number | null,
     minBalanceLimit: number | null,
+    trx?: Transaction<DB>,
   ): Promise<void> {
     if (minBalanceLimit == null && maxBalanceLimit == null) return;
-
-    const ledgerAccount = await this.db.kysely
+    const db = trx ?? this.db.kysely;
+    const ledgerAccount = await db
       .selectFrom('ledgerAccounts as la')
       .innerJoin('ledgers as l', 'l.id', 'la.ledgerId')
       .innerJoin('currencies as c', 'c.code', 'la.currencyCode')
@@ -474,7 +477,7 @@ export class LedgerAccountService {
     // If this fails no update will happen
     if (tbAccountsData.length > 0) await this.tigerBeetleService.createAccounts(tbAccountsData);
 
-    await this.db.kysely
+    await db
       .updateTable('ledgerAccounts')
       .set({
         boundCheckAccountTigerBeetleId: ledgerAccount.boundCheckAccountTigerBeetleId,
