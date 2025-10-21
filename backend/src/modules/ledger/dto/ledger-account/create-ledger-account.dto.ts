@@ -1,11 +1,13 @@
 import {
   IsEnum,
   IsNotEmpty,
+  IsNumber,
   IsObject,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
 
@@ -90,4 +92,26 @@ export class CreateLedgerAccountDto {
   @MinLength(1)
   @MaxLength(180)
   externalId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Max available balance on the account.',
+    example: 1_000_000,
+    nullable: true,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  maxBalanceLimit: number | null;
+
+  @ApiPropertyOptional({
+    description: 'Min available balance on the account.',
+    example: 100_000,
+    nullable: true,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minBalanceLimit: number | null;
 }

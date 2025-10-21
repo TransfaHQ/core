@@ -12,6 +12,7 @@ import { bufferToTbId, tbIdToBuffer } from '@libs/database/utils';
 import { NormalBalanceEnum } from '@libs/enums';
 import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
 import { generateDeterministicId } from '@libs/utils/id';
+import { uuidV7 } from '@libs/utils/uuid';
 
 import { CreateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/create-ledger-account.dto';
 import { UpdateLedgerAccountDto } from '@modules/ledger/dto/ledger-account/update-ledger-account.dto';
@@ -26,7 +27,18 @@ export class LedgerAccountService {
   ) {}
 
   async createLedgerAccount(data: CreateLedgerAccountDto): Promise<LedgerAccount> {
-    return this.db.transaction(async (trx) => {
+    const accountId = uuidV7();
+    if (
+      data.minBalanceLimit != null &&
+      data.maxBalanceLimit != null &&
+      BigNumber(data.minBalanceLimit).gt(BigNumber(data.maxBalanceLimit))
+    ) {
+      throw new BadRequestException(
+        'minBalanceLimit should be less than or equal to maxBalanceLimit.',
+      );
+    }
+
+    await this.db.transaction(async (trx) => {
       const ledger = await trx
         .selectFrom('ledgers')
         .where('id', '=', data.ledgerId)
@@ -50,27 +62,23 @@ export class LedgerAccountService {
           normalBalance: data.normalBalance,
           tigerBeetleId: tbIdToBuffer(id()),
           currencyExponent: currency.exponent,
+          id: accountId,
         })
         .returningAll()
         .executeTakeFirstOrThrow();
 
-      const metadata = await Promise.all(
-        Object.entries(data.metadata ?? {}).map(async ([key, value]) => {
-          const data = {
-            ledgerAccountId: account.id,
-            key,
-            value,
-          };
-          await trx.insertInto('ledgerAccountMetadata').values(data).executeTakeFirstOrThrow();
-          return {
-            key,
-            value,
-          };
-        }),
-      );
+      const metadata = Object.entries(data.metadata ?? {}).map(([key, value]) => ({
+        ledgerAccountId: account.id,
+        key,
+        value,
+      }));
+
+      if (metadata.length) {
+        await trx.insertInto('ledgerAccountMetadata').values(metadata).execute();
+      }
 
       // Create account on tigerbeetle and save it
-      const tbAccount = await this.tigerBeetleService.createAccount(
+      await this.tigerBeetleService.createAccount(
         {
           id: bufferToTbId(account.tigerBeetleId),
           debits_pending: 0n,
@@ -91,14 +99,13 @@ export class LedgerAccountService {
         },
         { trx, ledgerAccountId: account.id },
       );
-
-      const balances = this.parseAccountBalanceFromTBAccount(account, tbAccount);
-      return {
-        ...account,
-        metadata,
-        balances,
-      };
     });
+
+    if (data.minBalanceLimit != null || data.maxBalanceLimit != null) {
+      await this.setBalanceLimits(accountId, data.maxBalanceLimit, data.minBalanceLimit);
+    }
+
+    return this.retrieveLedgerAccount(accountId);
   }
 
   async retrieveLedgerAccount(id: string): Promise<LedgerAccount> {
@@ -356,7 +363,6 @@ export class LedgerAccountService {
     minBalanceLimit: number | null,
   ): Promise<void> {
     if (minBalanceLimit == null && maxBalanceLimit == null) return;
-
     const ledgerAccount = await this.db.kysely
       .selectFrom('ledgerAccounts as la')
       .innerJoin('ledgers as l', 'l.id', 'la.ledgerId')
@@ -391,7 +397,9 @@ export class LedgerAccountService {
     }
 
     if (minLimit != null && maxLimit != null && BigNumber(minLimit).gt(BigNumber(maxLimit))) {
-      throw new BadRequestException('minBalanceLimit should lower than equal to maxBalanceLimit.');
+      throw new BadRequestException(
+        'minBalanceLimit should be less than or equal to maxBalanceLimit.',
+      );
     }
 
     // We need to create control & operator account
@@ -417,7 +425,7 @@ export class LedgerAccountService {
 
     const tbAccountsData: Account[] = [];
 
-    const boundCheckAcountNormalBalance =
+    const boundCheckAccountNormalBalance =
       ledgerAccount.normalBalance === NormalBalanceEnum.CREDIT
         ? AccountFlags.credits_must_not_exceed_debits
         : AccountFlags.debits_must_not_exceed_credits;
@@ -425,7 +433,7 @@ export class LedgerAccountService {
     const isBoundCheckAccountExists = existingTbAccountIds.some((tbAccount) => {
       return (
         tbAccount.id === boundCheckAccountTigerBeetleId &&
-        tbAccount.flags === boundCheckAcountNormalBalance &&
+        tbAccount.flags === boundCheckAccountNormalBalance &&
         tbAccount.ledger === ledgerAccount.ledgerTigerBeetleId &&
         tbAccount.code === ledgerAccount.currencyId
       );
@@ -444,7 +452,7 @@ export class LedgerAccountService {
         reserved: 0,
         ledger: ledgerAccount.ledgerTigerBeetleId,
         code: ledgerAccount.currencyId,
-        flags: boundCheckAcountNormalBalance,
+        flags: boundCheckAccountNormalBalance,
         timestamp: 0n,
       });
     }

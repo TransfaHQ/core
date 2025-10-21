@@ -83,10 +83,18 @@ export class LedgerAccountResponseDto {
   @IsString()
   externalId: string | null;
 
-  @ApiProperty({ description: 'Max available balance on the account.', example: 1_000_000 })
+  @ApiProperty({
+    description: 'Max available balance on the account.',
+    example: 1_000_000,
+    nullable: true,
+  })
   maxBalanceLimit: number | null;
 
-  @ApiProperty({ description: 'Min available balance on the account.', example: 100_000 })
+  @ApiProperty({
+    description: 'Min available balance on the account.',
+    example: 100_000,
+    nullable: true,
+  })
   minBalanceLimit: number | null;
 
   @ApiProperty({ type: LedgerAccountBalancesDto, description: 'Balances of the ledger account' })
