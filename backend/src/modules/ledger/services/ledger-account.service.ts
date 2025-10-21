@@ -1,5 +1,5 @@
 import BigNumber from 'bignumber.js';
-import { Selectable, Transaction } from 'kysely';
+import { Selectable } from 'kysely';
 import { Account, AccountFlags, Account as TigerBeetleAccount, id } from 'tigerbeetle-node';
 import { validate } from 'uuid';
 
@@ -7,7 +7,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 
 import { CursorPaginatedResult, CursorPaginationRequest, cursorPaginate } from '@libs/database';
 import { DatabaseService } from '@libs/database/database.service';
-import { DB, LedgerAccounts } from '@libs/database/types';
+import { LedgerAccounts } from '@libs/database/types';
 import { bufferToTbId, tbIdToBuffer } from '@libs/database/utils';
 import { NormalBalanceEnum } from '@libs/enums';
 import { TigerBeetleService } from '@libs/tigerbeetle/tigerbeetle.service';
@@ -28,6 +28,16 @@ export class LedgerAccountService {
 
   async createLedgerAccount(data: CreateLedgerAccountDto): Promise<LedgerAccount> {
     const accountId = uuidV7();
+    if (
+      data.minBalanceLimit != null &&
+      data.maxBalanceLimit != null &&
+      BigNumber(data.minBalanceLimit).gt(BigNumber(data.maxBalanceLimit))
+    ) {
+      throw new BadRequestException(
+        'minBalanceLimit should be less than or equal to maxBalanceLimit.',
+      );
+    }
+
     await this.db.transaction(async (trx) => {
       const ledger = await trx
         .selectFrom('ledgers')
@@ -86,11 +96,11 @@ export class LedgerAccountService {
         user_data_32: account.normalBalance === NormalBalanceEnum.CREDIT ? 1 : 0, // account normal balance
         code: currency.id,
       });
-
-      if (data.minBalanceLimit != null || data.maxBalanceLimit != null) {
-        await this.setBalanceLimits(account.id, data.maxBalanceLimit, data.minBalanceLimit, trx);
-      }
     });
+
+    if (data.minBalanceLimit != null || data.maxBalanceLimit != null) {
+      await this.setBalanceLimits(accountId, data.maxBalanceLimit, data.minBalanceLimit);
+    }
 
     return this.retrieveLedgerAccount(accountId);
   }
@@ -348,11 +358,9 @@ export class LedgerAccountService {
     ledgerAccountId: string,
     maxBalanceLimit: number | null,
     minBalanceLimit: number | null,
-    trx?: Transaction<DB>,
   ): Promise<void> {
     if (minBalanceLimit == null && maxBalanceLimit == null) return;
-    const db = trx ?? this.db.kysely;
-    const ledgerAccount = await db
+    const ledgerAccount = await this.db.kysely
       .selectFrom('ledgerAccounts as la')
       .innerJoin('ledgers as l', 'l.id', 'la.ledgerId')
       .innerJoin('currencies as c', 'c.code', 'la.currencyCode')
@@ -474,7 +482,7 @@ export class LedgerAccountService {
     // If this fails no update will happen
     if (tbAccountsData.length > 0) await this.tigerBeetleService.createAccounts(tbAccountsData);
 
-    await db
+    await this.db.kysely
       .updateTable('ledgerAccounts')
       .set({
         boundCheckAccountTigerBeetleId: ledgerAccount.boundCheckAccountTigerBeetleId,
