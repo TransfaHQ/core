@@ -12,9 +12,9 @@ export interface CreateTigerbeetleAccountData {
   debitsPending: bigint;
   creditsPosted: bigint;
   creditsPending: bigint;
-  userData_128?: bigint;
-  userData_64?: bigint;
-  userData_32?: number;
+  userData128?: bigint;
+  userData64?: bigint;
+  userData32?: number;
   ledger: number;
   code: number;
   flags: number;
@@ -40,9 +40,9 @@ export class TigerbeetleAccountRepository {
         debitsPending: tbIdToBuffer(data.debitsPending),
         creditsPosted: tbIdToBuffer(data.creditsPosted),
         creditsPending: tbIdToBuffer(data.creditsPending),
-        userData128: data.userData_128 ? tbIdToBuffer(data.userData_128) : null,
-        userData64: data.userData_64 ? tbIdToBuffer(data.userData_64) : null,
-        userData32: data.userData_32 || null,
+        userData128: data.userData128 ? tbIdToBuffer(data.userData128) : null,
+        userData64: data.userData64 ? tbIdToBuffer(data.userData64) : null,
+        userData32: data.userData32 || null,
         ledger: data.ledger,
         code: data.code,
         flags: data.flags,
@@ -69,9 +69,9 @@ export class TigerbeetleAccountRepository {
       debitsPending: tbIdToBuffer(data.debitsPending),
       creditsPosted: tbIdToBuffer(data.creditsPosted),
       creditsPending: tbIdToBuffer(data.creditsPending),
-      userData128: data.userData_128 ? tbIdToBuffer(data.userData_128) : null,
-      userData64: data.userData_64 ? tbIdToBuffer(data.userData_64) : null,
-      userData32: data.userData_32 || null,
+      userData128: data.userData128 ? tbIdToBuffer(data.userData128) : null,
+      userData64: data.userData64 ? tbIdToBuffer(data.userData64) : null,
+      userData32: data.userData32 || null,
       ledger: data.ledger,
       code: data.code,
       flags: data.flags,

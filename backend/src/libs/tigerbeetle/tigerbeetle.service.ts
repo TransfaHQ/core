@@ -26,7 +26,6 @@ import {
 @Injectable()
 export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
   private client: ReturnType<typeof createClient>;
-  private secondaryClient: ReturnType<typeof createClient> | null = null;
 
   constructor(
     private readonly configService: ConfigService,
@@ -42,7 +41,6 @@ export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
 
   onModuleDestroy() {
     if (this.client) this.client.destroy();
-    if (this.secondaryClient) this.secondaryClient.destroy();
   }
 
   async createAccount(
@@ -100,7 +98,7 @@ export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
       throw new TigerBeetleTransferException('ledgerEntries', errors);
     }
 
-    await this.storeTransfersInDB(data, options?.trx, options?.ledgerEntryIds);
+    await this.storeTransfersInDB(data, options?.trx);
 
     return this.client.lookupTransfers(data.map((v) => v.id));
   }
@@ -125,9 +123,6 @@ export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
     return this.client.lookupTransfers(ids.map((i) => bufferToTbId(i)));
   }
 
-  /**
-   * Store a single account in the database
-   */
   private async storeAccountInDB(
     account: Account,
     trx?: Transaction<DB>,
@@ -139,9 +134,9 @@ export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
       debitsPending: account.debits_pending,
       creditsPosted: account.credits_posted,
       creditsPending: account.credits_pending,
-      userData_128: account.user_data_128,
-      userData_64: account.user_data_64,
-      userData_32: account.user_data_32,
+      userData128: account.user_data_128,
+      userData64: account.user_data_64,
+      userData32: account.user_data_32,
       ledger: account.ledger,
       code: account.code,
       flags: account.flags,
@@ -152,9 +147,6 @@ export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
     await this.accountRepository.createAccount(accountData, trx);
   }
 
-  /**
-   * Store multiple accounts in the database
-   */
   private async storeAccountsInDB(
     accounts: Account[],
     trx?: Transaction<DB>,
@@ -183,14 +175,7 @@ export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
     await this.accountRepository.createAccounts(accountsData, trx);
   }
 
-  /**
-   * Store multiple transfers in the database
-   */
-  private async storeTransfersInDB(
-    transfers: Transfer[],
-    trx?: Transaction<DB>,
-    ledgerEntryIds?: string[],
-  ): Promise<void> {
+  private async storeTransfersInDB(transfers: Transfer[], trx?: Transaction<DB>): Promise<void> {
     if (transfers.length === 0) {
       return;
     }
