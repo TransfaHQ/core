@@ -32,7 +32,7 @@ export class DatabaseService implements OnModuleDestroy {
     });
     this._client = new Kysely({
       dialect,
-      plugins: [new CamelCasePlugin()],
+      plugins: [new CamelCasePlugin({ underscoreBeforeDigits: true })],
       log: process.env.NODE_ENV === 'test' ? ['error'] : ['query', 'error'],
     });
   }
