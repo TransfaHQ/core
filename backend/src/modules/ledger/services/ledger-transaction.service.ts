@@ -327,7 +327,7 @@ export class LedgerTransactionService {
 
       // 8.e Create all TigerBeetle transfers prepared earlier
       //      (this is done after DB inserts so the DB state and TB transfers stay consistent)
-      await this.tigerBeetleService.createTransfers(tbTransfersData);
+      await this.tigerBeetleService.createTransfers(tbTransfersData, { trx });
 
       // 8.f Return the composed LedgerTransaction including metadata and populated ledgerEntries
       return {
@@ -713,7 +713,7 @@ export class LedgerTransactionService {
           ? TransferFlags.post_pending_transfer
           : TransferFlags.void_pending_transfer;
 
-      await this.tigerBeetleService.createTransfers(tbTransfersData);
+      await this.tigerBeetleService.createTransfers(tbTransfersData, { trx });
 
       await trx
         .updateTable('ledgerTransactions')

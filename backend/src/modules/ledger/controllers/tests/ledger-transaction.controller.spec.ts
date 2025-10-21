@@ -848,6 +848,493 @@ describe('LedgerTransactionController', () => {
             );
           });
       });
+
+      describe('Max Balance Limit', () => {
+        let debitAccount: LedgerAccount;
+        let creditAccount: LedgerAccount;
+        let debitAccount2: LedgerAccount;
+        let externalId: string;
+
+        beforeEach(async () => {
+          debitAccount = await ledgerAccountService.createLedgerAccount({
+            ledgerId: ledger.id,
+            name: 'usd debit',
+            description: '',
+            currency: 'USD',
+            normalBalance: NormalBalanceEnum.DEBIT,
+            minBalanceLimit: null,
+            maxBalanceLimit: null,
+          });
+
+          await ledgerAccountService.update(debitAccount.id, {
+            maxBalanceLimit: 100,
+          } as UpdateLedgerAccountDto);
+
+          creditAccount = await ledgerAccountService.createLedgerAccount({
+            ledgerId: ledger.id,
+            name: 'usd credit',
+            description: '',
+            currency: 'USD',
+            normalBalance: NormalBalanceEnum.CREDIT,
+            minBalanceLimit: null,
+            maxBalanceLimit: null,
+          });
+
+          await ledgerAccountService.update(creditAccount.id, {
+            maxBalanceLimit: 100,
+          } as UpdateLedgerAccountDto);
+
+          debitAccount2 = await ledgerAccountService.createLedgerAccount({
+            ledgerId: ledger.id,
+            name: 'usd debit',
+            description: '',
+            currency: 'USD',
+            normalBalance: NormalBalanceEnum.DEBIT,
+            minBalanceLimit: null,
+            maxBalanceLimit: null,
+          });
+        });
+
+        it('should not accept more than max balance limit on credit account', async () => {
+          externalId = uuidV7();
+          const data = {
+            description: 'test retrieve transaction',
+            externalId,
+            metadata: { test: 'retrieve' },
+            status: 'posted',
+            ledgerEntries: [
+              {
+                sourceAccountId: debitAccount2.id,
+                destinationAccountId: creditAccount.id,
+                amount: 50,
+              },
+            ],
+          };
+
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.CREATED);
+
+          data.ledgerEntries[0].amount = 500;
+          data.externalId = uuidV7();
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.BAD_REQUEST);
+        });
+
+        it('should not accept more than max balance limit on debit account', async () => {
+          externalId = uuidV7();
+          const data = {
+            description: 'test retrieve transaction',
+            externalId,
+            metadata: { test: 'retrieve' },
+            status: 'posted',
+            ledgerEntries: [
+              {
+                sourceAccountId: debitAccount.id,
+                destinationAccountId: creditAccount.id,
+                amount: 50,
+              },
+            ],
+          };
+
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.CREATED);
+
+          data.ledgerEntries[0].amount = 500;
+          data.externalId = uuidV7();
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.BAD_REQUEST);
+        });
+
+        it('should not validate max balance limit when creating pending transaction', async () => {
+          externalId = uuidV7();
+          const data = {
+            description: 'test retrieve transaction',
+            externalId,
+            metadata: { test: 'retrieve' },
+            status: 'pending',
+            ledgerEntries: [
+              {
+                sourceAccountId: debitAccount.id,
+                destinationAccountId: creditAccount.id,
+                amount: 500,
+              },
+            ],
+          };
+
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.CREATED);
+        });
+
+        it('should not validate max balance limit when archiving pending transaction', async () => {
+          externalId = uuidV7();
+          const data = {
+            description: 'test retrieve transaction',
+            externalId,
+            metadata: { test: 'retrieve' },
+            status: 'pending',
+            ledgerEntries: [
+              {
+                sourceAccountId: debitAccount.id,
+                destinationAccountId: creditAccount.id,
+                amount: 500,
+              },
+            ],
+          };
+          let transactionId = '';
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.CREATED)
+            .expect((response) => {
+              transactionId = response.body.id;
+            });
+
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}/${transactionId}/archive`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.OK);
+        });
+
+        it('should validate max balance limit when posting pending transaction', async () => {
+          externalId = uuidV7();
+          const data = {
+            description: 'test retrieve transaction',
+            externalId,
+            metadata: { test: 'retrieve' },
+            status: 'pending',
+            ledgerEntries: [
+              {
+                sourceAccountId: debitAccount.id,
+                destinationAccountId: creditAccount.id,
+                amount: 500,
+              },
+            ],
+          };
+          let transactionId = '';
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.CREATED)
+            .expect((response) => {
+              transactionId = response.body.id;
+            });
+
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}/${transactionId}/post`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.BAD_REQUEST);
+        });
+      });
+
+      describe('Min Balance Limit', () => {
+        let debitAccount: LedgerAccount;
+        let creditAccount: LedgerAccount;
+        let creditAccount2: LedgerAccount;
+        let debitAccount2: LedgerAccount;
+        let externalId: string;
+
+        beforeEach(async () => {
+          debitAccount = await ledgerAccountService.createLedgerAccount({
+            ledgerId: ledger.id,
+            name: 'usd debit',
+            description: '',
+            currency: 'USD',
+            normalBalance: NormalBalanceEnum.DEBIT,
+            minBalanceLimit: null,
+            maxBalanceLimit: null,
+          });
+
+          await ledgerAccountService.update(debitAccount.id, {
+            minBalanceLimit: 15,
+          } as UpdateLedgerAccountDto);
+
+          creditAccount = await ledgerAccountService.createLedgerAccount({
+            ledgerId: ledger.id,
+            name: 'usd credit',
+            description: '',
+            currency: 'USD',
+            normalBalance: NormalBalanceEnum.CREDIT,
+            minBalanceLimit: null,
+            maxBalanceLimit: null,
+          });
+
+          await ledgerAccountService.update(creditAccount.id, {
+            minBalanceLimit: 5,
+          } as UpdateLedgerAccountDto);
+
+          debitAccount2 = await ledgerAccountService.createLedgerAccount({
+            ledgerId: ledger.id,
+            name: 'usd debit',
+            description: '',
+            currency: 'USD',
+            normalBalance: NormalBalanceEnum.DEBIT,
+            minBalanceLimit: null,
+            maxBalanceLimit: null,
+          });
+
+          creditAccount2 = await ledgerAccountService.createLedgerAccount({
+            ledgerId: ledger.id,
+            name: 'usd credit',
+            description: '',
+            currency: 'USD',
+            normalBalance: NormalBalanceEnum.CREDIT,
+            minBalanceLimit: null,
+            maxBalanceLimit: null,
+          });
+
+          const data = {
+            description: 'test retrieve transaction',
+            externalId: uuidV7(),
+            metadata: { test: 'retrieve' },
+            status: 'posted',
+            ledgerEntries: [
+              {
+                sourceAccountId: debitAccount.id,
+                destinationAccountId: creditAccount.id,
+                amount: 50,
+              },
+            ],
+          };
+
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.CREATED);
+        });
+
+        it('should not allow balance to lower than min balance limit on credit account', async () => {
+          externalId = uuidV7();
+          const data = {
+            description: 'test retrieve transaction',
+            externalId,
+            metadata: { test: 'retrieve' },
+            status: 'posted',
+            ledgerEntries: [
+              {
+                sourceAccountId: creditAccount.id,
+                destinationAccountId: creditAccount2.id,
+                amount: 40,
+              },
+            ],
+          };
+
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.CREATED);
+
+          data.ledgerEntries[0].amount = 6;
+          data.externalId = uuidV7();
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.BAD_REQUEST);
+        });
+
+        it('should not allow balance to lower than min balance limit on debit account', async () => {
+          externalId = uuidV7();
+          const data = {
+            description: 'test retrieve transaction',
+            externalId,
+            metadata: { test: 'retrieve' },
+            status: 'posted',
+            ledgerEntries: [
+              {
+                sourceAccountId: debitAccount2.id,
+                destinationAccountId: debitAccount.id,
+                amount: 30,
+              },
+            ],
+          };
+
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.CREATED);
+
+          data.ledgerEntries[0].amount = 10;
+          data.externalId = uuidV7();
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.BAD_REQUEST);
+        });
+
+        it('should not validate min balance limit when creating pending transaction', async () => {
+          externalId = uuidV7();
+          const data = {
+            description: 'test retrieve transaction',
+            externalId,
+            metadata: { test: 'retrieve' },
+            status: 'pending',
+            ledgerEntries: [
+              {
+                sourceAccountId: debitAccount2.id,
+                destinationAccountId: debitAccount.id,
+                amount: 5,
+              },
+            ],
+          };
+
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.CREATED);
+        });
+
+        it('should not validate min balance limit when archiving pending transaction', async () => {
+          externalId = uuidV7();
+          const data = {
+            description: 'test retrieve transaction',
+            externalId,
+            metadata: { test: 'retrieve' },
+            status: 'pending',
+            ledgerEntries: [
+              {
+                sourceAccountId: creditAccount.id,
+                destinationAccountId: creditAccount2.id,
+                amount: 5,
+              },
+            ],
+          };
+          let transactionId = '';
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.CREATED)
+            .expect((response) => {
+              transactionId = response.body.id;
+            });
+
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}/${transactionId}/archive`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.OK);
+        });
+
+        it('should validate min balance limit when posting pending transaction', async () => {
+          externalId = uuidV7();
+          const data = {
+            description: 'test retrieve transaction',
+            externalId,
+            metadata: { test: 'retrieve' },
+            status: 'pending',
+            ledgerEntries: [
+              {
+                sourceAccountId: creditAccount.id,
+                destinationAccountId: creditAccount2.id,
+                amount: 50,
+              },
+            ],
+          };
+          let transactionId = '';
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.CREATED)
+            .expect((response) => {
+              transactionId = response.body.id;
+            });
+
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}/${transactionId}/post`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.BAD_REQUEST);
+        });
+
+        it('should validate min & max balance when set', async () => {
+          await ledgerAccountService.update(debitAccount.id, {
+            minBalanceLimit: 15,
+            maxBalanceLimit: 75,
+          } as UpdateLedgerAccountDto);
+
+          await ledgerAccountService.update(creditAccount.id, {
+            minBalanceLimit: 5,
+            maxBalanceLimit: 75,
+          } as UpdateLedgerAccountDto);
+
+          externalId = uuidV7();
+          const data = {
+            description: 'test retrieve transaction',
+            externalId,
+            metadata: { test: 'retrieve' },
+            status: 'posted',
+            ledgerEntries: [
+              {
+                sourceAccountId: debitAccount.id,
+                destinationAccountId: creditAccount.id,
+                amount: 75,
+              },
+            ],
+          };
+
+          // Max balance will be exceeded on debit account so it should refuse
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.BAD_REQUEST);
+
+          // Max balance will be exceeded on debit account so it should refuse
+          data.externalId = uuidV7();
+          data.ledgerEntries[0].amount = 10;
+
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.CREATED);
+
+          // Min balance on credit account be exceeded on credit account so it should refuse
+          const data2 = {
+            description: 'test retrieve transaction',
+            externalId: uuidV7(),
+            metadata: { test: 'retrieve' },
+            status: 'posted',
+            ledgerEntries: [
+              {
+                sourceAccountId: creditAccount.id,
+                destinationAccountId: debitAccount.id,
+                amount: 66,
+              },
+            ],
+          };
+          await request(ctx.app.getHttpServer())
+            .post(`${endpoint}`)
+            .send(data2)
+            .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+            .expect(HttpStatus.BAD_REQUEST);
+        });
+      });
     });
   });
 
@@ -1243,491 +1730,6 @@ describe('LedgerTransactionController', () => {
         .post(`${endpoint}/${nonExistentId}/archive`)
         .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
         .expect(HttpStatus.NOT_FOUND);
-    });
-
-    describe('Max Balance Limit', () => {
-      let debitAccount: LedgerAccount;
-      let creditAccount: LedgerAccount;
-      let debitAccount2: LedgerAccount;
-
-      beforeEach(async () => {
-        debitAccount = await ledgerAccountService.createLedgerAccount({
-          ledgerId: ledger.id,
-          name: 'usd debit',
-          description: '',
-          currency: 'USD',
-          normalBalance: NormalBalanceEnum.DEBIT,
-          minBalanceLimit: null,
-          maxBalanceLimit: null,
-        });
-
-        await ledgerAccountService.update(debitAccount.id, {
-          maxBalanceLimit: 100,
-        } as UpdateLedgerAccountDto);
-
-        creditAccount = await ledgerAccountService.createLedgerAccount({
-          ledgerId: ledger.id,
-          name: 'usd credit',
-          description: '',
-          currency: 'USD',
-          normalBalance: NormalBalanceEnum.CREDIT,
-          minBalanceLimit: null,
-          maxBalanceLimit: null,
-        });
-
-        await ledgerAccountService.update(creditAccount.id, {
-          maxBalanceLimit: 100,
-        } as UpdateLedgerAccountDto);
-
-        debitAccount2 = await ledgerAccountService.createLedgerAccount({
-          ledgerId: ledger.id,
-          name: 'usd debit',
-          description: '',
-          currency: 'USD',
-          normalBalance: NormalBalanceEnum.DEBIT,
-          minBalanceLimit: null,
-          maxBalanceLimit: null,
-        });
-      });
-
-      it('should not accept more than max balance limit on credit account', async () => {
-        externalId = uuidV7();
-        const data = {
-          description: 'test retrieve transaction',
-          externalId,
-          metadata: { test: 'retrieve' },
-          status: 'posted',
-          ledgerEntries: [
-            {
-              sourceAccountId: debitAccount2.id,
-              destinationAccountId: creditAccount.id,
-              amount: 50,
-            },
-          ],
-        };
-
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.CREATED);
-
-        data.ledgerEntries[0].amount = 500;
-        data.externalId = uuidV7();
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.BAD_REQUEST);
-      });
-
-      it('should not accept more than max balance limit on debit account', async () => {
-        externalId = uuidV7();
-        const data = {
-          description: 'test retrieve transaction',
-          externalId,
-          metadata: { test: 'retrieve' },
-          status: 'posted',
-          ledgerEntries: [
-            {
-              sourceAccountId: debitAccount.id,
-              destinationAccountId: creditAccount.id,
-              amount: 50,
-            },
-          ],
-        };
-
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.CREATED);
-
-        data.ledgerEntries[0].amount = 500;
-        data.externalId = uuidV7();
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.BAD_REQUEST);
-      });
-
-      it('should not validate max balance limit when creating pending transaction', async () => {
-        externalId = uuidV7();
-        const data = {
-          description: 'test retrieve transaction',
-          externalId,
-          metadata: { test: 'retrieve' },
-          status: 'pending',
-          ledgerEntries: [
-            {
-              sourceAccountId: debitAccount.id,
-              destinationAccountId: creditAccount.id,
-              amount: 500,
-            },
-          ],
-        };
-
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.CREATED);
-      });
-
-      it('should not validate max balance limit when archiving pending transaction', async () => {
-        externalId = uuidV7();
-        const data = {
-          description: 'test retrieve transaction',
-          externalId,
-          metadata: { test: 'retrieve' },
-          status: 'pending',
-          ledgerEntries: [
-            {
-              sourceAccountId: debitAccount.id,
-              destinationAccountId: creditAccount.id,
-              amount: 500,
-            },
-          ],
-        };
-        let transactionId = '';
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.CREATED)
-          .expect((response) => {
-            transactionId = response.body.id;
-          });
-
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}/${transactionId}/archive`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.OK);
-      });
-
-      it('should validate max balance limit when posting pending transaction', async () => {
-        externalId = uuidV7();
-        const data = {
-          description: 'test retrieve transaction',
-          externalId,
-          metadata: { test: 'retrieve' },
-          status: 'pending',
-          ledgerEntries: [
-            {
-              sourceAccountId: debitAccount.id,
-              destinationAccountId: creditAccount.id,
-              amount: 500,
-            },
-          ],
-        };
-        let transactionId = '';
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.CREATED)
-          .expect((response) => {
-            transactionId = response.body.id;
-          });
-
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}/${transactionId}/post`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.BAD_REQUEST);
-      });
-    });
-
-    describe('Min Balance Limit', () => {
-      let debitAccount: LedgerAccount;
-      let creditAccount: LedgerAccount;
-      let creditAccount2: LedgerAccount;
-      let debitAccount2: LedgerAccount;
-
-      beforeEach(async () => {
-        debitAccount = await ledgerAccountService.createLedgerAccount({
-          ledgerId: ledger.id,
-          name: 'usd debit',
-          description: '',
-          currency: 'USD',
-          normalBalance: NormalBalanceEnum.DEBIT,
-          minBalanceLimit: null,
-          maxBalanceLimit: null,
-        });
-
-        await ledgerAccountService.update(debitAccount.id, {
-          minBalanceLimit: 15,
-        } as UpdateLedgerAccountDto);
-
-        creditAccount = await ledgerAccountService.createLedgerAccount({
-          ledgerId: ledger.id,
-          name: 'usd credit',
-          description: '',
-          currency: 'USD',
-          normalBalance: NormalBalanceEnum.CREDIT,
-          minBalanceLimit: null,
-          maxBalanceLimit: null,
-        });
-
-        await ledgerAccountService.update(creditAccount.id, {
-          minBalanceLimit: 5,
-        } as UpdateLedgerAccountDto);
-
-        debitAccount2 = await ledgerAccountService.createLedgerAccount({
-          ledgerId: ledger.id,
-          name: 'usd debit',
-          description: '',
-          currency: 'USD',
-          normalBalance: NormalBalanceEnum.DEBIT,
-          minBalanceLimit: null,
-          maxBalanceLimit: null,
-        });
-
-        creditAccount2 = await ledgerAccountService.createLedgerAccount({
-          ledgerId: ledger.id,
-          name: 'usd credit',
-          description: '',
-          currency: 'USD',
-          normalBalance: NormalBalanceEnum.CREDIT,
-          minBalanceLimit: null,
-          maxBalanceLimit: null,
-        });
-
-        const data = {
-          description: 'test retrieve transaction',
-          externalId: uuidV7(),
-          metadata: { test: 'retrieve' },
-          status: 'posted',
-          ledgerEntries: [
-            {
-              sourceAccountId: debitAccount.id,
-              destinationAccountId: creditAccount.id,
-              amount: 50,
-            },
-          ],
-        };
-
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.CREATED);
-      });
-
-      it('should not allow balance to lower than min balance limit on credit account', async () => {
-        externalId = uuidV7();
-        const data = {
-          description: 'test retrieve transaction',
-          externalId,
-          metadata: { test: 'retrieve' },
-          status: 'posted',
-          ledgerEntries: [
-            {
-              sourceAccountId: creditAccount.id,
-              destinationAccountId: creditAccount2.id,
-              amount: 40,
-            },
-          ],
-        };
-
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.CREATED);
-
-        data.ledgerEntries[0].amount = 6;
-        data.externalId = uuidV7();
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.BAD_REQUEST);
-      });
-
-      it('should not allow balance to lower than min balance limit on debit account', async () => {
-        externalId = uuidV7();
-        const data = {
-          description: 'test retrieve transaction',
-          externalId,
-          metadata: { test: 'retrieve' },
-          status: 'posted',
-          ledgerEntries: [
-            {
-              sourceAccountId: debitAccount2.id,
-              destinationAccountId: debitAccount.id,
-              amount: 30,
-            },
-          ],
-        };
-
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.CREATED);
-
-        data.ledgerEntries[0].amount = 10;
-        data.externalId = uuidV7();
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.BAD_REQUEST);
-      });
-
-      it('should not validate min balance limit when creating pending transaction', async () => {
-        externalId = uuidV7();
-        const data = {
-          description: 'test retrieve transaction',
-          externalId,
-          metadata: { test: 'retrieve' },
-          status: 'pending',
-          ledgerEntries: [
-            {
-              sourceAccountId: debitAccount2.id,
-              destinationAccountId: debitAccount.id,
-              amount: 5,
-            },
-          ],
-        };
-
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.CREATED);
-      });
-
-      it('should not validate min balance limit when archiving pending transaction', async () => {
-        externalId = uuidV7();
-        const data = {
-          description: 'test retrieve transaction',
-          externalId,
-          metadata: { test: 'retrieve' },
-          status: 'pending',
-          ledgerEntries: [
-            {
-              sourceAccountId: creditAccount.id,
-              destinationAccountId: creditAccount2.id,
-              amount: 5,
-            },
-          ],
-        };
-        let transactionId = '';
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.CREATED)
-          .expect((response) => {
-            transactionId = response.body.id;
-          });
-
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}/${transactionId}/archive`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.OK);
-      });
-
-      it('should validate min balance limit when posting pending transaction', async () => {
-        externalId = uuidV7();
-        const data = {
-          description: 'test retrieve transaction',
-          externalId,
-          metadata: { test: 'retrieve' },
-          status: 'pending',
-          ledgerEntries: [
-            {
-              sourceAccountId: creditAccount.id,
-              destinationAccountId: creditAccount2.id,
-              amount: 50,
-            },
-          ],
-        };
-        let transactionId = '';
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.CREATED)
-          .expect((response) => {
-            transactionId = response.body.id;
-          });
-
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}/${transactionId}/post`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.BAD_REQUEST);
-      });
-
-      it('should validate min & max balance when set', async () => {
-        await ledgerAccountService.update(debitAccount.id, {
-          minBalanceLimit: 15,
-          maxBalanceLimit: 75,
-        } as UpdateLedgerAccountDto);
-
-        await ledgerAccountService.update(creditAccount.id, {
-          minBalanceLimit: 5,
-          maxBalanceLimit: 75,
-        } as UpdateLedgerAccountDto);
-
-        externalId = uuidV7();
-        const data = {
-          description: 'test retrieve transaction',
-          externalId,
-          metadata: { test: 'retrieve' },
-          status: 'posted',
-          ledgerEntries: [
-            {
-              sourceAccountId: debitAccount.id,
-              destinationAccountId: creditAccount.id,
-              amount: 75,
-            },
-          ],
-        };
-
-        // Max balance will be exceeded on debit account so it should refuse
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.BAD_REQUEST);
-
-        // Max balance will be exceeded on debit account so it should refuse
-        data.externalId = uuidV7();
-        data.ledgerEntries[0].amount = 10;
-
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.CREATED);
-
-        // Min balance on credit account be exceeded on credit account so it should refuse
-        const data2 = {
-          description: 'test retrieve transaction',
-          externalId: uuidV7(),
-          metadata: { test: 'retrieve' },
-          status: 'posted',
-          ledgerEntries: [
-            {
-              sourceAccountId: creditAccount.id,
-              destinationAccountId: debitAccount.id,
-              amount: 66,
-            },
-          ],
-        };
-        await request(ctx.app.getHttpServer())
-          .post(`${endpoint}`)
-          .send(data2)
-          .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
-          .expect(HttpStatus.BAD_REQUEST);
-      });
     });
   });
 });

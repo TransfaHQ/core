@@ -78,24 +78,27 @@ export class LedgerAccountService {
       }
 
       // Create account on tigerbeetle and save it
-      await this.tigerBeetleService.createAccount({
-        id: bufferToTbId(account.tigerBeetleId),
-        debits_pending: 0n,
-        credits_pending: 0n,
-        credits_posted: 0n,
-        debits_posted: 0n,
-        ledger: ledger.tigerBeetleId,
-        timestamp: 0n,
-        reserved: 0,
-        flags:
-          account.normalBalance === NormalBalanceEnum.CREDIT
-            ? AccountFlags.debits_must_not_exceed_credits
-            : AccountFlags.credits_must_not_exceed_debits,
-        user_data_128: 0n,
-        user_data_64: 0n,
-        user_data_32: account.normalBalance === NormalBalanceEnum.CREDIT ? 1 : 0, // account normal balance
-        code: currency.id,
-      });
+      await this.tigerBeetleService.createAccount(
+        {
+          id: bufferToTbId(account.tigerBeetleId),
+          debits_pending: 0n,
+          credits_pending: 0n,
+          credits_posted: 0n,
+          debits_posted: 0n,
+          ledger: ledger.tigerBeetleId,
+          timestamp: 0n,
+          reserved: 0,
+          flags:
+            account.normalBalance === NormalBalanceEnum.CREDIT
+              ? AccountFlags.debits_must_not_exceed_credits
+              : AccountFlags.credits_must_not_exceed_debits,
+          user_data_128: 0n,
+          user_data_64: 0n,
+          user_data_32: account.normalBalance === NormalBalanceEnum.CREDIT ? 1 : 0, // account normal balance
+          code: currency.id,
+        },
+        { trx, ledgerAccountId: account.id },
+      );
     });
 
     if (data.minBalanceLimit != null || data.maxBalanceLimit != null) {

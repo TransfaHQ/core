@@ -28,7 +28,7 @@ export class CreateLedgerAccountDto {
 
   @ApiProperty({
     description: 'Name of the ledger account',
-    example: 'Company General Ledger',
+    example: 'Cash account',
     minLength: 3,
     maxLength: 255,
   })
@@ -40,7 +40,7 @@ export class CreateLedgerAccountDto {
 
   @ApiPropertyOptional({
     description: 'Description of the ledger account purpose',
-    example: 'Main accounting ledger account for company operations',
+    example: 'Main ledger account for company operations',
     minLength: 3,
     maxLength: 255,
   })
