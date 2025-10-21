@@ -205,6 +205,87 @@ describe('LedgerAccountController', () => {
       expect(tbAccount.flags).toBe(AccountFlags.credits_must_not_exceed_debits);
     });
 
+    it('should create debit ledger account with balance limit set', async () => {
+      const currency = await ctx.app.get(CurrencyService).findByCode('USD');
+      const externalId = uuidV7();
+
+      let accountId: string = '';
+      await request(ctx.app.getHttpServer())
+        .post('/v1/ledger_accounts')
+        .set(setTestBasicAuthHeader(authKey.id, authKey.secret))
+        .send({
+          name: 'test',
+          ledgerId: ledger.id,
+          currency: currency.code,
+          normalBalance: NormalBalanceEnum.DEBIT,
+          externalId,
+          minBalanceLimit: 10,
+          maxBalanceLimit: 100,
+        })
+        .expect(HttpStatus.CREATED)
+        .expect((response) => {
+          expect(response.body.name).toBe('test');
+          expect(response.body.description).toBe(null);
+          expect(response.body.ledgerId).toBe(ledger.id);
+          expect(response.body.createdAt).toBeDefined();
+          expect(response.body.updatedAt).toBeDefined();
+          expect(response.body.externalId).toBe(externalId);
+          expect(response.body.maxBalanceLimit).toBe(100);
+          expect(response.body.minBalanceLimit).toBe(10);
+
+          expect(response.body.balances.pendingBalance).toMatchObject({
+            credits: 0,
+            debits: 0,
+            amount: 0,
+            currency: currency.code,
+            currencyExponent: currency.exponent,
+          });
+
+          expect(response.body.balances.availableBalance).toMatchObject({
+            credits: 0,
+            debits: 0,
+            amount: 0,
+            currency: currency.code,
+            currencyExponent: currency.exponent,
+          });
+
+          expect(response.body.balances.postedBalance).toMatchObject({
+            credits: 0,
+            debits: 0,
+            amount: 0,
+            currency: currency.code,
+            currencyExponent: currency.exponent,
+          });
+          accountId = response.body.id;
+        });
+
+      // Make sure it is saved in DB
+      const account = await ctx.trx
+        .selectFrom('ledgerAccounts')
+        .leftJoin('ledgers', 'ledgerAccounts.ledgerId', 'ledgers.id')
+        .where('ledgerAccounts.id', '=', accountId)
+        .select([
+          'ledgerAccounts.id',
+          'ledgerAccounts.tigerBeetleId',
+          'ledgers.tigerBeetleId as ledgerTigerBeetleId',
+        ])
+        .executeTakeFirstOrThrow();
+
+      expect(account).toBeDefined();
+
+      // Make sure that account is created in TigerBeetle
+      const tbAccount = await tigerBeetleService.retrieveAccount(account.tigerBeetleId);
+
+      expect(tbAccount.ledger).toEqual(account.ledgerTigerBeetleId);
+      expect(tbAccount.code).toBe(+currency.id);
+      expect(tbAccount.user_data_32).toBe(0);
+      expect(tbAccount.credits_pending).toBe(0n);
+      expect(tbAccount.debits_pending).toBe(0n);
+      expect(tbAccount.credits_posted).toBe(0n);
+      expect(tbAccount.debits_posted).toBe(0n);
+      expect(tbAccount.flags).toBe(AccountFlags.credits_must_not_exceed_debits);
+    });
+
     it('should not accept invalid data', async () => {
       await request(ctx.app.getHttpServer())
         .post('/v1/ledger_accounts')
@@ -264,6 +345,8 @@ describe('LedgerAccountController', () => {
         name: 'Ledger account',
         normalBalance: NormalBalanceEnum.CREDIT,
         description: '',
+        minBalanceLimit: null,
+        maxBalanceLimit: null,
       });
     });
     it('should list ledger accounts', async () => {
@@ -311,6 +394,8 @@ describe('LedgerAccountController', () => {
         normalBalance: NormalBalanceEnum.CREDIT,
         currency: eurCurrency.code,
         externalId: uuidV7(),
+        minBalanceLimit: null,
+        maxBalanceLimit: null,
       });
 
       await ledgerAccountService.createLedgerAccount({
@@ -320,6 +405,8 @@ describe('LedgerAccountController', () => {
         normalBalance: NormalBalanceEnum.DEBIT,
         currency: 'USD',
         externalId: uuidV7(),
+        minBalanceLimit: null,
+        maxBalanceLimit: null,
       });
 
       await ledgerAccountService.createLedgerAccount({
@@ -334,6 +421,8 @@ describe('LedgerAccountController', () => {
           region: 'US',
           type: 'operational',
         },
+        minBalanceLimit: null,
+        maxBalanceLimit: null,
       });
     });
 
@@ -677,6 +766,8 @@ describe('LedgerAccountController', () => {
                   type: 'test',
                 }
               : {},
+          minBalanceLimit: null,
+          maxBalanceLimit: null,
         });
         accounts.push(account);
       }
@@ -1077,6 +1168,8 @@ describe('LedgerAccountController', () => {
         normalBalance: NormalBalanceEnum.CREDIT,
         currency: 'USD',
         externalId: uuidV7(),
+        minBalanceLimit: null,
+        maxBalanceLimit: null,
       });
     });
 
@@ -1122,6 +1215,8 @@ describe('LedgerAccountController', () => {
         metadata: {
           test: 'value',
         },
+        minBalanceLimit: null,
+        maxBalanceLimit: null,
       });
     });
     it('should return 200', async () => {
@@ -1302,7 +1397,7 @@ describe('LedgerAccountController', () => {
         .expect(HttpStatus.BAD_REQUEST)
         .expect((response) => {
           expect(response.body.message).toBe(
-            'minBalanceLimit should lower than equal to maxBalanceLimit.',
+            'minBalanceLimit should be less than or equal to maxBalanceLimit.',
           );
         });
     });

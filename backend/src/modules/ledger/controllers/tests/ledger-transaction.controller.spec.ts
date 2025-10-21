@@ -59,6 +59,8 @@ describe('LedgerTransactionController', () => {
       description: '',
       currency: eurCurrency.code,
       normalBalance: NormalBalanceEnum.CREDIT,
+      minBalanceLimit: null,
+      maxBalanceLimit: null,
     });
 
     eurDebitAccount = await ledgerAccountService.createLedgerAccount({
@@ -67,6 +69,8 @@ describe('LedgerTransactionController', () => {
       description: '',
       currency: eurCurrency.code,
       normalBalance: NormalBalanceEnum.DEBIT,
+      minBalanceLimit: null,
+      maxBalanceLimit: null,
     });
 
     usdDebitAccount = await ledgerAccountService.createLedgerAccount({
@@ -75,6 +79,8 @@ describe('LedgerTransactionController', () => {
       description: '',
       currency: usdCurrency.code,
       normalBalance: NormalBalanceEnum.DEBIT,
+      minBalanceLimit: null,
+      maxBalanceLimit: null,
     });
 
     usdCreditAccount = await ledgerAccountService.createLedgerAccount({
@@ -83,6 +89,8 @@ describe('LedgerTransactionController', () => {
       description: '',
       currency: usdCurrency.code,
       normalBalance: NormalBalanceEnum.CREDIT,
+      minBalanceLimit: null,
+      maxBalanceLimit: null,
     });
 
     usdDebitAccount2 = await ledgerAccountService.createLedgerAccount({
@@ -91,6 +99,8 @@ describe('LedgerTransactionController', () => {
       description: '',
       currency: usdCurrency.code,
       normalBalance: NormalBalanceEnum.DEBIT,
+      minBalanceLimit: null,
+      maxBalanceLimit: null,
     });
 
     tigerBeetleService = ctx.app.get(TigerBeetleService);
@@ -1247,6 +1257,8 @@ describe('LedgerTransactionController', () => {
           description: '',
           currency: 'USD',
           normalBalance: NormalBalanceEnum.DEBIT,
+          minBalanceLimit: null,
+          maxBalanceLimit: null,
         });
 
         await ledgerAccountService.update(debitAccount.id, {
@@ -1259,6 +1271,8 @@ describe('LedgerTransactionController', () => {
           description: '',
           currency: 'USD',
           normalBalance: NormalBalanceEnum.CREDIT,
+          minBalanceLimit: null,
+          maxBalanceLimit: null,
         });
 
         await ledgerAccountService.update(creditAccount.id, {
@@ -1271,6 +1285,8 @@ describe('LedgerTransactionController', () => {
           description: '',
           currency: 'USD',
           normalBalance: NormalBalanceEnum.DEBIT,
+          minBalanceLimit: null,
+          maxBalanceLimit: null,
         });
       });
 
@@ -1437,6 +1453,8 @@ describe('LedgerTransactionController', () => {
           description: '',
           currency: 'USD',
           normalBalance: NormalBalanceEnum.DEBIT,
+          minBalanceLimit: null,
+          maxBalanceLimit: null,
         });
 
         await ledgerAccountService.update(debitAccount.id, {
@@ -1449,6 +1467,8 @@ describe('LedgerTransactionController', () => {
           description: '',
           currency: 'USD',
           normalBalance: NormalBalanceEnum.CREDIT,
+          minBalanceLimit: null,
+          maxBalanceLimit: null,
         });
 
         await ledgerAccountService.update(creditAccount.id, {
@@ -1461,6 +1481,8 @@ describe('LedgerTransactionController', () => {
           description: '',
           currency: 'USD',
           normalBalance: NormalBalanceEnum.DEBIT,
+          minBalanceLimit: null,
+          maxBalanceLimit: null,
         });
 
         creditAccount2 = await ledgerAccountService.createLedgerAccount({
@@ -1469,6 +1491,8 @@ describe('LedgerTransactionController', () => {
           description: '',
           currency: 'USD',
           normalBalance: NormalBalanceEnum.CREDIT,
+          minBalanceLimit: null,
+          maxBalanceLimit: null,
         });
 
         const data = {

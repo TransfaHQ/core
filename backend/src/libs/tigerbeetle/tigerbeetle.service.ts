@@ -9,7 +9,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 
-import { bufferToTbId, tbIdToBuffer } from '@libs/database/utils';
+import { bufferToTbId } from '@libs/database/utils';
 import { TigerBeetleTransferException } from '@libs/exceptions';
 
 import { ConfigService } from '../config/config.service';
@@ -31,7 +31,7 @@ export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
     if (this.client) this.client.destroy();
   }
 
-  async createAccount(data: Account): Promise<Account> {
+  async createAccount(data: Account): Promise<void> {
     const errors = await this.client.createAccounts([data]);
     for (const error of errors) {
       this.logger.error(
@@ -44,11 +44,9 @@ export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
         `Failed to create ${errors.length} account(s): ${errors.map((e) => CreateAccountError[e.result]).join(', ')}`,
       );
     }
-
-    return this.retrieveAccount(tbIdToBuffer(data.id));
   }
 
-  async createAccounts(data: Account[]): Promise<Account[]> {
+  async createAccounts(data: Account[]): Promise<void> {
     const errors = await this.client.createAccounts(data);
     for (const error of errors) {
       this.logger.error(
@@ -61,8 +59,6 @@ export class TigerBeetleService implements OnModuleDestroy, OnModuleInit {
         `Failed to create ${errors.length} account(s): ${errors.map((e) => CreateAccountError[e.result]).join(', ')}`,
       );
     }
-
-    return this.retrieveAccounts(data.map((a) => tbIdToBuffer(a.id)));
   }
 
   async createTransfers(data: Transfer[]): Promise<Transfer[]> {
