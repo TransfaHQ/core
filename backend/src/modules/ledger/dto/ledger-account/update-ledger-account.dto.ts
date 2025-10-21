@@ -49,13 +49,23 @@ export class UpdateLedgerAccountDto {
   @IsMetadata({ message: 'metadata must have string keys/values max length 255' })
   metadata?: Record<string, string>;
 
-  @ApiPropertyOptional({ description: 'Max available balance on the account.', example: 1_000_000 })
+  @ApiPropertyOptional({
+    description: 'Max available balance on the account.',
+    example: 1_000_000,
+    nullable: true,
+    minimum: 0,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
   maxBalanceLimit: number | null;
 
-  @ApiPropertyOptional({ description: 'Min available balance on the account.', example: 100_000 })
+  @ApiPropertyOptional({
+    description: 'Min available balance on the account.',
+    example: 100_000,
+    nullable: true,
+    minimum: 0,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)

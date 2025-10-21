@@ -57,20 +57,15 @@ export class LedgerAccountService {
         .returningAll()
         .executeTakeFirstOrThrow();
 
-      await Promise.all(
-        Object.entries(data.metadata ?? {}).map(async ([key, value]) => {
-          const data = {
-            ledgerAccountId: account.id,
-            key,
-            value,
-          };
-          await trx.insertInto('ledgerAccountMetadata').values(data).executeTakeFirstOrThrow();
-          return {
-            key,
-            value,
-          };
-        }),
-      );
+      const metadata = Object.entries(data.metadata ?? {}).map(([key, value]) => ({
+        ledgerAccountId: account.id,
+        key,
+        value,
+      }));
+
+      if (metadata.length) {
+        await trx.insertInto('ledgerAccountMetadata').values(metadata).execute();
+      }
 
       // Create account on tigerbeetle and save it
       await this.tigerBeetleService.createAccount({
@@ -391,7 +386,9 @@ export class LedgerAccountService {
     }
 
     if (minLimit != null && maxLimit != null && BigNumber(minLimit).gt(BigNumber(maxLimit))) {
-      throw new BadRequestException('minBalanceLimit should lower than equal to maxBalanceLimit.');
+      throw new BadRequestException(
+        'minBalanceLimit should be less than or equal to maxBalanceLimit.',
+      );
     }
 
     // We need to create control & operator account
@@ -417,7 +414,7 @@ export class LedgerAccountService {
 
     const tbAccountsData: Account[] = [];
 
-    const boundCheckAcountNormalBalance =
+    const boundCheckAccountNormalBalance =
       ledgerAccount.normalBalance === NormalBalanceEnum.CREDIT
         ? AccountFlags.credits_must_not_exceed_debits
         : AccountFlags.debits_must_not_exceed_credits;
@@ -425,7 +422,7 @@ export class LedgerAccountService {
     const isBoundCheckAccountExists = existingTbAccountIds.some((tbAccount) => {
       return (
         tbAccount.id === boundCheckAccountTigerBeetleId &&
-        tbAccount.flags === boundCheckAcountNormalBalance &&
+        tbAccount.flags === boundCheckAccountNormalBalance &&
         tbAccount.ledger === ledgerAccount.ledgerTigerBeetleId &&
         tbAccount.code === ledgerAccount.currencyId
       );
@@ -444,7 +441,7 @@ export class LedgerAccountService {
         reserved: 0,
         ledger: ledgerAccount.ledgerTigerBeetleId,
         code: ledgerAccount.currencyId,
-        flags: boundCheckAcountNormalBalance,
+        flags: boundCheckAccountNormalBalance,
         timestamp: 0n,
       });
     }
