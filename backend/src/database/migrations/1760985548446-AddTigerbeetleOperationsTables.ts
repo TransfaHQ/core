@@ -33,7 +33,7 @@ export class AddTigerbeetleOperationsTables1760985548446 implements MigrationInt
         transfer_id bytea NOT NULL UNIQUE,
         debit_account_id bytea NOT NULL,
         credit_account_id bytea NOT NULL,
-        amount bigint NOT NULL CHECK (amount >= 0),
+        amount bytea NOT NULL,
         pending_id bytea,
         user_data_128 bytea,
         user_data_64 bytea,

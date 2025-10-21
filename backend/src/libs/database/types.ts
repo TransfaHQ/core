@@ -9,8 +9,6 @@ export type Generated<T> =
     ? ColumnType<S, I | undefined, U>
     : ColumnType<T, T | undefined, T>;
 
-export type Int8 = ColumnType<string, bigint | number | string, bigint | number | string>;
-
 export type Json = JsonValue;
 
 export type JsonArray = JsonValue[];
@@ -181,7 +179,7 @@ export interface TigerbeetleAccounts {
 }
 
 export interface TigerbeetleTransfers {
-  amount: Int8;
+  amount: Buffer;
   code: number;
   createdAt: Generated<Timestamp>;
   creditAccountId: Buffer;
